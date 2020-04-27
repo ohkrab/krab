@@ -1,7 +1,11 @@
-.PHONY: run test
+.PHONY: build install test
 
-run:
-	go run -race main.go
+build:
+	mkdir -p bin/
+	go build -o bin/krab main.go
+
+install:
+	cp bin/krab /usr/local/bin
 
 test:
 	go test ./...

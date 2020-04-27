@@ -18,7 +18,6 @@ func FindFilesToParse() []string {
 	return make([]string, 0)
 }
 
-
 // ParseFromFile parses HCL files based on path.
 func ParseFromFile(path string) (*ParsedFile, error) {
 	file, err := os.Open(path)
