@@ -4,7 +4,9 @@ go 1.14
 
 require (
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
+	github.com/gofiber/fiber v1.9.3
 	github.com/hashicorp/hcl v1.0.0
+	github.com/klauspost/compress v1.10.5 // indirect
 	github.com/mitchellh/mapstructure v1.2.2 // indirect
 	github.com/pelletier/go-toml v1.7.0 // indirect
 	github.com/spf13/afero v1.2.2 // indirect

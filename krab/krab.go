@@ -26,6 +26,12 @@ func (a *App) Init() {
 	fmt.Println("TODO: init")
 }
 
+// Agent starts agent mode.
+func (a *App) Agent() {
+	agent := Agent{}
+	agent.Run()
+}
+
 // Run starts the app and registers all plugins
 func (a *App) Run() {
 	// root
@@ -58,10 +64,20 @@ func (a *App) Run() {
 		Short: "Run plugin command",
 	}
 
+	// agent cmd
+	agentCmd := &cobra.Command{
+		Use:   "agent",
+		Short: "Start agent",
+		Run: func(cmd *cobra.Command, args []string) {
+			a.Agent()
+		},
+	}
+
 	// register internal commands
 	rootCmd.AddCommand(versionCmd)
 	rootCmd.AddCommand(initCmd)
 	rootCmd.AddCommand(pluginCmd)
+	rootCmd.AddCommand(agentCmd)
 
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
