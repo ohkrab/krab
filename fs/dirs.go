@@ -1,9 +1,9 @@
-package mustdir
+package fs
 
 import "os"
 
-// GetPwd gets PWD or panics.
-func GetPwd() string {
+// MustGetPwd gets PWD or panics.
+func MustGetPwd() string {
 	dir, err := os.Getwd()
 	if err != nil {
 		panic(err)

@@ -1,17 +1,19 @@
 package krab
 
-import "github.com/gofiber/fiber"
+import (
+	"github.com/gin-gonic/gin"
+)
 
 type Agent struct {
-	app *fiber.App
+	app *gin.Engine
 }
 
 func (a *Agent) Run() {
-	app := fiber.New()
-	a.app = app
+	g := gin.Default()
+	a.app = g
 
-	app.Get("/", func(c *fiber.Ctx) {
-		c.Send("Oh Krab!")
+	g.GET("/", func(c *gin.Context) {
+		c.JSON(200, gin.H{"name": "Oh! Krab!"})
 	})
-	app.Listen(8888)
+	g.Run()
 }

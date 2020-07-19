@@ -1,0 +1,20 @@
+locals {
+    uri = "..."
+}
+
+connection "default" {
+    uri = "postgres://krab:secret@localhost:5432/postgres"
+}
+
+connection "interpolated" {
+    uri = "postgres://${env("USER")}:${env("PASSWORD")}@localhost:5432/postgres"
+}
+
+connection "referenced" {
+    uri = local.uri
+}
+
+connection "from_env" {
+   uri = env("HOME")
+}
+

@@ -11,14 +11,11 @@ const Version = "0.0.1"
 
 // App data
 type App struct {
-	Registry *PluginRegistry
 }
 
 // New creates krab instance
 func New(dir string) *App {
-	return &App{
-		Registry: NewPluginRegistry(dir),
-	}
+	return &App{}
 }
 
 // Init downloads plugins to cache dir.
@@ -49,21 +46,6 @@ func (a *App) Run() {
 		},
 	}
 
-	// init cmd
-	initCmd := &cobra.Command{
-		Use:   "init",
-		Short: "Initialize plugins",
-		Run: func(cmd *cobra.Command, args []string) {
-			a.Init()
-		},
-	}
-
-	// plugin cmd
-	pluginCmd := &cobra.Command{
-		Use:   "plugin",
-		Short: "Run plugin command",
-	}
-
 	// agent cmd
 	agentCmd := &cobra.Command{
 		Use:   "agent",
@@ -75,8 +57,6 @@ func (a *App) Run() {
 
 	// register internal commands
 	rootCmd.AddCommand(versionCmd)
-	rootCmd.AddCommand(initCmd)
-	rootCmd.AddCommand(pluginCmd)
 	rootCmd.AddCommand(agentCmd)
 
 	if err := rootCmd.Execute(); err != nil {

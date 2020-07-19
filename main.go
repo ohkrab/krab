@@ -1,11 +1,11 @@
 package main
 
 import (
+	"github.com/ohkrab/krab/fs"
 	"github.com/ohkrab/krab/krab"
-	"github.com/ohkrab/krab/mustdir"
 )
 
 func main() {
-	app := krab.New(mustdir.GetPwd())
+	app := krab.New(fs.MustGetPwd())
 	app.Run()
 }
