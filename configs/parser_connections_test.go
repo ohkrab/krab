@@ -12,10 +12,10 @@ func Test_ParserConnections(t *testing.T) {
 	g.Describe("Parser#Connections", func() {
 		g.It("Should parse connections", func() {
 			parser := NewParser()
-			file, diags := parser.LoadConfigFile("./../test/fixtures/connections.krab")
+			config, diags := parser.LoadConfigDir("./../test/fixtures")
 
-			for _, c := range file.Connections {
-				fmt.Println(c.Name, ":", c.UriVal)
+			for addr, conn := range config.Module.Connections {
+				fmt.Println(addr, ":", conn)
 			}
 
 			fmt.Println(diags)

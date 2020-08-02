@@ -47,7 +47,7 @@ func (p *Parser) LoadHCLFile(path string) (hcl.Body, hcl.Diagnostics) {
 var configFileSchema = &hcl.BodySchema{
 	Blocks: []hcl.BlockHeaderSchema{
 		{
-			Type: "locals",
+			Type: "globals",
 		},
 		{
 			Type:       "connection",

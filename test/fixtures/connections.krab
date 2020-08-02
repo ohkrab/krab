@@ -1,4 +1,4 @@
-locals {
+globals {
     uri = "..."
 }
 
@@ -11,7 +11,11 @@ connection "interpolated" {
 }
 
 connection "referenced" {
-    uri = local.uri
+    uri = global.uri
+}
+
+connection "duplicated" {
+    uri = connection.default.uri
 }
 
 connection "from_env" {

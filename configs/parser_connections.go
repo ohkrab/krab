@@ -1,17 +1,14 @@
 package configs
 
 import (
-	"fmt"
-	"os"
-
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
-	"github.com/zclconf/go-cty/cty"
-	"github.com/zclconf/go-cty/cty/function"
+	"github.com/ohkrab/krab/addrs"
 )
 
 type Connection struct {
-	Name      string
+	addrs.Addr
+
 	Uri       hcl.Expression
 	Config    hcl.Body
 	DeclRange hcl.Range
@@ -31,7 +28,10 @@ var connectionBlockSchema = &hcl.BodySchema{
 // https://github.com/hashicorp/terraform/blob/e320cd2b357479e4a89cb9236ebbb4ca70e24dfc/configs/named_values.go#l492
 func decodeConnectionBlock(block *hcl.Block) (*Connection, hcl.Diagnostics) {
 	c := &Connection{
-		Name: block.Labels[0],
+		Addr: addrs.Addr{
+			Keyword: "connection",
+			Name:    block.Labels[0],
+		},
 	}
 	content, remain, diags := block.Body.PartialContent(connectionBlockSchema)
 	c.Config = remain
@@ -43,37 +43,37 @@ func decodeConnectionBlock(block *hcl.Block) (*Connection, hcl.Diagnostics) {
 			Subject:  &block.LabelRanges[0],
 		})
 	}
-	fmt.Println(c)
 
-	param := function.Parameter{Name: "name", Type: cty.String}
-	fn := function.New(
-		&function.Spec{
-			Params: []function.Parameter{param},
-			Type:   function.StaticReturnType(cty.String),
-			Impl: func(args []cty.Value, retType cty.Type) (cty.Value, error) {
-				return cty.StringVal(os.Getenv(args[0].AsString())), nil
-			},
-		},
-	)
+	// param := function.Parameter{Name: "name", Type: cty.String}
+	// fn := function.New(
+	// 	&function.Spec{
+	// 		Params: []function.Parameter{param},
+	// 		Type:   function.StaticReturnType(cty.String),
+	// 		Impl: func(args []cty.Value, retType cty.Type) (cty.Value, error) {
+	// 			return cty.StringVal(os.Getenv(args[0].AsString())), nil
+	// 		},
+	// 	},
+	// )
 
 	if attr, exists := content.Attributes["uri"]; exists {
-		evalContext := hcl.EvalContext{
-			Variables: map[string]cty.Value{
-				"local": cty.MapVal(map[string]cty.Value{"uri": cty.StringVal("postgres://uri")}),
-			},
-			Functions: map[string]function.Function{"env": fn},
-		}
 		c.Uri = attr.Expr
-		tt := c.Uri.Variables()
-		for _, t := range tt {
-			a, b := t.TraverseAbs(&evalContext)
-			fmt.Println("T", t, a, b)
-		}
-		// if c.Name == "from_env" {
-		val, _ := c.Uri.Value(&evalContext)
-		c.UriVal = val.AsString()
-		// }
 	}
+	// evalContext := hcl.EvalContext{
+	// 	Variables: map[string]cty.Value{
+	// 		"local": cty.MapVal(map[string]cty.Value{"uri": cty.StringVal("postgres://uri")}),
+	// 	},
+	// 	Functions: map[string]function.Function{"env": fn},
+	// }
+	// tt := c.Uri.Variables()
+	// for _, t := range tt {
+	// 	fmt.Println("t", t)
+	// 	a, b := t.TraverseAbs(&evalContext)
+	// 	fmt.Println("T", t, a, b)
+	// }
+	// // if c.Name == "from_env" {
+	// val, _ := c.Uri.Value(&evalContext)
+	// c.UriVal = val.AsString()
+	// }
 
 	return c, diags
 }

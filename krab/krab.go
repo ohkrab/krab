@@ -18,11 +18,6 @@ func New(dir string) *App {
 	return &App{}
 }
 
-// Init downloads plugins to cache dir.
-func (a *App) Init() {
-	fmt.Println("TODO: init")
-}
-
 // Agent starts agent mode.
 func (a *App) Agent() {
 	agent := Agent{}
@@ -34,7 +29,7 @@ func (a *App) Run() {
 	// root
 	rootCmd := &cobra.Command{
 		Use:   "krab",
-		Short: "Krab is a pluggable database/automation tool",
+		Short: "Krab is a PostgreSQL tool",
 	}
 
 	// version cmd
