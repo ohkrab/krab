@@ -15,18 +15,17 @@ func (w *Walker) Walk() diagnostics.List {
 	diags := diagnostics.New()
 	visited := make(map[string]bool, 0)
 
-	for v := range w.Graph.adjList {
+	w.Graph.eachVertex(func(v string) {
 		if !visited[v] {
 			w.recursiveWalk(v, visited, diags)
 		}
-	}
+	})
 
 	return diags
 }
 
 func (w *Walker) recursiveWalk(startingVertex string, visited map[string]bool, diags diagnostics.List) {
-	adjList := w.Graph.adjList[startingVertex]
-	it := adjList.Iterator()
+	it := w.Graph.adjecentSet(startingVertex).Iterator()
 
 	for it.Next() {
 		v, ok := it.Value().(string)
