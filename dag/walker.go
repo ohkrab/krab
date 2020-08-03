@@ -30,5 +30,7 @@ func (w *Walker) recursiveWalk(startingVertex string, visited map[string]bool, d
 	})
 
 	visited[startingVertex] = true
-	w.Callback(w.Graph.data[startingVertex])
+	visitedVertex := w.Graph.data[startingVertex]
+	vDiags := w.Callback(visitedVertex)
+	diags.Append(vDiags)
 }
