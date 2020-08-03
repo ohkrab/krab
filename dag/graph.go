@@ -65,6 +65,18 @@ func (g *Graph) eachVertex(eachFn func(v string)) {
 	})
 }
 
+func (g *Graph) eachAdjecentVertex(adjecentTo string, eachFn func(v string)) {
+	it := g.adjecentSet(adjecentTo).Iterator()
+	for it.Next() {
+		v, ok := it.Value().(string)
+		if ok {
+			eachFn(v)
+		} else {
+			panic("Graph: Cannot fetch Vertex ID in iterator")
+		}
+	}
+}
+
 func (g *Graph) adjecentSet(v string) *treeset.Set {
 	if list, found := g.adjList.Get(v); found {
 		if set, ok := list.(*treeset.Set); ok {
