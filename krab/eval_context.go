@@ -1,6 +1,6 @@
 package krab
 
-type EvalContext struct {
+type EvalContext interface {
 	// EvaluateBlock takes the given raw configuration block and associated
 	// schema and evaluates it to produce a value of an object type that
 	// conforms to the implied type of the schema.
@@ -50,6 +50,10 @@ type EvalContext struct {
 	// the context of the module they belong to and so we sometimes need to
 	// override the normal expression evaluation behavior.
 	// GetVariableValue(addr addrs.AbsInputVariableInstance) cty.Value
+}
+
+type DefaultEvalContext struct {
+	Evaluator *Evaluator
 }
 
 // func (ctx *BuiltinEvalContext) EvaluateBlock(body hcl.Body, schema *configschema.Block, self addrs.Referenceable, keyData InstanceKeyEvalData) (cty.Value, hcl.Body, tfdiags.Diagnostics) {

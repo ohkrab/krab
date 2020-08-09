@@ -19,8 +19,17 @@ func NewContext(opts *ContextOpts) (*Context, diagnostics.List) {
 	}, nil
 }
 
-func (ctx *Context) Graph() (*Graph, diagnostics.List) {
+func (c *Context) Graph() (*Graph, diagnostics.List) {
 	steps := []GraphTransformer{}
 	builder := &GraphBuilder{Steps: steps}
-	return builder.Build(ctx.config.Module)
+	return builder.Build(c.config.Module)
+}
+
+func (c *Context) Eval() diagnostics.List {
+	graph, diags := c.Graph()
+	walker := &ContextGraphWalker{
+		Context: c,
+	}
+	graph.Walk(walker)
+	return diags
 }

@@ -1,6 +1,7 @@
 package krab
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/ohkrab/krab/configs"
@@ -21,7 +22,6 @@ type GraphBuilder struct {
 	Steps    []GraphTransformer
 	Validate bool
 }
-type EvalNode interface{}
 
 type GraphWalker interface {
 	EvalContext() EvalContext
@@ -49,7 +49,39 @@ func (b *GraphBuilder) Build(mod *configs.Module) (*Graph, diagnostics.List) {
 }
 
 func (g *Graph) Walk(walker GraphWalker) diagnostics.List {
-	var walkFn dag.WalkFunc
-	// ctx := walker.EvalContext()
+	ctx := walker.EvalContext()
+
+	walkFn := func(v dag.Vertex) (diags diagnostics.List) {
+		log.Printf("[TRACE] vertex %q: starting visit (%T)", v.VertexID(), v)
+
+		defer func() {
+			log.Printf("[TRACE] vertex %q: visit complete", v.VertexID())
+		}()
+
+		walker.EnterVertex(v)
+		defer walker.ExitVertex(v, diags)
+
+		// If the node is eval-able, then evaluate it.
+		if ev, ok := v.(GraphNodeEvalable); ok {
+			tree := ev.EvalTree()
+			if tree == nil {
+				panic(fmt.Sprintf("%q (%T): nil eval tree", v.VertexID(), v))
+			}
+
+			// Allow the walker to change our tree if needed. Eval,
+			// then callback with the output.
+			log.Printf("[TRACE] vertex %q: evaluating", v.VertexID())
+
+			tree = walker.EnterEvalTree(v, tree)
+			output, err := tree.Eval(ctx)
+			diags = diags.Append(walker.ExitEvalTree(v, output, err))
+			if diags.HasErrors() {
+				return
+			}
+		}
+
+		return
+	}
+
 	return g.graph.Walk(walkFn)
 }

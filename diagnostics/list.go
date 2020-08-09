@@ -1,10 +1,18 @@
 package diagnostics
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/hashicorp/hcl/v2"
+)
 
 type List []Diagnostic
 
 type Diagnostic struct {
+}
+
+type Hcl struct {
+	wrappedDiags *hcl.Diagnostic
 }
 
 func New() List {
@@ -22,10 +30,10 @@ func (list List) Append(diags ...interface{}) List {
 			list = append(list, ti)
 		case List:
 			list = append(list, ti...)
-		// case hcl.Diagnostics:
-		// 	for _, hclDiag := range ti {
-		// 		diags = append(diags, hclDiagnostic{hclDiag})
-		// 	}
+		case hcl.Diagnostics:
+			for _, hclDiag := range ti {
+				diags = append(diags, Hcl{hclDiag})
+			}
 		// case *hcl.Diagnostic:
 		// 	diags = append(diags, hclDiagnostic{i})
 		case error:
@@ -40,4 +48,8 @@ func (list List) Append(diags ...interface{}) List {
 	}
 
 	return list
+}
+
+func (list List) HasErrors() bool {
+	return len(list) > 0
 }
