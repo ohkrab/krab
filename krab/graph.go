@@ -13,6 +13,9 @@ type GraphTransformer interface {
 	Transform(*Graph) error
 }
 
+type ReferenceTransformer struct {
+}
+
 type Graph struct {
 	graph  *dag.Graph
 	module *configs.Module
@@ -84,4 +87,8 @@ func (g *Graph) Walk(walker GraphWalker) diagnostics.List {
 	}
 
 	return g.graph.Walk(walkFn)
+}
+
+func (t *ReferenceTransformer) Transform(g *Graph) error {
+	return nil
 }

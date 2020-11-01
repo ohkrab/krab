@@ -14,6 +14,10 @@ func (p *Parser) LoadConfigFile(path string) (*File, hcl.Diagnostics) {
 
 	for _, block := range content.Blocks {
 		switch block.Type {
+		case "globals":
+			globs, globsDiags := decodeGlobalsBlock(block)
+			diags = append(diags, globsDiags...)
+			file.Globals = append(file.Globals, globs...)
 		case "connection":
 			conn, connDiags := decodeConnectionBlock(block)
 			diags = append(diags, connDiags...)

@@ -4,26 +4,24 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/hcl/v2"
-	"github.com/zclconf/go-cty/cty"
-	"github.com/zclconf/go-cty/cty/function"
 )
 
 type Module struct {
 	SourceDir   string
 	Connections map[string]*Connection
+	Globals     map[string]*Global
 }
 
 type File struct {
 	Connections []*Connection
-
-	Variables map[string]cty.Value
-	Functions map[string]function.Function
+	Globals     []*Global
 }
 
 func NewModule(files []*File) (*Module, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
 	mod := &Module{
 		Connections: map[string]*Connection{},
+		Globals:     map[string]*Global{},
 	}
 
 	for _, file := range files {
@@ -37,17 +35,17 @@ func NewModule(files []*File) (*Module, hcl.Diagnostics) {
 func (m *Module) appendFile(file *File) hcl.Diagnostics {
 	var diags hcl.Diagnostics
 
-	// for _, l := range file.Locals {
-	// 	if existing, exists := m.Locals[l.Name]; exists {
-	// 		diags = append(diags, &hcl.Diagnostic{
-	// 			Severity: hcl.DiagError,
-	// 			Summary:  "Duplicate local value definition",
-	// 			Detail:   fmt.Sprintf("A local value named %q was already defined at %s. Local value names must be unique within a module.", existing.Name, existing.DeclRange),
-	// 			Subject:  &l.DeclRange,
-	// 		})
-	// 	}
-	// 	m.Locals[l.Name] = l
-	// }
+	for _, g := range file.Globals {
+		if existing, exists := m.Globals[g.Name]; exists {
+			diags = append(diags, &hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary:  "Duplicate global value definition",
+				Detail:   fmt.Sprintf("A global value named %q was already defined at %s. Global value names must be unique.", existing.Name, existing.DeclRange),
+				Subject:  &g.DeclRange,
+			})
+		}
+		m.Globals[g.Name] = g
+	}
 
 	for _, r := range file.Connections {
 		key := r.Addr.String()

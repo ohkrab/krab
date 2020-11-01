@@ -3,6 +3,7 @@ package krab
 import (
 	"github.com/ohkrab/krab/configs"
 	"github.com/ohkrab/krab/diagnostics"
+	"github.com/zclconf/go-cty/cty/function"
 )
 
 type Context struct {
@@ -10,7 +11,8 @@ type Context struct {
 }
 
 type ContextOpts struct {
-	Config *configs.Config
+	Config    *configs.Config
+	Functions map[string]function.Function
 }
 
 func NewContext(opts *ContextOpts) (*Context, diagnostics.List) {
@@ -20,7 +22,9 @@ func NewContext(opts *ContextOpts) (*Context, diagnostics.List) {
 }
 
 func (c *Context) Graph() (*Graph, diagnostics.List) {
-	steps := []GraphTransformer{}
+	steps := []GraphTransformer{
+		&ReferenceTransformer{},
+	}
 	builder := &GraphBuilder{Steps: steps}
 	return builder.Build(c.config.Module)
 }

@@ -12,13 +12,11 @@ func Test_ParserConnections(t *testing.T) {
 	g.Describe("Parser#Connections", func() {
 		g.It("Should parse connections", func() {
 			parser := NewParser()
-			config, diags := parser.LoadConfigDir("./../test/fixtures")
+			c, diags := parser.LoadConfigDir("./../test/fixtures")
 
-			for addr, conn := range config.Module.Connections {
-				fmt.Println(addr, ":", conn)
-			}
+			g.Assert(len(diags)).Eql(0)
 
-			fmt.Println(diags)
+			fmt.Println(c.Module.Connections)
 		})
 	})
 }

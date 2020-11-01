@@ -30,13 +30,14 @@ func decodeConnectionBlock(block *hcl.Block) (*Connection, hcl.Diagnostics) {
 	c := &Connection{
 		Addr: addrs.Addr{
 			Keyword: "connection",
+			Type:    "",
 			Name:    block.Labels[0],
 		},
 	}
 	content, remain, diags := block.Body.PartialContent(connectionBlockSchema)
 	c.Config = remain
 
-	if !hclsyntax.ValidIdentifier(c.Name) {
+	if !hclsyntax.ValidIdentifier(c.Addr.Name) {
 		diags = append(diags, &hcl.Diagnostic{
 			Severity: hcl.DiagError,
 			Summary:  "Invalid identifier for connection name",
