@@ -4,8 +4,8 @@ import "fmt"
 
 type Addr struct {
 	Keyword string
-	Type    string
-	Name    string
+	Type    string `hcl:"type,label"`
+	Name    string `hcl:"name,label"`
 }
 
 func (a *Addr) String() string {

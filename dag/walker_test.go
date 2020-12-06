@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	. "github.com/franela/goblin"
+	"github.com/franela/goblin"
 	"github.com/ohkrab/krab/diagnostics"
 )
 
@@ -18,7 +18,7 @@ func (mv MockVertex) VertexID() string {
 }
 
 func Test_Walker(t *testing.T) {
-	g := Goblin(t)
+	g := goblin.Goblin(t)
 	g.Describe("Walker#Walk", func() {
 		g.It("Traverse graph using DFS", func() {
 			graph := New()
