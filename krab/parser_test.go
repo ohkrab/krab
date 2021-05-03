@@ -10,17 +10,33 @@ import (
 func TestParser(t *testing.T) {
 	g := goblin.Goblin(t)
 
-	g.Describe("Simple migrations with sets", func() {
+	g.Describe("Simple migration resource", func() {
 		g.It("Should parse config without errors", func() {
-			p := mockParser("src/a.krab.hcl", `
+			p := mockParser(
+				"src/public.krab.hcl",
+				`
+migration "create_tenants" {
+  up {
+	sql = "CREATE TABLE tenants(name VARCHAR PRIMARY KEY)"
+  }
+
+  down {
+	sql = "DROP TABLE tenants"
+  }
+}
 `)
-			_, err := p.LoadConfigDir("src")
-			g.Assert(err).IsNotNil("Parsing src/ should return error")
+			c, err := p.LoadConfigDir("src")
+			g.Assert(err).IsNil()
+
+			if migration, ok := c.Migrations["create_tenants"]; ok {
+				g.Assert(migration.RefName).Eql("create_tenants")
+				g.Assert(migration.Up.Sql).Eql("CREATE TABLE tenants(name VARCHAR PRIMARY KEY)")
+				g.Assert(migration.Down.Sql).Eql("DROP TABLE tenants")
+			} else {
+				g.Failf("Can't get migration %s", "create_tenants")
+			}
 
 		})
-		// 1. load dir
-		// 2. parse with no errors
-		// 3. verify correct  reference
 	})
 }
 
