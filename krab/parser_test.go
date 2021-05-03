@@ -29,10 +29,12 @@ func mockParser(pathContentPair ...string) *Parser {
 	memfs := afero.NewMemMapFs()
 
 	for i := 1; i < len(pathContentPair); i += 2 {
+		path := pathContentPair[i-1]
+		content := pathContentPair[i]
 		afero.WriteFile(
 			memfs,
-			pathContentPair[i-1],
-			[]byte(pathContentPair[i]),
+			path,
+			[]byte(content),
 			0644,
 		)
 	}

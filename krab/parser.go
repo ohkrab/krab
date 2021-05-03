@@ -60,8 +60,13 @@ func (p *Parser) loadConfigFiles(paths ...string) ([]*File, error) {
 func (p *Parser) loadConfigFile(path string) (*File, error) {
 	var file File
 
-	if err := hclsimple.DecodeFile(path, nil, &file); err != nil {
+	src, err := p.fs.ReadFile(path)
+	if err != nil {
 		return nil, fmt.Errorf("[%w] Failed to load file %s", err, path)
+	}
+
+	if err := hclsimple.Decode(path, src, nil, &file); err != nil {
+		return nil, fmt.Errorf("[%w] Failed to decode file %s", err, path)
 	}
 
 	return &file, nil
