@@ -3,7 +3,7 @@ package krab
 // Migration represents single up/down migration pair.
 //
 type Migration struct {
-	Addr
+	RefName string `hcl:"name,label"`
 
 	Up   MigrationUp   `hcl:"up,block"`
 	Down MigrationDown `hcl:"down,block"`
