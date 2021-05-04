@@ -32,5 +32,14 @@ func (c *Config) appendFile(file *File) error {
 
 		c.Migrations[m.RefName] = m
 	}
+
+	for _, s := range file.MigrationSets {
+		if _, found := c.MigrationSets[s.RefName]; found {
+			return fmt.Errorf("MigrationSet with the name '%s' already exists", s.RefName)
+		}
+
+		c.MigrationSets[s.RefName] = s
+	}
+
 	return nil
 }

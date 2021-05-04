@@ -80,4 +80,61 @@ migration "abc" {
 			g.Assert(strings.Contains(err.Error(), "Migration with the name 'abc' already exists")).IsTrue()
 		})
 	})
+
+	g.Describe("Simple migration_set resource", func() {
+		g.It("Should parse config without errors", func() {
+			p := mockParser(
+				"src/migrations.krab.hcl",
+				`
+migration "abc" {
+  up {}
+  down {}
+}
+
+migration "def" {
+  up {}
+  down {}
+}
+
+migration "xyz" {
+  up {}
+  down {}
+}
+`,
+				"src/sets.krab.hcl",
+				`
+migration_set "public" {
+  migrations = [
+  	migration.abc,
+	migration.def,
+  ]
+}
+
+migration_set "private" {
+  migrations = [migration.xyz]
+}
+`)
+			c, err := p.LoadConfigDir("src")
+			g.Assert(err).IsNil()
+
+			// public set
+			publicSet, ok := c.MigrationSets["public"]
+			if !ok {
+				g.Fail("Failed to fetch 'public' set")
+			}
+			g.Assert(publicSet.RefName).Eql("public")
+			g.Assert(len(publicSet.Migrations)).Eql(2)
+			g.Assert(publicSet.Migrations[0].RefName).Eql("abc")
+			g.Assert(publicSet.Migrations[1].RefName).Eql("def")
+
+			// private set
+			privateSet, ok := c.MigrationSets["private"]
+			if !ok {
+				g.Fail("Failed to fetch 'private' set")
+			}
+			g.Assert(privateSet.RefName).Eql("private")
+			g.Assert(len(privateSet.Migrations)).Eql(1)
+			g.Assert(publicSet.Migrations[0].RefName).Eql("xyz")
+		})
+	})
 }
