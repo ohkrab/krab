@@ -1,6 +1,8 @@
 package krab
 
-import "fmt"
+import (
+	"fmt"
+)
 
 // Config represents all configuration loaded from directory.
 //
@@ -15,9 +17,25 @@ func NewConfig(files []*File) (*Config, error) {
 		Migrations:    make(map[string]*Migration),
 	}
 
+	// append files
 	for _, f := range files {
 		if err := c.appendFile(f); err != nil {
 			return nil, err
+		}
+	}
+
+	// parse refs
+	for _, set := range c.MigrationSets {
+		set.Migrations = make([]*Migration, 0)
+
+		traversals := set.MigrationsExpr.Variables()
+		for _, t := range traversals {
+			addr, err := parseTraversalToAddr(t)
+			if err != nil {
+				return nil, fmt.Errorf("Parsing migrations for set '%s' failed. %w", set.RefName, err)
+			}
+			migration := c.Migrations[addr.OnlyRefNames()]
+			set.Migrations = append(set.Migrations, migration)
 		}
 	}
 

@@ -134,7 +134,7 @@ migration_set "private" {
 			}
 			g.Assert(privateSet.RefName).Eql("private")
 			g.Assert(len(privateSet.Migrations)).Eql(1)
-			g.Assert(publicSet.Migrations[0].RefName).Eql("xyz")
+			g.Assert(privateSet.Migrations[0].RefName).Eql("xyz")
 		})
 	})
 }
