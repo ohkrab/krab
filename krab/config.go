@@ -34,7 +34,10 @@ func NewConfig(files []*File) (*Config, error) {
 			if err != nil {
 				return nil, fmt.Errorf("Parsing migrations for set '%s' failed. %w", set.RefName, err)
 			}
-			migration := c.Migrations[addr.OnlyRefNames()]
+			migration, found := c.Migrations[addr.OnlyRefNames()]
+			if !found {
+				return nil, fmt.Errorf("Migration Set references '%s' migration that does not exist", addr.OnlyRefNames())
+			}
 			set.Migrations = append(set.Migrations, migration)
 		}
 	}

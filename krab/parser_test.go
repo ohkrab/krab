@@ -156,4 +156,19 @@ migration_set "abc" {
 			g.Assert(strings.Contains(err.Error(), "Migration Set with the name 'abc' already exists")).IsTrue("Names must be unique")
 		})
 	})
+
+	g.Describe("Missing migration referenced in migration set", func() {
+		g.It("Should fail with the error", func() {
+			p := mockParser(
+				"src/sets.krab.hcl",
+				`
+migration_set "abc" {
+  migrations = [migration.does_not_exist]
+}
+`)
+			_, err := p.LoadConfigDir("src")
+			g.Assert(err).IsNotNil("Parsing config should fail")
+			g.Assert(strings.Contains(err.Error(), "Migration Set references 'does_not_exist' migration that does not exist")).IsTrue("Missing migration")
+		})
+	})
 }
