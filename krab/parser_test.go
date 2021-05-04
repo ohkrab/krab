@@ -77,7 +77,7 @@ migration "abc" {
 `)
 			_, err := p.LoadConfigDir("src")
 			g.Assert(err).IsNotNil()
-			g.Assert(strings.Contains(err.Error(), "Migration with the name 'abc' already exists")).IsTrue()
+			g.Assert(strings.Contains(err.Error(), "Migration with the name 'abc' already exists")).IsTrue("Names must be unique")
 		})
 	})
 
@@ -135,6 +135,25 @@ migration_set "private" {
 			g.Assert(privateSet.RefName).Eql("private")
 			g.Assert(len(privateSet.Migrations)).Eql(1)
 			g.Assert(privateSet.Migrations[0].RefName).Eql("xyz")
+		})
+	})
+
+	g.Describe("Duplicated migration_set resource with the same ref name", func() {
+		g.It("Config parsing should fail because of duplicates", func() {
+			p := mockParser(
+				"src/sets.krab.hcl",
+				`
+migration_set "abc" {
+  migrations = []
+}
+
+migration_set "abc" {
+  migrations = []
+}
+`)
+			_, err := p.LoadConfigDir("src")
+			g.Assert(err).IsNotNil()
+			g.Assert(strings.Contains(err.Error(), "Migration Set with the name 'abc' already exists")).IsTrue("Names must be unique")
 		})
 	})
 }

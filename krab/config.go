@@ -53,7 +53,7 @@ func (c *Config) appendFile(file *File) error {
 
 	for _, s := range file.MigrationSets {
 		if _, found := c.MigrationSets[s.RefName]; found {
-			return fmt.Errorf("MigrationSet with the name '%s' already exists", s.RefName)
+			return fmt.Errorf("Migration Set with the name '%s' already exists", s.RefName)
 		}
 
 		c.MigrationSets[s.RefName] = s
