@@ -40,6 +40,27 @@ migration "create_tenants" {
 		})
 	})
 
+	g.Describe("Optional content in up/down blocks for migrations", func() {
+		g.It("Parses successfuly without providing up/down details", func() {
+			p := mockParser(
+				"src/public.krab.hcl",
+				`migration "abc" {
+                  up {}
+				  down {}
+				}`,
+			)
+			c, err := p.LoadConfigDir("src")
+			g.Assert(err).IsNil()
+			if migration, ok := c.Migrations["abc"]; ok {
+				g.Assert(migration.RefName).Eql("abc")
+				g.Assert(migration.Up.Sql).Eql("")
+				g.Assert(migration.Down.Sql).Eql("")
+			} else {
+				g.Failf("Can't get migration %s", "abc")
+			}
+		})
+	})
+
 	g.Describe("Duplicated migration resource with the same ref name", func() {
 		g.It("Config parsing should fail because of duplicates", func() {
 			p := mockParser(
