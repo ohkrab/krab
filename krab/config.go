@@ -27,7 +27,7 @@ func NewConfig(files []*File) (*Config, error) {
 func (c *Config) appendFile(file *File) error {
 	for _, m := range file.Migrations {
 		if _, found := c.Migrations[m.RefName]; found {
-			return fmt.Errorf("Migration with the name %s already exists", m.RefName)
+			return fmt.Errorf("Migration with the name '%s' already exists", m.RefName)
 		}
 
 		c.Migrations[m.RefName] = m

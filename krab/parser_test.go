@@ -1,6 +1,7 @@
 package krab
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/franela/goblin"
@@ -36,6 +37,27 @@ migration "create_tenants" {
 				g.Failf("Can't get migration %s", "create_tenants")
 			}
 
+		})
+	})
+
+	g.Describe("Duplicated migration resource with the same ref name", func() {
+		g.It("Config parsing should fail because of duplicates", func() {
+			p := mockParser(
+				"src/public.krab.hcl",
+				`
+migration "abc" {
+  up { sql = "" }
+  down { sql = "" }
+}
+
+migration "abc" {
+  up { sql = "" }
+  down { sql = "" }
+}
+`)
+			_, err := p.LoadConfigDir("src")
+			g.Assert(err).IsNotNil()
+			g.Assert(strings.Contains(err.Error(), "Migration with the name 'abc' already exists")).IsTrue()
 		})
 	})
 }
