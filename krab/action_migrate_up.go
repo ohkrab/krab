@@ -97,8 +97,8 @@ func (a *ActionMigrateUp) findPendingMigrations(refsInDb []SchemaInfo) []*Migrat
 			}
 		}
 
-		if found != nil {
-			pendingMigrations = append(pendingMigrations, found)
+		if found == nil {
+			pendingMigrations = append(pendingMigrations, migration)
 		}
 	}
 
