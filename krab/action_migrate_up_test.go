@@ -37,8 +37,11 @@ func Test_ActionMigrateUp(t *testing.T) {
 					return
 				}
 
-				var schema []SchemaInfo
-				db.Select(&schema, "SELECT * FROM schema_info")
+				schema, err := action.fetchMigrationsFromDb(ctx)
+				if err != nil {
+					t.Error("Fetching migrations failed", err)
+					return
+				}
 
 				g.Assert(len(schema)).Eql(1)
 				g.Assert(schema[0].Version).Eql("v1")

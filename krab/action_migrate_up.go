@@ -18,8 +18,10 @@ type ActionMigrateUp struct {
 	db  *sqlx.DB
 }
 
-func (a *ActionMigrateUp) fetchMigrationsFromDb(ctx context.Context) ([]string, error) {
-	return []string{"test"}, nil
+func (a *ActionMigrateUp) fetchMigrationsFromDb(ctx context.Context) ([]SchemaInfo, error) {
+	var schema []SchemaInfo
+	err := a.db.SelectContext(ctx, &schema, "SELECT * FROM schema_info")
+	return schema, err
 }
 
 func (a *ActionMigrateUp) execInDb(ctx context.Context, sql string) error {
@@ -33,7 +35,7 @@ func (a *ActionMigrateUp) insertToSchemaInformation(ctx context.Context, refName
 }
 
 func (a *ActionMigrateUp) createSchemeInformation(ctx context.Context) error {
-	_, err := a.db.Exec("CREATE TABLE IF NOT EXIST schema_info(version varchar PRIMARY KEY)")
+	_, err := a.db.Exec("CREATE TABLE IF NOT EXISTS schema_info(version varchar PRIMARY KEY)")
 	return err
 }
 
@@ -57,13 +59,11 @@ func (a *ActionMigrateUp) migrate(ctx context.Context, migration *Migration) err
 func (a *ActionMigrateUp) Run(ctx context.Context) error {
 	lock := krabdb.AdvisoryLock{Errs: make(chan error)}
 
-	fmt.Println("{{{{")
 	err := a.createSchemeInformation(ctx)
 	// TODO: ensure schema_info structure compatiblity with inner structs
 	if err != nil {
 		return errors.Wrap(err, "Failed to create `schema_info` table for migrations")
 	}
-	fmt.Println("}}}}")
 
 	lock.Lock(ctx)
 	defer lock.Unlock(ctx)
@@ -85,13 +85,13 @@ func (a *ActionMigrateUp) Run(ctx context.Context) error {
 	return nil
 }
 
-func (a *ActionMigrateUp) findPendingMigrations(refsInDb []string) []*Migration {
+func (a *ActionMigrateUp) findPendingMigrations(refsInDb []SchemaInfo) []*Migration {
 	pendingMigrations := make([]*Migration, 0)
 
 	for _, migration := range a.Set.Migrations {
 		var found *Migration
 		for _, ref := range refsInDb {
-			if migration.RefName == ref {
+			if migration.RefName == ref.Version {
 				found = migration
 				break
 			}
