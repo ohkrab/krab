@@ -19,6 +19,7 @@ func TryAdvisoryXactLock(ctx context.Context, tx *sqlx.Tx, id int64) (bool, erro
 	if err != nil {
 		return false, errors.Wrap(err, "Failed to obtain advisory lock")
 	}
+	defer res.Close()
 
 	for res.Next() {
 		var success bool
@@ -26,5 +27,5 @@ func TryAdvisoryXactLock(ctx context.Context, tx *sqlx.Tx, id int64) (bool, erro
 		return success, err
 	}
 
-	return true, nil
+	return false, errors.New("Failed to obtain advisory lock")
 }

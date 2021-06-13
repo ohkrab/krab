@@ -3,6 +3,7 @@ package krab
 import (
 	"context"
 
+	_ "github.com/jackc/pgx/v4"
 	"github.com/jmoiron/sqlx"
 	"github.com/ohkrab/krab/krabdb"
 	"github.com/pkg/errors"
@@ -10,73 +11,56 @@ import (
 
 type ActionMigrateUp struct {
 	Set *MigrationSet
-	db  *sqlx.DB
 }
 
-func (a *ActionMigrateUp) migrate(ctx context.Context, migration *Migration) error {
-	// BEGIN
-	_, err := a.db.ExecContext(ctx, migration.Up.Sql)
+func (a *ActionMigrateUp) migrate(ctx context.Context, tx *sqlx.Tx, migration *Migration) error {
+	_, err := tx.ExecContext(ctx, migration.Up.Sql)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Failed to execute migration")
 	}
 
-	err = SchemaMigrationInsert(ctx, a.db, migration.RefName)
+	err = SchemaMigrationInsert(ctx, tx, migration.RefName)
 	if err != nil {
-		// ROLLBACK
-		return err
+		return errors.Wrap(err, "Failed to insert migration")
 	}
 
-	// COMMIT
 	return nil
 }
 
-func (a *ActionMigrateUp) Run(ctx context.Context) error {
-	tx, err := a.db.BeginTxx(ctx, nil)
+func (a *ActionMigrateUp) Run(ctx context.Context, db *sqlx.DB) error {
+	mainTx, err := db.BeginTxx(ctx, nil)
 	if err != nil {
-		return err
-	}
-	defer tx.Commit()
-
-	ok, err := krabdb.TryAdvisoryXactLock(ctx, tx, 1)
-	if err != nil {
-		return err
+		return errors.Wrap(err, "Failed to start transaction")
 	}
 
-	if ok {
-		err := SchemaMigrationInit(ctx, a.db)
-		if err != nil {
-			return errors.Wrap(err, "Failed to create default table for migrations")
-		}
+	_, err = krabdb.TryAdvisoryXactLock(ctx, mainTx, 1)
+	if err != nil {
+		mainTx.Rollback()
+		return errors.Wrap(err, "Possibly another migration in progress")
+	}
 
-		migrationRefsInDb, err := SchemaMigrationSelectAll(ctx, a.db)
+	err = SchemaMigrationInit(ctx, mainTx)
+	if err != nil {
+		mainTx.Rollback()
+		return errors.Wrap(err, "Failed to create default table for migrations")
+	}
+
+	migrationRefsInDb, err := SchemaMigrationSelectAll(ctx, mainTx)
+	if err != nil {
+		mainTx.Rollback()
+		return err
+	}
+
+	pendingMigrations := SchemaMigrationFilterPending(a.Set.Migrations, migrationRefsInDb)
+
+	for _, pending := range pendingMigrations {
+		err := a.migrate(ctx, mainTx, pending)
 		if err != nil {
+			mainTx.Rollback()
 			return err
 		}
-
-		pendingMigrations := SchemaMigrationFilterPending(a.Set.Migrations, migrationRefsInDb)
-
-		{
-			tx, err := a.db.BeginTxx(ctx, nil)
-			if err != nil {
-				return err
-			}
-
-			for _, pending := range pendingMigrations {
-				err := a.migrate(ctx, pending)
-				if err != nil {
-					tx.Rollback() // ignore rollback error
-					return err
-				}
-			}
-
-			err = tx.Commit()
-			if err != nil {
-				return err
-			}
-		}
-	} else {
-		return errors.New("Another migration in progress")
 	}
 
-	return nil
+	err = mainTx.Commit()
+	return err
 }

@@ -2,23 +2,26 @@ package krab
 
 import (
 	"context"
+	"strings"
 	"testing"
 
-	epg "github.com/fergusstrange/embedded-postgres"
 	"github.com/franela/goblin"
+	_ "github.com/jackc/pgx/v4"
 	"github.com/jmoiron/sqlx"
-	_ "github.com/lib/pq"
 )
 
 func Test_ActionMigrateUp(t *testing.T) {
-	g := goblin.Goblin(t)
-	ctx := context.Background()
-
 	withPg(t, func(db *sqlx.DB) {
-		g.Describe("#Run", func() {
+		g := goblin.Goblin(t)
+		ctx := context.Background()
+
+		g.Describe("Running migrate up action", func() {
+			g.AfterEach(func() {
+				SchemaMigrationTruncate(ctx, db)
+			})
+
 			g.It("Migration passess successfuly", func() {
 				action := &ActionMigrateUp{
-					db: db,
 					Set: &MigrationSet{
 						Migrations: []*Migration{
 							{
@@ -31,9 +34,9 @@ func Test_ActionMigrateUp(t *testing.T) {
 					},
 				}
 
-				err := action.Run(ctx)
+				err := action.Run(ctx, db)
 				if err != nil {
-					t.Error("Migration error", err)
+					t.Error("Migration error:", err)
 					return
 				}
 
@@ -46,30 +49,37 @@ func Test_ActionMigrateUp(t *testing.T) {
 				g.Assert(len(schema)).Eql(1)
 				g.Assert(schema[0].Version).Eql("v1")
 			})
+
+			g.It("Migration is not saved when error occured", func() {
+				action := &ActionMigrateUp{
+					Set: &MigrationSet{
+						Migrations: []*Migration{
+							{
+								RefName: "v1",
+								Up: MigrationUp{
+									Sql: `SELECT invalid`,
+								},
+							},
+						},
+					},
+				}
+
+				err := action.Run(ctx, db)
+
+				g.Assert(err).IsNotNil("Invalid migration should return error")
+				g.Assert(strings.Contains(
+					err.Error(),
+					`column "invalid" does not exist`,
+				)).Eql(true)
+
+				schema, err := SchemaMigrationSelectAll(ctx, db)
+				if err != nil {
+					t.Error("Fetching migrations failed", err)
+					return
+				}
+
+				g.Assert(len(schema)).Eql(0)
+			})
 		})
 	})
-}
-
-func withPg(t *testing.T, f func(db *sqlx.DB)) {
-	database := epg.NewDatabase()
-
-	if err := database.Start(); err != nil {
-		t.Fatal(err)
-	}
-
-	defer func() {
-		if err := database.Stop(); err != nil {
-			t.Fatal(err)
-		}
-	}()
-
-	db, err := sqlx.Connect(
-		"postgres",
-		"host=localhost port=5432 user=postgres password=postgres dbname=postgres sslmode=disable",
-	)
-
-	if err != nil {
-		t.Fatal(err)
-	}
-	f(db)
 }

@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/jmoiron/sqlx"
-	"github.com/lib/pq"
+	"github.com/ohkrab/krab/krabdb"
 )
 
 // SchemaMigration represents a single row from migrations table.
@@ -14,31 +14,41 @@ type SchemaMigration struct {
 }
 
 // SchemaMigrationInit creates a migrations table.
-func SchemaMigrationInit(ctx context.Context, db *sqlx.DB) error {
+func SchemaMigrationInit(ctx context.Context, db sqlx.ExecerContext) error {
 	_, err := db.ExecContext(ctx, fmt.Sprintf(
 		"CREATE TABLE IF NOT EXISTS %s(version varchar PRIMARY KEY)",
-		pq.QuoteIdentifier(DefaultMigrationsTableName),
+		krabdb.QuoteIdent(DefaultMigrationsTableName),
+	))
+	return err
+}
+
+// SchemaMigrationTruncate truncates migrations table.
+func SchemaMigrationTruncate(ctx context.Context, db sqlx.ExecerContext) error {
+	_, err := db.ExecContext(ctx, fmt.Sprintf(
+		"TRUNCATE %s",
+		krabdb.QuoteIdent(DefaultMigrationsTableName),
 	))
 	return err
 }
 
 // SchemaMigrationSelectAll fetches all migrations from a database.
-func SchemaMigrationSelectAll(ctx context.Context, db *sqlx.DB) ([]SchemaMigration, error) {
+func SchemaMigrationSelectAll(ctx context.Context, db sqlx.QueryerContext) ([]SchemaMigration, error) {
 	var schema []SchemaMigration
-	err := db.SelectContext(
+	err := sqlx.SelectContext(
 		ctx,
+		db,
 		&schema,
-		fmt.Sprintf("SELECT version FROM %s ORDER BY 1", pq.QuoteIdentifier(DefaultMigrationsTableName)),
+		fmt.Sprintf("SELECT version FROM %s ORDER BY 1", krabdb.QuoteIdent(DefaultMigrationsTableName)),
 	)
 	return schema, err
 }
 
 // SchemaMigrationInsert saves migration to a database.
-func SchemaMigrationInsert(ctx context.Context, db *sqlx.DB, refName string) error {
-	_, err := db.ExecContext(ctx, fmt.Sprintf(
-		"INSERT INTO %s(version) VALUES ($1)",
-		pq.QuoteIdentifier(DefaultMigrationsTableName),
-	),
+func SchemaMigrationInsert(ctx context.Context, db sqlx.ExecerContext, refName string) error {
+	_, err := db.ExecContext(
+		ctx,
+		fmt.Sprintf("INSERT INTO %s(version) VALUES ($1) RETURNING *", krabdb.QuoteIdent(DefaultMigrationsTableName)),
+		// fmt.Sprintf("INSERT INTO %s(version) VALUES ('%s')", krabdb.QuoteIdent(DefaultMigrationsTableName), refName),
 		refName,
 	)
 	return err
