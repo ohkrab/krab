@@ -37,7 +37,7 @@ func Test_ActionMigrateUp(t *testing.T) {
 					return
 				}
 
-				schema, err := action.fetchMigrationsFromDb(ctx)
+				schema, err := SchemaMigrationSelectAll(ctx, db)
 				if err != nil {
 					t.Error("Fetching migrations failed", err)
 					return
