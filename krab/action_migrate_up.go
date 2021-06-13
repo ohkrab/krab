@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/lib/pq"
 	"github.com/ohkrab/krab/krabdb"
 	"github.com/pkg/errors"
 )
@@ -20,28 +21,31 @@ type ActionMigrateUp struct {
 
 func (a *ActionMigrateUp) fetchMigrationsFromDb(ctx context.Context) ([]SchemaInfo, error) {
 	var schema []SchemaInfo
-	err := a.db.SelectContext(ctx, &schema, "SELECT * FROM schema_info")
+	err := a.db.SelectContext(ctx, &schema, fmt.Sprintf("SELECT * FROM %s", pq.QuoteIdentifier(DefaultMigrationsTableName)))
 	return schema, err
 }
 
-func (a *ActionMigrateUp) execInDb(ctx context.Context, sql string) error {
-	fmt.Println("Migrating", sql)
-	return nil
-}
-
 func (a *ActionMigrateUp) insertToSchemaInformation(ctx context.Context, refName string) error {
-	_, err := a.db.NamedExec("INSERT INTO schema_info(version) VALUES (:version)", map[string]interface{}{"version": refName})
+	_, err := a.db.ExecContext(ctx, fmt.Sprintf(
+		"INSERT INTO %s(version) VALUES ($1)",
+		pq.QuoteIdentifier(DefaultMigrationsTableName),
+	),
+		refName,
+	)
 	return err
 }
 
-func (a *ActionMigrateUp) createSchemeInformation(ctx context.Context) error {
-	_, err := a.db.Exec("CREATE TABLE IF NOT EXISTS schema_info(version varchar PRIMARY KEY)")
+func (a *ActionMigrateUp) createSchema(ctx context.Context) error {
+	_, err := a.db.ExecContext(ctx, fmt.Sprintf(
+		"CREATE TABLE IF NOT EXISTS %s(version varchar PRIMARY KEY)",
+		pq.QuoteIdentifier(DefaultMigrationsTableName),
+	))
 	return err
 }
 
 func (a *ActionMigrateUp) migrate(ctx context.Context, migration *Migration) error {
 	// BEGIN
-	err := a.execInDb(ctx, migration.Up.Sql)
+	_, err := a.db.ExecContext(ctx, migration.Up.Sql)
 	if err != nil {
 		return err
 	}
@@ -57,29 +61,52 @@ func (a *ActionMigrateUp) migrate(ctx context.Context, migration *Migration) err
 }
 
 func (a *ActionMigrateUp) Run(ctx context.Context) error {
-	lock := krabdb.AdvisoryLock{Errs: make(chan error)}
-
-	err := a.createSchemeInformation(ctx)
-	// TODO: ensure schema_info structure compatiblity with inner structs
+	tx, err := a.db.BeginTxx(ctx, nil)
 	if err != nil {
-		return errors.Wrap(err, "Failed to create `schema_info` table for migrations")
+		return err
 	}
+	defer tx.Commit()
 
-	lock.Lock(ctx)
-	defer lock.Unlock(ctx)
-
-	migrationRefsInDb, err := a.fetchMigrationsFromDb(ctx)
+	ok, err := krabdb.TryAdvisoryXactLock(ctx, tx, 1)
 	if err != nil {
 		return err
 	}
 
-	pendingMigrations := a.findPendingMigrations(migrationRefsInDb)
+	if ok {
+		err := a.createSchema(ctx)
+		// TODO: ensure structure compatiblity with inner structs
+		if err != nil {
+			return errors.Wrap(err, "Failed to create default table for migrations")
+		}
 
-	for _, pending := range pendingMigrations {
-		err := a.migrate(ctx, pending)
+		migrationRefsInDb, err := a.fetchMigrationsFromDb(ctx)
 		if err != nil {
 			return err
 		}
+
+		pendingMigrations := a.findPendingMigrations(migrationRefsInDb)
+
+		{
+			tx, err := a.db.BeginTxx(ctx, nil)
+			if err != nil {
+				return err
+			}
+
+			for _, pending := range pendingMigrations {
+				err := a.migrate(ctx, pending)
+				if err != nil {
+					tx.Rollback() // ignore rollback error
+					return err
+				}
+			}
+
+			err = tx.Commit()
+			if err != nil {
+				return err
+			}
+		}
+	} else {
+		return errors.New("Another migration in progress")
 	}
 
 	return nil

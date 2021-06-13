@@ -12,10 +12,12 @@ require (
 	github.com/jmoiron/sqlx v1.3.4
 	github.com/klauspost/compress v1.12.3 // indirect
 	github.com/klauspost/pgzip v1.2.5 // indirect
+	github.com/konsorten/go-windows-terminal-sequences v1.0.3 // indirect
 	github.com/lib/pq v1.10.2
 	github.com/mitchellh/go-wordwrap v1.0.0 // indirect
 	github.com/pierrec/lz4/v4 v4.1.7 // indirect
 	github.com/pkg/errors v0.8.1
+	github.com/sirupsen/logrus v1.8.1 // indirect
 	github.com/spf13/afero v1.6.0
 	github.com/ulikunitz/xz v0.5.10 // indirect
 	github.com/zclconf/go-cty v1.5.1 // indirect
