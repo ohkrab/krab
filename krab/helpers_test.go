@@ -1,6 +1,13 @@
 package krab
 
-import "github.com/spf13/afero"
+import (
+	"testing"
+
+	_ "github.com/jackc/pgx/v4"
+	_ "github.com/jackc/pgx/v4/stdlib"
+	"github.com/jmoiron/sqlx"
+	"github.com/spf13/afero"
+)
 
 // mockParser expects args: "path", "content", "path2", "content2", ...
 func mockParser(pathContentPair ...string) *Parser {
@@ -20,4 +27,22 @@ func mockParser(pathContentPair ...string) *Parser {
 	p := NewParser()
 	p.fs = afero.Afero{Fs: memfs}
 	return p
+}
+
+func withPg(t *testing.T, f func(db *sqlx.DB)) {
+	db, err := sqlx.Connect(
+		"pgx",
+		"postgres://krab:secret@localhost:5432/krab?sslmode=disable",
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+
+	err = db.Ping()
+	if err != nil {
+		t.Fatalf("Failed to ping db: %v", err)
+	}
+
+	f(db)
 }

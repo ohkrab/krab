@@ -4,10 +4,9 @@ import (
 	"context"
 	"testing"
 
-	epg "github.com/fergusstrange/embedded-postgres"
 	"github.com/franela/goblin"
+	_ "github.com/jackc/pgx/v4"
 	"github.com/jmoiron/sqlx"
-	_ "github.com/lib/pq"
 )
 
 func Test_ActionMigrateUp(t *testing.T) {
@@ -15,8 +14,10 @@ func Test_ActionMigrateUp(t *testing.T) {
 	ctx := context.Background()
 
 	withPg(t, func(db *sqlx.DB) {
-		g.Describe("#Run", func() {
+		g.Describe("Running migrate up action", func() {
 			g.It("Migration passess successfuly", func() {
+				// SchemaMigrationTruncate(ctx, db)
+
 				action := &ActionMigrateUp{
 					db: db,
 					Set: &MigrationSet{
@@ -33,7 +34,7 @@ func Test_ActionMigrateUp(t *testing.T) {
 
 				err := action.Run(ctx)
 				if err != nil {
-					t.Error("Migration error", err)
+					t.Error("Migration error:", err)
 					return
 				}
 
@@ -46,30 +47,35 @@ func Test_ActionMigrateUp(t *testing.T) {
 				g.Assert(len(schema)).Eql(1)
 				g.Assert(schema[0].Version).Eql("v1")
 			})
+
+			g.Xit("Migration is not saved when error occured", func() {
+				SchemaMigrationInit(ctx, db)
+
+				action := &ActionMigrateUp{
+					db: db,
+					Set: &MigrationSet{
+						Migrations: []*Migration{
+							{
+								RefName: "v1",
+								Up: MigrationUp{
+									Sql: `SELECT invalid`,
+								},
+							},
+						},
+					},
+				}
+
+				err := action.Run(ctx)
+				g.Assert(err.Error()).Eql(`pq: column "invalid" does not exist`)
+
+				schema, err := SchemaMigrationSelectAll(ctx, db)
+				if err != nil {
+					t.Error("Fetching migrations failed", err)
+					return
+				}
+
+				g.Assert(len(schema)).Eql(0)
+			})
 		})
 	})
-}
-
-func withPg(t *testing.T, f func(db *sqlx.DB)) {
-	database := epg.NewDatabase()
-
-	if err := database.Start(); err != nil {
-		t.Fatal(err)
-	}
-
-	defer func() {
-		if err := database.Stop(); err != nil {
-			t.Fatal(err)
-		}
-	}()
-
-	db, err := sqlx.Connect(
-		"postgres",
-		"host=localhost port=5432 user=postgres password=postgres dbname=postgres sslmode=disable",
-	)
-
-	if err != nil {
-		t.Fatal(err)
-	}
-	f(db)
 }
