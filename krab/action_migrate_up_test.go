@@ -5,21 +5,20 @@ import (
 	"testing"
 
 	"github.com/franela/goblin"
+	"github.com/jackc/pgx/v4"
 	_ "github.com/jackc/pgx/v4"
-	"github.com/jmoiron/sqlx"
 )
 
 func Test_ActionMigrateUp(t *testing.T) {
 	g := goblin.Goblin(t)
 	ctx := context.Background()
 
-	withPg(t, func(db *sqlx.DB) {
+	withPg(t, func(conn *pgx.Conn) {
 		g.Describe("Running migrate up action", func() {
 			g.It("Migration passess successfuly", func() {
-				// SchemaMigrationTruncate(ctx, db)
+				SchemaMigrationTruncate(ctx, conn)
 
 				action := &ActionMigrateUp{
-					db: db,
 					Set: &MigrationSet{
 						Migrations: []*Migration{
 							{
@@ -32,13 +31,13 @@ func Test_ActionMigrateUp(t *testing.T) {
 					},
 				}
 
-				err := action.Run(ctx)
+				err := action.Run(ctx, conn)
 				if err != nil {
-					t.Error("Migration error:", err)
+					t.Error("Test migration error:", err)
 					return
 				}
 
-				schema, err := SchemaMigrationSelectAll(ctx, db)
+				schema, err := SchemaMigrationSelectAll(ctx, conn)
 				if err != nil {
 					t.Error("Fetching migrations failed", err)
 					return
@@ -49,10 +48,9 @@ func Test_ActionMigrateUp(t *testing.T) {
 			})
 
 			g.Xit("Migration is not saved when error occured", func() {
-				SchemaMigrationInit(ctx, db)
+				SchemaMigrationInit(ctx, conn)
 
 				action := &ActionMigrateUp{
-					db: db,
 					Set: &MigrationSet{
 						Migrations: []*Migration{
 							{
@@ -65,10 +63,10 @@ func Test_ActionMigrateUp(t *testing.T) {
 					},
 				}
 
-				err := action.Run(ctx)
+				err := action.Run(ctx, conn)
 				g.Assert(err.Error()).Eql(`pq: column "invalid" does not exist`)
 
-				schema, err := SchemaMigrationSelectAll(ctx, db)
+				schema, err := SchemaMigrationSelectAll(ctx, conn)
 				if err != nil {
 					t.Error("Fetching migrations failed", err)
 					return

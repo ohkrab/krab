@@ -1,9 +1,12 @@
 package krab
 
 import (
+	"context"
 	"testing"
 
+	"github.com/jackc/pgx/v4"
 	_ "github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v4/pgxpool"
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/jmoiron/sqlx"
 	"github.com/spf13/afero"
@@ -29,7 +32,26 @@ func mockParser(pathContentPair ...string) *Parser {
 	return p
 }
 
-func withPg(t *testing.T, f func(db *sqlx.DB)) {
+func withPg(t *testing.T, f func(*pgx.Conn)) {
+	pool, err := pgxpool.Connect(
+		context.Background(),
+		"postgres://krab:secret@localhost:5432/krab?sslmode=disable",
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer pool.Close()
+
+	conn, err := pool.Acquire(context.Background())
+	if err != nil {
+		t.Fatalf("Failed to acquire conn: %v", err)
+	}
+	defer conn.Release()
+
+	f(conn.Conn())
+}
+
+func withPgSqlx(t *testing.T, f func(db *sqlx.DB)) {
 	db, err := sqlx.Connect(
 		"pgx",
 		"postgres://krab:secret@localhost:5432/krab?sslmode=disable",
