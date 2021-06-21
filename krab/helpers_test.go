@@ -43,4 +43,33 @@ func withPg(t *testing.T, f func(db *sqlx.DB)) {
 	}
 
 	f(db)
+
+	db.MustExec(`
+DO 
+$$ 
+  DECLARE 
+    r RECORD;
+BEGIN
+  FOR r IN 
+    (
+      SELECT table_name 
+        FROM information_schema.tables 
+       WHERE table_schema = 'public'
+    ) 
+  LOOP
+     EXECUTE 'DROP TABLE ' || quote_ident(r.table_name) || ' CASCADE';
+  END LOOP;
+END
+$$`)
+}
+
+func sqlxRowsMapScan(rows *sqlx.Rows) []map[string]interface{} {
+	res := []map[string]interface{}{}
+	for rows.Next() {
+		row := map[string]interface{}{}
+		rows.MapScan(row)
+		res = append(res, row)
+	}
+
+	return res
 }

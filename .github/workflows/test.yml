@@ -37,7 +37,7 @@ jobs:
 
       - name: Run tests
         env:
-          DATABASE_URL: "postgres://krab:secret@localhost:5432/krab?sslmode=disable"
+          DATABASE_URL: "postgres://krab:secret@localhost:5432/krab?sslmode=disable&prefer_simple_protocol=true"
         run: |
           mkdir -p bin/
           go test -v ./...

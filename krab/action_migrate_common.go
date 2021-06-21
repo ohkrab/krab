@@ -48,7 +48,16 @@ func SchemaMigrationInsert(ctx context.Context, db sqlx.ExecerContext, refName s
 	_, err := db.ExecContext(
 		ctx,
 		fmt.Sprintf("INSERT INTO %s(version) VALUES ($1) RETURNING *", krabdb.QuoteIdent(DefaultMigrationsTableName)),
-		// fmt.Sprintf("INSERT INTO %s(version) VALUES ('%s')", krabdb.QuoteIdent(DefaultMigrationsTableName), refName),
+		refName,
+	)
+	return err
+}
+
+// SchemaMigrationDelete removes migration from a database.
+func SchemaMigrationDelete(ctx context.Context, db sqlx.ExecerContext, refName string) error {
+	_, err := db.ExecContext(
+		ctx,
+		fmt.Sprintf("DELETE FROM %s WHERE version = $1 RETURNING *", krabdb.QuoteIdent(DefaultMigrationsTableName)),
 		refName,
 	)
 	return err

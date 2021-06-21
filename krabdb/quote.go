@@ -1,7 +1,9 @@
 package krabdb
 
-import "github.com/lib/pq"
+import (
+	"github.com/jackc/pgx/v4"
+)
 
 func QuoteIdent(s string) string {
-	return pq.QuoteIdentifier(s)
+	return pgx.Identifier{s}.Sanitize()
 }
