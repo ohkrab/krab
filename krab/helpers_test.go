@@ -1,6 +1,7 @@
 package krab
 
 import (
+	"os"
 	"testing"
 
 	_ "github.com/jackc/pgx/v4"
@@ -30,10 +31,7 @@ func mockParser(pathContentPair ...string) *Parser {
 }
 
 func withPg(t *testing.T, f func(db *sqlx.DB)) {
-	db, err := sqlx.Connect(
-		"pgx",
-		"postgres://krab:secret@localhost:5432/krab?sslmode=disable",
-	)
+	db, err := sqlx.Connect("pgx", os.Getenv("DATABASE_URL"))
 	if err != nil {
 		t.Fatal(err)
 	}
