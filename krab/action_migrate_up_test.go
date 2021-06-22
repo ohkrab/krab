@@ -51,6 +51,8 @@ func Test_ActionMigrateUp(t *testing.T) {
 			})
 
 			g.It("Migration is not saved when error occured", func() {
+				SchemaMigrationInit(ctx, db)
+
 				action := &ActionMigrateUp{
 					Set: &MigrationSet{
 						Migrations: []*Migration{
