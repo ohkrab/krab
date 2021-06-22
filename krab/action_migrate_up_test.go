@@ -17,7 +17,7 @@ func Test_ActionMigrateUp(t *testing.T) {
 
 		g.Describe("Running migrate up action", func() {
 			g.AfterEach(func() {
-				SchemaMigrationTruncate(ctx, db)
+				cleanDb(db)
 			})
 
 			g.It("Migration passess successfuly", func() {

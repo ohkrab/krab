@@ -41,9 +41,12 @@ func withPg(t *testing.T, f func(db *sqlx.DB)) {
 	if err != nil {
 		t.Fatalf("Failed to ping db: %v", err)
 	}
+	defer cleanDb(db)
 
 	f(db)
+}
 
+func cleanDb(db *sqlx.DB) {
 	db.MustExec(`
 DO 
 $$ 
