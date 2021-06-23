@@ -11,6 +11,8 @@ type Config struct {
 	Migrations    map[string]*Migration
 }
 
+// NewConfig returns new configuration that was read from Parser.
+// Transient attributes are updated with parsed data.
 func NewConfig(files []*File) (*Config, error) {
 	c := &Config{
 		MigrationSets: make(map[string]*MigrationSet),

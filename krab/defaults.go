@@ -1,5 +1,5 @@
 package krab
 
 const (
-	DefaultMigrationsTableName = "schema_migrations"
+	defaultMigrationsTableName = "schema_migrations"
 )

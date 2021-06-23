@@ -4,17 +4,19 @@ import (
 	"context"
 	"fmt"
 
-	_ "github.com/jackc/pgx/v4"
 	"github.com/jmoiron/sqlx"
 	"github.com/ohkrab/krab/krabdb"
 	"github.com/pkg/errors"
 )
 
+// ActionMigrateDown keeps data needed to perform this action.
 type ActionMigrateDown struct {
 	Set           *MigrationSet
 	DownMigration SchemaMigration
 }
 
+// Run performs the action.
+// Schema migration must exist before running it.
 func (a *ActionMigrateDown) Run(ctx context.Context, db *sqlx.DB) error {
 	migration := a.Set.FindMigrationByRef(a.DownMigration.Version)
 	if migration == nil {
@@ -45,7 +47,7 @@ func (a *ActionMigrateDown) Run(ctx context.Context, db *sqlx.DB) error {
 }
 
 func (a *ActionMigrateDown) migrateDown(ctx context.Context, tx *sqlx.Tx, migration *Migration) error {
-	_, err := tx.ExecContext(ctx, migration.Down.Sql)
+	_, err := tx.ExecContext(ctx, migration.Down.SQL)
 	if err != nil {
 		return errors.Wrap(err, "Failed to execute migration")
 	}

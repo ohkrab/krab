@@ -20,7 +20,7 @@ func Test_ActionMigrateDown(t *testing.T) {
 				cleanDb(db)
 			})
 
-			g.It("Migration passess successfuly", func() {
+			g.It("Migration passess successfully", func() {
 				// setup
 				set := &MigrationSet{
 					RefName: "public",
@@ -28,19 +28,19 @@ func Test_ActionMigrateDown(t *testing.T) {
 						{
 							RefName: "v1",
 							Up: MigrationUp{
-								Sql: `CREATE TABLE animals(name VARCHAR)`,
+								SQL: `CREATE TABLE animals(name VARCHAR)`,
 							},
 							Down: MigrationDown{
-								Sql: `DROP TABLE animals`,
+								SQL: `DROP TABLE animals`,
 							},
 						},
 						{
 							RefName: "v2",
 							Up: MigrationUp{
-								Sql: `ALTER TABLE animals ADD COLUMN emoji VARCHAR`,
+								SQL: `ALTER TABLE animals ADD COLUMN emoji VARCHAR`,
 							},
 							Down: MigrationDown{
-								Sql: `ALTER TABLE animals DROP COLUMN emoji`,
+								SQL: `ALTER TABLE animals DROP COLUMN emoji`,
 							},
 						},
 					},
@@ -53,7 +53,7 @@ func Test_ActionMigrateDown(t *testing.T) {
 				g.Assert(err).IsNil("Elephant must be inserted")
 
 				// state before
-				schema, err := SchemaMigrationSelectAll(ctx, db)
+				schema, _ := SchemaMigrationSelectAll(ctx, db)
 				g.Assert(len(schema)).Eql(2)
 				g.Assert(schema[0].Version).Eql("v1")
 				g.Assert(schema[1].Version).Eql("v2")
@@ -76,7 +76,7 @@ func Test_ActionMigrateDown(t *testing.T) {
 				g.Assert(err).IsNil("Action must succeed", err)
 
 				// state after
-				schema, err = SchemaMigrationSelectAll(ctx, db)
+				schema, _ = SchemaMigrationSelectAll(ctx, db)
 				g.Assert(len(schema)).Eql(1)
 				g.Assert(schema[0].Version).Eql("v1")
 
@@ -93,26 +93,26 @@ func Test_ActionMigrateDown(t *testing.T) {
 				g.Assert(animals[0]["emoji"]).Eql(nil)
 			})
 
-			g.It("Migration is not saved when error occured", func() {
+			g.It("Migration is not saved when error occurred", func() {
 				// setup
 				set := &MigrationSet{
 					Migrations: []*Migration{
 						{
 							RefName: "v1",
 							Up: MigrationUp{
-								Sql: `CREATE TABLE animals(name VARCHAR)`,
+								SQL: `CREATE TABLE animals(name VARCHAR)`,
 							},
 							Down: MigrationDown{
-								Sql: `DROP TABLE animals`,
+								SQL: `DROP TABLE animals`,
 							},
 						},
 						{
 							RefName: "v2",
 							Up: MigrationUp{
-								Sql: `ALTER TABLE animals ADD COLUMN emoji VARCHAR`,
+								SQL: `ALTER TABLE animals ADD COLUMN emoji VARCHAR`,
 							},
 							Down: MigrationDown{
-								Sql: `ALTER TABLE animals DROP COLUMN emoji; ALTER TABLE animals DROP COLUMN habitat`,
+								SQL: `ALTER TABLE animals DROP COLUMN emoji; ALTER TABLE animals DROP COLUMN habitat`,
 							},
 						},
 					},
@@ -125,7 +125,7 @@ func Test_ActionMigrateDown(t *testing.T) {
 				g.Assert(err).IsNil("Elephant must be inserted")
 
 				// state before
-				schema, err := SchemaMigrationSelectAll(ctx, db)
+				schema, _ := SchemaMigrationSelectAll(ctx, db)
 				g.Assert(len(schema)).Eql(2)
 				g.Assert(schema[0].Version).Eql("v1")
 				g.Assert(schema[1].Version).Eql("v2")

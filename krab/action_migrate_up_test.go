@@ -20,14 +20,14 @@ func Test_ActionMigrateUp(t *testing.T) {
 				cleanDb(db)
 			})
 
-			g.It("Migration passess successfuly", func() {
+			g.It("Migration passess successfully", func() {
 				action := &ActionMigrateUp{
 					Set: &MigrationSet{
 						Migrations: []*Migration{
 							{
 								RefName: "v1",
 								Up: MigrationUp{
-									Sql: `SELECT 1`,
+									SQL: `SELECT 1`,
 								},
 							},
 						},
@@ -50,7 +50,7 @@ func Test_ActionMigrateUp(t *testing.T) {
 				g.Assert(schema[0].Version).Eql("v1")
 			})
 
-			g.It("Migration is not saved when error occured", func() {
+			g.It("Migration is not saved when error occurred", func() {
 				SchemaMigrationInit(ctx, db)
 
 				action := &ActionMigrateUp{
@@ -59,7 +59,7 @@ func Test_ActionMigrateUp(t *testing.T) {
 							{
 								RefName: "v1",
 								Up: MigrationUp{
-									Sql: `SELECT invalid`,
+									SQL: `SELECT invalid`,
 								},
 							},
 						},

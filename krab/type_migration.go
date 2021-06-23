@@ -11,10 +11,10 @@ type Migration struct {
 
 // MigrationUp contains info how to migrate up.
 type MigrationUp struct {
-	Sql string `hcl:"sql,optional"`
+	SQL string `hcl:"sql,optional"`
 }
 
-// MigrationUp contains info how to migrate down.
+// MigrationDown contains info how to migrate down.
 type MigrationDown struct {
-	Sql string `hcl:"sql,optional"`
+	SQL string `hcl:"sql,optional"`
 }

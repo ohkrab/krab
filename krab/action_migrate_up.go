@@ -3,30 +3,18 @@ package krab
 import (
 	"context"
 
-	_ "github.com/jackc/pgx/v4"
 	"github.com/jmoiron/sqlx"
 	"github.com/ohkrab/krab/krabdb"
 	"github.com/pkg/errors"
 )
 
+// ActionMigrateUp keeps data needed to perform this action.
 type ActionMigrateUp struct {
 	Set *MigrationSet
 }
 
-func (a *ActionMigrateUp) migrate(ctx context.Context, tx *sqlx.Tx, migration *Migration) error {
-	_, err := tx.ExecContext(ctx, migration.Up.Sql)
-	if err != nil {
-		return errors.Wrap(err, "Failed to execute migration")
-	}
-
-	err = SchemaMigrationInsert(ctx, tx, migration.RefName)
-	if err != nil {
-		return errors.Wrap(err, "Failed to insert migration")
-	}
-
-	return nil
-}
-
+// Run performs the action. All pending migrations will be executed.
+// Migration schema is created if does not exist.
 func (a *ActionMigrateUp) Run(ctx context.Context, db *sqlx.DB) error {
 	mainTx, err := db.BeginTxx(ctx, nil)
 	if err != nil {
@@ -54,7 +42,7 @@ func (a *ActionMigrateUp) Run(ctx context.Context, db *sqlx.DB) error {
 	pendingMigrations := SchemaMigrationFilterPending(a.Set.Migrations, migrationRefsInDb)
 
 	for _, pending := range pendingMigrations {
-		err := a.migrate(ctx, mainTx, pending)
+		err := a.migrateUp(ctx, mainTx, pending)
 		if err != nil {
 			mainTx.Rollback()
 			return err
@@ -63,4 +51,18 @@ func (a *ActionMigrateUp) Run(ctx context.Context, db *sqlx.DB) error {
 
 	err = mainTx.Commit()
 	return err
+}
+
+func (a *ActionMigrateUp) migrateUp(ctx context.Context, tx *sqlx.Tx, migration *Migration) error {
+	_, err := tx.ExecContext(ctx, migration.Up.SQL)
+	if err != nil {
+		return errors.Wrap(err, "Failed to execute migration")
+	}
+
+	err = SchemaMigrationInsert(ctx, tx, migration.RefName)
+	if err != nil {
+		return errors.Wrap(err, "Failed to insert migration")
+	}
+
+	return nil
 }

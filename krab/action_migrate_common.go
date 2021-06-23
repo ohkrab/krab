@@ -17,7 +17,7 @@ type SchemaMigration struct {
 func SchemaMigrationInit(ctx context.Context, db sqlx.ExecerContext) error {
 	_, err := db.ExecContext(ctx, fmt.Sprintf(
 		"CREATE TABLE IF NOT EXISTS %s(version varchar PRIMARY KEY)",
-		krabdb.QuoteIdent(DefaultMigrationsTableName),
+		krabdb.QuoteIdent(defaultMigrationsTableName),
 	))
 	return err
 }
@@ -26,7 +26,7 @@ func SchemaMigrationInit(ctx context.Context, db sqlx.ExecerContext) error {
 func SchemaMigrationTruncate(ctx context.Context, db sqlx.ExecerContext) error {
 	_, err := db.ExecContext(ctx, fmt.Sprintf(
 		"TRUNCATE %s",
-		krabdb.QuoteIdent(DefaultMigrationsTableName),
+		krabdb.QuoteIdent(defaultMigrationsTableName),
 	))
 	return err
 }
@@ -38,7 +38,7 @@ func SchemaMigrationSelectAll(ctx context.Context, db sqlx.QueryerContext) ([]Sc
 		ctx,
 		db,
 		&schema,
-		fmt.Sprintf("SELECT version FROM %s ORDER BY 1", krabdb.QuoteIdent(DefaultMigrationsTableName)),
+		fmt.Sprintf("SELECT version FROM %s ORDER BY 1", krabdb.QuoteIdent(defaultMigrationsTableName)),
 	)
 	return schema, err
 }
@@ -47,7 +47,7 @@ func SchemaMigrationSelectAll(ctx context.Context, db sqlx.QueryerContext) ([]Sc
 func SchemaMigrationInsert(ctx context.Context, db sqlx.ExecerContext, refName string) error {
 	_, err := db.ExecContext(
 		ctx,
-		fmt.Sprintf("INSERT INTO %s(version) VALUES ($1) RETURNING *", krabdb.QuoteIdent(DefaultMigrationsTableName)),
+		fmt.Sprintf("INSERT INTO %s(version) VALUES ($1) RETURNING *", krabdb.QuoteIdent(defaultMigrationsTableName)),
 		refName,
 	)
 	return err
@@ -57,7 +57,7 @@ func SchemaMigrationInsert(ctx context.Context, db sqlx.ExecerContext, refName s
 func SchemaMigrationDelete(ctx context.Context, db sqlx.ExecerContext, refName string) error {
 	_, err := db.ExecContext(
 		ctx,
-		fmt.Sprintf("DELETE FROM %s WHERE version = $1 RETURNING *", krabdb.QuoteIdent(DefaultMigrationsTableName)),
+		fmt.Sprintf("DELETE FROM %s WHERE version = $1 RETURNING *", krabdb.QuoteIdent(defaultMigrationsTableName)),
 		refName,
 	)
 	return err

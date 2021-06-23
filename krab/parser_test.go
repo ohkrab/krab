@@ -30,8 +30,8 @@ migration "create_tenants" {
 
 			if migration, ok := c.Migrations["create_tenants"]; ok {
 				g.Assert(migration.RefName).Eql("create_tenants")
-				g.Assert(migration.Up.Sql).Eql("CREATE TABLE tenants(name VARCHAR PRIMARY KEY)")
-				g.Assert(migration.Down.Sql).Eql("DROP TABLE tenants")
+				g.Assert(migration.Up.SQL).Eql("CREATE TABLE tenants(name VARCHAR PRIMARY KEY)")
+				g.Assert(migration.Down.SQL).Eql("DROP TABLE tenants")
 			} else {
 				g.Failf("Can't get migration %s", "create_tenants")
 			}
@@ -40,7 +40,7 @@ migration "create_tenants" {
 	})
 
 	g.Describe("Optional content in up/down blocks for migrations", func() {
-		g.It("Parses successfuly without providing up/down details", func() {
+		g.It("Parses successfully without providing up/down details", func() {
 			p := mockParser(
 				"src/public.krab.hcl",
 				`migration "abc" {
@@ -52,8 +52,8 @@ migration "create_tenants" {
 			g.Assert(err).IsNil()
 			if migration, ok := c.Migrations["abc"]; ok {
 				g.Assert(migration.RefName).Eql("abc")
-				g.Assert(migration.Up.Sql).Eql("")
-				g.Assert(migration.Down.Sql).Eql("")
+				g.Assert(migration.Up.SQL).Eql("")
+				g.Assert(migration.Down.SQL).Eql("")
 			} else {
 				g.Failf("Can't get migration %s", "abc")
 			}

@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/afero"
 )
 
+// Parser represents HCL simple parser.
 type Parser struct {
 	p  *hclparse.Parser
 	fs afero.Afero
@@ -77,7 +78,7 @@ func (p *Parser) dirFiles(dir string) ([]string, error) {
 
 	infos, err := p.fs.ReadDir(dir)
 	if err != nil {
-		return nil, fmt.Errorf("Directory %s does not exist or cannot be read.", dir)
+		return nil, fmt.Errorf("Directory %s does not exist or cannot be read", dir)
 	}
 
 	for _, info := range infos {
@@ -101,9 +102,9 @@ func (p *Parser) dirFiles(dir string) ([]string, error) {
 func fileExt(path string) string {
 	if strings.HasSuffix(path, ".krab.hcl") {
 		return ".krab.hcl"
-	} else {
-		return "" // unrecognized extension
 	}
+
+	return "" // unrecognized extension
 }
 
 func isIgnoredFile(name string) bool {
