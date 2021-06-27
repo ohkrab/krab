@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"time"
 
 	_ "github.com/jackc/pgx/v4"
 	_ "github.com/jackc/pgx/v4/stdlib"
@@ -18,8 +17,11 @@ func main() {
 	ctx := context.Background()
 
 	zerolog.SetGlobalLevel(zerolog.DebugLevel)
-	output := zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.RFC3339}
-	log := zerolog.New(output).With().Timestamp().Logger()
+	output := zerolog.ConsoleWriter{
+		Out:        os.Stderr,
+		PartsOrder: []string{zerolog.LevelFieldName, zerolog.CallerFieldName, zerolog.MessageFieldName},
+	}
+	log := zerolog.New(output).With().Logger()
 
 	dir, err := optGetDir()
 	if err != nil {
