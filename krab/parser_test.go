@@ -179,10 +179,10 @@ migration_set "abc" {
 				`
 migration "abc" {
   up {
-	sql = fileread("src/up.sql")
+	sql = file_read("src/up.sql")
   }
   down {
-	sql = fileread("src/down.sql")
+	sql = file_read("src/down.sql")
   }
 }
 `,
@@ -209,10 +209,10 @@ migration "abc" {
 				`
 migration "abc" {
   up {
-	sql = fileread("src/up.sql")
+	sql = file_read("src/up.sql")
   }
   down {
-	sql = fileread("src/down.sql")
+	sql = file_read("src/down.sql")
   }
 }
 `,
@@ -224,7 +224,7 @@ migration "abc" {
 			g.Assert(
 				strings.Contains(
 					err.Error(),
-					`Call to function "fileread" failed: open src/up.sql: file does not exist.`,
+					`Call to function "file_read" failed: open src/up.sql: file does not exist.`,
 				),
 			).IsTrue(err)
 		})

@@ -12,7 +12,7 @@ func EvalContext(fs afero.Afero) *hcl.EvalContext {
 	ctx := &hcl.EvalContext{
 		Variables: map[string]cty.Value{},
 		Functions: map[string]function.Function{
-			"fileread": FnFileRead(fs),
+			"file_read": FnFileRead(fs),
 		},
 	}
 
