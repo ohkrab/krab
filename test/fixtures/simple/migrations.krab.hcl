@@ -9,8 +9,6 @@ migration "add_tenants" {
 }
 
 migration_set "public" {
-  schema_migrations_table = "krab_migrations"
-
   migrations = [
     migration.add_tenants
   ]
@@ -27,8 +25,6 @@ migration "add_users" {
 }
 
 migration_set "tenant" {
-  schema_migrations_table = "krab_migrations"
-
   migrations = [
     migration.add_users
   ]
@@ -36,33 +32,34 @@ migration_set "tenant" {
 
 migration "create_users" {
   up {
-    alter_table "users" {
-        add_column "email" {
-          type = "varchar"
-          null = true
-        }
+    # alter_table "users" {
+    #     add_column "email" {
+    #       type = "varchar"
+    #       null = true
+    #     }
 
-        drop_column "deprecated_field" {}
+    #     drop_column "deprecated_field" {}
 
-        primary_key = ["email", "name"]
+    #     primary_key = ["email", "name"]
 
-        create_index "idx_uniq_emails" {
-          unique  = true
-          columns = ["email"]
-        }
+    #     create_index "idx_uniq_emails" {
+    #       unique  = true
+    #       columns = ["email"]
+    #     }
 
-        constraint "users_pk" {
-          columns = ["email"]
-          check "valid_nu
-        }
-    }
+    #     constraint "users_pk" {
+    #       columns = ["email"]
+    #       check "valid_nu
+    #     }
+    # }
   }
 
-  down = up.reverse
+  # down = up.reverse
+  down {}
 
-  hooks {
-      after "up" {
-          do = wasm.file("../wasm/migrate_from_old_system.wasm")
-      }
-  }
+  # hooks {
+  #     after "up" {
+  #         do = wasm.file("../wasm/migrate_from_old_system.wasm")
+  #     }
+  # }
 }
