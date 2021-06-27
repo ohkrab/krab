@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 
@@ -109,6 +110,10 @@ func migrateSubcommands(ctx context.Context, name string, config *krab.Config) [
 			HideHelp:        true,
 			SkipFlagParsing: true,
 			Action: func(c *cli.Context) error {
+				if c.NArg() != 1 {
+					return errors.New("Requires [version] argument to be specified")
+				}
+
 				action := krab.ActionMigrateDown{
 					Set:           config.MigrationSets[name],
 					DownMigration: krab.SchemaMigration{c.Args().First()},
