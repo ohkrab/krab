@@ -5,8 +5,10 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsimple"
 	"github.com/hashicorp/hcl2/hclparse"
+	"github.com/ohkrab/krab/krabfn"
 	"github.com/spf13/afero"
 )
 
@@ -46,9 +48,10 @@ func (p *Parser) LoadConfigDir(path string) (*Config, error) {
 
 func (p *Parser) loadConfigFiles(paths ...string) ([]*File, error) {
 	var files []*File
+	evalContext := krabfn.EvalContext(p.fs)
 
 	for _, path := range paths {
-		f, err := p.loadConfigFile(path)
+		f, err := p.loadConfigFile(path, evalContext)
 		if err != nil {
 			return nil, err
 		}
@@ -58,7 +61,7 @@ func (p *Parser) loadConfigFiles(paths ...string) ([]*File, error) {
 	return files, nil
 }
 
-func (p *Parser) loadConfigFile(path string) (*File, error) {
+func (p *Parser) loadConfigFile(path string, evalContext *hcl.EvalContext) (*File, error) {
 	var file File
 
 	src, err := p.fs.ReadFile(path)
@@ -66,7 +69,7 @@ func (p *Parser) loadConfigFile(path string) (*File, error) {
 		return nil, fmt.Errorf("[%w] Failed to load file %s", err, path)
 	}
 
-	if err := hclsimple.Decode(path, src, nil, &file); err != nil {
+	if err := hclsimple.Decode(path, src, evalContext, &file); err != nil {
 		return nil, fmt.Errorf("[%w] Failed to decode file %s", err, path)
 	}
 

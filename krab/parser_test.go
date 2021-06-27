@@ -171,4 +171,62 @@ migration_set "abc" {
 			g.Assert(strings.Contains(err.Error(), "Migration Set references 'does_not_exist' migration that does not exist")).IsTrue("Missing migration")
 		})
 	})
+
+	g.Describe("Migrations defined in SQL files", func() {
+		g.It("Should read SQL file content when file exists", func() {
+			p := mockParser(
+				"src/migrations.krab.hcl",
+				`
+migration "abc" {
+  up {
+	sql = fileread("src/up.sql")
+  }
+  down {
+	sql = fileread("src/down.sql")
+  }
+}
+`,
+				"src/up.sql",
+				"CREATE TABLE abc",
+				"src/down.sql",
+				"DROP TABLE abc",
+			)
+
+			config, err := p.LoadConfigDir("src")
+			g.Assert(err).IsNil("Parsing config should not fail")
+
+			migration, exists := config.Migrations["abc"]
+			g.Assert(exists).Eql(true, "Migration `abc` must exists")
+
+			g.Assert(migration.RefName).Eql("abc")
+			g.Assert(migration.Up.SQL).Eql("CREATE TABLE abc")
+			g.Assert(migration.Down.SQL).Eql("DROP TABLE abc")
+		})
+
+		g.It("Should return error when file does not exist", func() {
+			p := mockParser(
+				"src/migrations.krab.hcl",
+				`
+migration "abc" {
+  up {
+	sql = fileread("src/up.sql")
+  }
+  down {
+	sql = fileread("src/down.sql")
+  }
+}
+`,
+			)
+
+			_, err := p.LoadConfigDir("src")
+			g.Assert(err).IsNotNil("Parsing config should not fail")
+
+			g.Assert(
+				strings.Contains(
+					err.Error(),
+					`Call to function "fileread" failed: open src/up.sql: file does not exist.`,
+				),
+			).IsTrue(err)
+		})
+	})
 }
