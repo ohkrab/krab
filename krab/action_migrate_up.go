@@ -59,7 +59,7 @@ func (a *ActionMigrateUp) migrateUp(ctx context.Context, tx *sqlx.Tx, migration 
 		return errors.Wrap(err, "Failed to execute migration")
 	}
 
-	err = SchemaMigrationInsert(ctx, tx, migration.RefName)
+	err = SchemaMigrationInsert(ctx, tx, migration.Version)
 	if err != nil {
 		return errors.Wrap(err, "Failed to insert migration")
 	}

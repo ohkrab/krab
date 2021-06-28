@@ -13,10 +13,10 @@ type MigrationSet struct {
 	Migrations     []*Migration   // populated from refs in expression
 }
 
-// FindMigrationByRef looks up for the migration in current set.
-func (ms *MigrationSet) FindMigrationByRef(ref string) *Migration {
+// FindMigrationByVersion looks up for the migration in current set.
+func (ms *MigrationSet) FindMigrationByVersion(version string) *Migration {
 	for _, m := range ms.Migrations {
-		if m.RefName == ref {
+		if m.Version == version {
 			return m
 		}
 	}

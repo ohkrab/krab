@@ -18,7 +18,7 @@ type ActionMigrateDown struct {
 // Run performs the action.
 // Schema migration must exist before running it.
 func (a *ActionMigrateDown) Run(ctx context.Context, db *sqlx.DB) error {
-	migration := a.Set.FindMigrationByRef(a.DownMigration.Version)
+	migration := a.Set.FindMigrationByVersion(a.DownMigration.Version)
 	if migration == nil {
 		return fmt.Errorf("Migration `%s` not found in `%s` set",
 			a.DownMigration.Version,
@@ -52,7 +52,7 @@ func (a *ActionMigrateDown) migrateDown(ctx context.Context, tx *sqlx.Tx, migrat
 		return errors.Wrap(err, "Failed to execute migration")
 	}
 
-	err = SchemaMigrationDelete(ctx, tx, migration.RefName)
+	err = SchemaMigrationDelete(ctx, tx, migration.Version)
 	if err != nil {
 		return errors.Wrap(err, "Failed to delete migration")
 	}

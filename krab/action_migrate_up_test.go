@@ -25,7 +25,7 @@ func Test_ActionMigrateUp(t *testing.T) {
 					Set: &MigrationSet{
 						Migrations: []*Migration{
 							{
-								RefName: "v1",
+								Version: "v1",
 								Up: MigrationUp{
 									SQL: `SELECT 1`,
 								},
@@ -57,7 +57,7 @@ func Test_ActionMigrateUp(t *testing.T) {
 					Set: &MigrationSet{
 						Migrations: []*Migration{
 							{
-								RefName: "v1",
+								Version: "v1",
 								Up: MigrationUp{
 									SQL: `SELECT invalid`,
 								},

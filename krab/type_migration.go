@@ -5,8 +5,16 @@ package krab
 type Migration struct {
 	RefName string `hcl:"ref_name,label"`
 
-	Up   MigrationUp   `hcl:"up,block"`
-	Down MigrationDown `hcl:"down,block"`
+	Version string        `hcl:"version,optional"`
+	Up      MigrationUp   `hcl:"up,block"`
+	Down    MigrationDown `hcl:"down,block"`
+}
+
+// OnAfterParse updates version if not specified.
+func (m *Migration) OnAfterParse() {
+	if m.Version == "" {
+		m.Version = m.RefName
+	}
 }
 
 // MigrationUp contains info how to migrate up.

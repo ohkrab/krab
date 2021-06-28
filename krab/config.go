@@ -54,6 +54,7 @@ func (c *Config) appendFile(file *File) error {
 		}
 
 		c.Migrations[m.RefName] = m
+		m.OnAfterParse()
 	}
 
 	for _, s := range file.MigrationSets {

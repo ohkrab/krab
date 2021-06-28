@@ -26,7 +26,7 @@ func Test_ActionMigrateDown(t *testing.T) {
 					RefName: "public",
 					Migrations: []*Migration{
 						{
-							RefName: "v1",
+							Version: "v1",
 							Up: MigrationUp{
 								SQL: `CREATE TABLE animals(name VARCHAR)`,
 							},
@@ -35,7 +35,7 @@ func Test_ActionMigrateDown(t *testing.T) {
 							},
 						},
 						{
-							RefName: "v2",
+							Version: "v2",
 							Up: MigrationUp{
 								SQL: `ALTER TABLE animals ADD COLUMN emoji VARCHAR`,
 							},
@@ -98,7 +98,7 @@ func Test_ActionMigrateDown(t *testing.T) {
 				set := &MigrationSet{
 					Migrations: []*Migration{
 						{
-							RefName: "v1",
+							Version: "v1",
 							Up: MigrationUp{
 								SQL: `CREATE TABLE animals(name VARCHAR)`,
 							},
@@ -107,7 +107,7 @@ func Test_ActionMigrateDown(t *testing.T) {
 							},
 						},
 						{
-							RefName: "v2",
+							Version: "v2",
 							Up: MigrationUp{
 								SQL: `ALTER TABLE animals ADD COLUMN emoji VARCHAR`,
 							},

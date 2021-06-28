@@ -1,6 +1,7 @@
 package krab
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
@@ -64,6 +65,7 @@ BEGIN
   END LOOP;
 END
 $$`)
+	db.MustExec(fmt.Sprint("DROP TABLE IF EXISTS ", defaultMigrationsTableName))
 }
 
 func sqlxRowsMapScan(rows *sqlx.Rows) []map[string]interface{} {

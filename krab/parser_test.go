@@ -30,12 +30,39 @@ migration "create_tenants" {
 
 			if migration, ok := c.Migrations["create_tenants"]; ok {
 				g.Assert(migration.RefName).Eql("create_tenants")
+				g.Assert(migration.Version).Eql("create_tenants")
 				g.Assert(migration.Up.SQL).Eql("CREATE TABLE tenants(name VARCHAR PRIMARY KEY)")
 				g.Assert(migration.Down.SQL).Eql("DROP TABLE tenants")
 			} else {
 				g.Failf("Can't get migration %s", "create_tenants")
 			}
+		})
 
+		g.It("Should allow to overwrite version", func() {
+			p := mockParser(
+				"src/public.krab.hcl",
+				`
+migration "create_tenants" {
+  version = "2006"
+
+  up {
+	sql = "CREATE TABLE tenants(name VARCHAR PRIMARY KEY)"
+  }
+
+  down {
+	sql = "DROP TABLE tenants"
+  }
+}
+`)
+			c, err := p.LoadConfigDir("src")
+			g.Assert(err).IsNil()
+
+			if migration, ok := c.Migrations["create_tenants"]; ok {
+				g.Assert(migration.RefName).Eql("create_tenants")
+				g.Assert(migration.Version).Eql("2006")
+			} else {
+				g.Failf("Can't get migration %s", "create_tenants")
+			}
 		})
 	})
 

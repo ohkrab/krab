@@ -44,21 +44,21 @@ func SchemaMigrationSelectAll(ctx context.Context, db sqlx.QueryerContext) ([]Sc
 }
 
 // SchemaMigrationInsert saves migration to a database.
-func SchemaMigrationInsert(ctx context.Context, db sqlx.ExecerContext, refName string) error {
+func SchemaMigrationInsert(ctx context.Context, db sqlx.ExecerContext, version string) error {
 	_, err := db.ExecContext(
 		ctx,
 		fmt.Sprintf("INSERT INTO %s(version) VALUES ($1) RETURNING *", krabdb.QuoteIdent(defaultMigrationsTableName)),
-		refName,
+		version,
 	)
 	return err
 }
 
 // SchemaMigrationDelete removes migration from a database.
-func SchemaMigrationDelete(ctx context.Context, db sqlx.ExecerContext, refName string) error {
+func SchemaMigrationDelete(ctx context.Context, db sqlx.ExecerContext, version string) error {
 	_, err := db.ExecContext(
 		ctx,
 		fmt.Sprintf("DELETE FROM %s WHERE version = $1 RETURNING *", krabdb.QuoteIdent(defaultMigrationsTableName)),
-		refName,
+		version,
 	)
 	return err
 }
@@ -70,7 +70,7 @@ func SchemaMigrationFilterPending(all []*Migration, refsInDb []SchemaMigration) 
 	for _, migration := range all {
 		var found *Migration
 		for _, ref := range refsInDb {
-			if migration.RefName == ref.Version {
+			if migration.Version == ref.Version {
 				found = migration
 				break
 			}
