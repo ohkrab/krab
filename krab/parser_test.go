@@ -251,7 +251,7 @@ migration "abc" {
 			g.Assert(
 				strings.Contains(
 					err.Error(),
-					`Call to function "file_read" failed: open src/up.sql: file does not exist.`,
+					`Call to function "file_read" failed`,
 				),
 			).IsTrue(err)
 		})
