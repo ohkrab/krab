@@ -47,20 +47,19 @@ func main() {
 		},
 	}
 
-	migrateCmds := make([]*cli.Command, 0, len(config.MigrationSets))
+	migrateUpCmds := make([]*cli.Command, 0, len(config.MigrationSets))
+	migrateDownCmds := make([]*cli.Command, 0, len(config.MigrationSets))
 	for _, set := range config.MigrationSets {
-		migrateCmds = append(migrateCmds, &cli.Command{
-			Name:        set.RefName,
-			Subcommands: migrateSubcommands(ctx, set.RefName, config),
-		})
+		migrateUpCmds = append(migrateUpCmds, migrateUpCommand(ctx, set.RefName, config))
+		migrateDownCmds = append(migrateDownCmds, migrateDownCommand(ctx, set.RefName, config))
 	}
-	if len(migrateCmds) > 0 {
-		cmds = append(cmds, &cli.Command{
-			Name:        "migrate",
-			Usage:       "Migration commands",
-			Subcommands: migrateCmds,
-		})
-	}
+	cmdUp := &cli.Command{Name: "up", Subcommands: migrateUpCmds}
+	cmdDown := &cli.Command{Name: "down", Subcommands: migrateDownCmds}
+	cmds = append(cmds, &cli.Command{
+		Name:        "migrate",
+		Usage:       "Migration commands",
+		Subcommands: []*cli.Command{cmdUp, cmdDown},
+	})
 
 	app := &cli.App{
 		Name:     "krab",
@@ -91,44 +90,38 @@ func optGetDir() (string, error) {
 	return os.Getwd()
 }
 
-func migrateSubcommands(ctx context.Context, name string, config *krab.Config) []*cli.Command {
-	return []*cli.Command{
-		{
-			Name:  "up",
-			Usage: fmt.Sprintf("Migrate `%s` up", name),
-			Action: func(c *cli.Context) error {
-				action := krab.ActionMigrateUp{Set: config.MigrationSets[name]}
-				return withPg(func(db *sqlx.DB) error {
-					return action.Run(ctx, db)
-				})
-			},
+func migrateUpCommand(ctx context.Context, name string, config *krab.Config) *cli.Command {
+	return &cli.Command{
+		Name:  name,
+		Usage: fmt.Sprintf("Migrate `%s` up", name),
+		Action: func(c *cli.Context) error {
+			action := krab.ActionMigrateUp{Set: config.MigrationSets[name]}
+			return withPg(func(db *sqlx.DB) error {
+				return action.Run(ctx, db)
+			})
 		},
-		{
-			Name:            "down",
-			Usage:           fmt.Sprintf("Migrate `%s` down", name),
-			ArgsUsage:       "[version]",
-			HideHelp:        true,
-			SkipFlagParsing: true,
-			Action: func(c *cli.Context) error {
-				if c.NArg() != 1 {
-					return errors.New("Requires [version] argument to be specified")
-				}
+	}
+}
 
-				action := krab.ActionMigrateDown{
-					Set:           config.MigrationSets[name],
-					DownMigration: krab.SchemaMigration{c.Args().First()},
-				}
-				return withPg(func(db *sqlx.DB) error {
-					return action.Run(ctx, db)
-				})
-			},
+func migrateDownCommand(ctx context.Context, name string, config *krab.Config) *cli.Command {
+	return &cli.Command{
+		Name:            name,
+		Usage:           fmt.Sprintf("Migrate `%s` down", name),
+		ArgsUsage:       "[version]",
+		HideHelp:        true,
+		SkipFlagParsing: true,
+		Action: func(c *cli.Context) error {
+			if c.NArg() != 1 {
+				return errors.New("Requires [version] argument to be specified")
+			}
+
+			action := krab.ActionMigrateDown{
+				Set:           config.MigrationSets[name],
+				DownMigration: krab.SchemaMigration{c.Args().First()},
+			}
+			return withPg(func(db *sqlx.DB) error {
+				return action.Run(ctx, db)
+			})
 		},
-		// {
-		// 	Name:            "rollback",
-		// 	Usage:           fmt.Sprintf("Rollback `%s` N steps", name),
-		// 	ArgsUsage:       "[step]",
-		// 	HideHelp:        true,
-		// 	SkipFlagParsing: true,
-		// },
 	}
 }
