@@ -1,7 +1,7 @@
 builds:
   -
     ldflags:
-      - -s -w -X krab.InfoVersion={{.Version}} -X krab.InfoCommit={{.Commit}} -X krab.InfoBuildDate={{.Date}}
+      - -s -w -X github.com/ohkrab/krab/krab.InfoVersion={{.Version}} -X github.com/ohkrab/krab/krab.InfoCommit={{.Commit}} -X github.com/ohkrab/krab/krab.InfoBuildDate={{.Date}}
     goarch:
       - amd64
       - arm64
@@ -9,6 +9,5 @@ builds:
       - 7
     ignore:
       - goos: linux
-        goarch: arm
-        goarm: 7
+        goarch: arm64
 
