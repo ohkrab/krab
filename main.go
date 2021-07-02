@@ -43,6 +43,7 @@ func main() {
 		Usage: "Print version",
 		Action: func(c *cli.Context) error {
 			fmt.Fprintln(c.App.Writer, krab.InfoName, krab.InfoVersion)
+			fmt.Fprintln(c.App.Writer, "Build", krab.InfoCommit, krab.InfoBuildDate)
 			return nil
 		},
 	}

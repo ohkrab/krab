@@ -1,7 +1,7 @@
 builds:
   -
     ldflags:
-      - -s -w -X krab.InfoVersion={{.Version}} -X krab.InfoCommit={{.Commit}} -X krab.InfoBuildDate={{.Date}} -X krab.InfoGoVersion={{.Env.GOVERSION}}
+      - -s -w -X krab.InfoVersion={{.Version}} -X krab.InfoCommit={{.Commit}} -X krab.InfoBuildDate={{.Date}}
     goarch:
       - amd64
       - arm64
