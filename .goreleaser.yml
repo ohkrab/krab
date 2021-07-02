@@ -11,3 +11,5 @@ builds:
       - goos: linux
         goarch: arm64
 
+    binary: krab
+
