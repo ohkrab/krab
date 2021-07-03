@@ -33,7 +33,7 @@ func TestValidators(t *testing.T) {
 	})
 
 	g.Describe("ValidateStringNonEmpty", func() {
-		g.It("Lenght must be > 0", func() {
+		g.It("Length must be > 0", func() {
 			g.Assert(ValidateStringNonEmpty("field", "a")).IsNil()
 			g.Assert(ValidateStringNonEmpty("field", "")).IsNotNil()
 		})
