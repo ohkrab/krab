@@ -2,9 +2,11 @@ package krab
 
 import (
 	"context"
+	"flag"
 	"fmt"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/ohkrab/krab/cli"
 	"github.com/ohkrab/krab/krabdb"
 	"github.com/pkg/errors"
 )
@@ -15,9 +17,56 @@ type ActionMigrateDown struct {
 	DownMigration SchemaMigration
 }
 
-// Run performs the action.
+func (a *ActionMigrateDown) Help() string {
+	return `Usage: krab migrate down [set] [version]
+  
+Rollback migration in given [set] identified by [version].
+
+Example:
+
+    krab migrate down default 20060102150405
+`
+}
+
+func (a *ActionMigrateDown) Synopsis() string {
+	return fmt.Sprintf("Migrate `%s` down", a.Set.RefName)
+}
+
+// Run in CLI.
+func (a *ActionMigrateDown) Run(args []string) int {
+	ui := cli.DefaultUI()
+	flags := flag.NewFlagSet("", flag.ContinueOnError)
+	err := flags.Parse(args)
+	if err != nil {
+		ui.Error(err.Error())
+		return 1
+	}
+	args = flags.Args()
+
+	switch len(args) {
+	case 1:
+		a.DownMigration = SchemaMigration{args[0]}
+	default:
+		ui.Info(a.Help())
+		ui.Error("Invalid number of arguments")
+		return 1
+	}
+
+	err = krabdb.WithConnection(func(db *sqlx.DB) error {
+		return a.Do(context.Background(), db)
+	})
+
+	if err != nil {
+		ui.Error(err.Error())
+		return 1
+	}
+
+	return 0
+}
+
+// Do performs the action.
 // Schema migration must exist before running it.
-func (a *ActionMigrateDown) Run(ctx context.Context, db *sqlx.DB) error {
+func (a *ActionMigrateDown) Do(ctx context.Context, db *sqlx.DB) error {
 	migration := a.Set.FindMigrationByVersion(a.DownMigration.Version)
 	if migration == nil {
 		return fmt.Errorf("Migration `%s` not found in `%s` set",

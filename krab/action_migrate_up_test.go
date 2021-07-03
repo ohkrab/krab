@@ -34,7 +34,7 @@ func Test_ActionMigrateUp(t *testing.T) {
 					},
 				}
 
-				err := action.Run(ctx, db)
+				err := action.Do(ctx, db)
 				if err != nil {
 					t.Error("Migration error:", err)
 					return
@@ -66,7 +66,7 @@ func Test_ActionMigrateUp(t *testing.T) {
 					},
 				}
 
-				err := action.Run(ctx, db)
+				err := action.Do(ctx, db)
 
 				g.Assert(err).IsNotNil("Invalid migration should return error")
 				g.Assert(strings.Contains(

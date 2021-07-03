@@ -2,8 +2,11 @@ package krab
 
 import (
 	"context"
+	"flag"
+	"fmt"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/ohkrab/krab/cli"
 	"github.com/ohkrab/krab/krabdb"
 	"github.com/pkg/errors"
 )
@@ -13,9 +16,55 @@ type ActionMigrateUp struct {
 	Set *MigrationSet
 }
 
+func (a *ActionMigrateUp) Help() string {
+	return `Usage: krab migrate up [set]
+  
+Migrate all pending migrations in given [set].
+
+Example:
+
+    krab migrate up default
+`
+}
+
+func (a *ActionMigrateUp) Synopsis() string {
+	return fmt.Sprintf("Migrate `%s` up", a.Set.RefName)
+}
+
+// Run in CLI.
+func (a *ActionMigrateUp) Run(args []string) int {
+	ui := cli.DefaultUI()
+	flags := flag.NewFlagSet("", flag.ContinueOnError)
+	err := flags.Parse(args)
+	if err != nil {
+		ui.Error(err.Error())
+		return 1
+	}
+
+	args = flags.Args()
+	switch len(args) {
+	case 0: // ok
+	default:
+		ui.Info(a.Help())
+		ui.Error("Invalid number of arguments")
+		return 1
+	}
+
+	err = krabdb.WithConnection(func(db *sqlx.DB) error {
+		return a.Do(context.Background(), db)
+	})
+
+	if err != nil {
+		ui.Error(err.Error())
+		return 1
+	}
+
+	return 0
+}
+
 // Run performs the action. All pending migrations will be executed.
 // Migration schema is created if does not exist.
-func (a *ActionMigrateUp) Run(ctx context.Context, db *sqlx.DB) error {
+func (a *ActionMigrateUp) Do(ctx context.Context, db *sqlx.DB) error {
 	mainTx, err := db.BeginTxx(ctx, nil)
 	if err != nil {
 		return errors.Wrap(err, "Failed to start transaction")

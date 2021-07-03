@@ -46,7 +46,7 @@ func Test_ActionMigrateDown(t *testing.T) {
 					},
 				}
 
-				err := (&ActionMigrateUp{Set: set}).Run(ctx, db)
+				err := (&ActionMigrateUp{Set: set}).Do(ctx, db)
 				g.Assert(err).IsNil("Up migration should pass")
 
 				_, err = db.ExecContext(ctx, "INSERT INTO animals(name, emoji) VALUES('Elephant', '🐘')")
@@ -72,7 +72,7 @@ func Test_ActionMigrateDown(t *testing.T) {
 
 				// action
 				action := &ActionMigrateDown{Set: set, DownMigration: SchemaMigration{"v2"}}
-				err = action.Run(ctx, db)
+				err = action.Do(ctx, db)
 				g.Assert(err).IsNil("Action must succeed", err)
 
 				// state after
@@ -118,7 +118,7 @@ func Test_ActionMigrateDown(t *testing.T) {
 					},
 				}
 
-				err := (&ActionMigrateUp{Set: set}).Run(ctx, db)
+				err := (&ActionMigrateUp{Set: set}).Do(ctx, db)
 				g.Assert(err).IsNil("Up migration should pass")
 
 				_, err = db.ExecContext(ctx, "INSERT INTO animals(name, emoji) VALUES('Elephant', '🐘')")
@@ -132,7 +132,7 @@ func Test_ActionMigrateDown(t *testing.T) {
 
 				// action
 				action := &ActionMigrateDown{Set: set, DownMigration: SchemaMigration{"v2"}}
-				err = action.Run(ctx, db)
+				err = action.Do(ctx, db)
 				g.Assert(err).IsNotNil("Migration should fail")
 				g.Assert(
 					strings.Contains(
