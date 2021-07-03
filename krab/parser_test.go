@@ -16,33 +16,6 @@ func TestParser(t *testing.T) {
 				"src/public.krab.hcl",
 				`
 migration "create_tenants" {
-  up {
-	sql = "CREATE TABLE tenants(name VARCHAR PRIMARY KEY)"
-  }
-
-  down {
-	sql = "DROP TABLE tenants"
-  }
-}
-`)
-			c, err := p.LoadConfigDir("src")
-			g.Assert(err).IsNil()
-
-			if migration, ok := c.Migrations["create_tenants"]; ok {
-				g.Assert(migration.RefName).Eql("create_tenants")
-				g.Assert(migration.Version).Eql("create_tenants")
-				g.Assert(migration.Up.SQL).Eql("CREATE TABLE tenants(name VARCHAR PRIMARY KEY)")
-				g.Assert(migration.Down.SQL).Eql("DROP TABLE tenants")
-			} else {
-				g.Failf("Can't get migration %s", "create_tenants")
-			}
-		})
-
-		g.It("Should allow to overwrite version", func() {
-			p := mockParser(
-				"src/public.krab.hcl",
-				`
-migration "create_tenants" {
   version = "2006"
 
   up {
@@ -60,6 +33,8 @@ migration "create_tenants" {
 			if migration, ok := c.Migrations["create_tenants"]; ok {
 				g.Assert(migration.RefName).Eql("create_tenants")
 				g.Assert(migration.Version).Eql("2006")
+				g.Assert(migration.Up.SQL).Eql("CREATE TABLE tenants(name VARCHAR PRIMARY KEY)")
+				g.Assert(migration.Down.SQL).Eql("DROP TABLE tenants")
 			} else {
 				g.Failf("Can't get migration %s", "create_tenants")
 			}
@@ -71,6 +46,7 @@ migration "create_tenants" {
 			p := mockParser(
 				"src/public.krab.hcl",
 				`migration "abc" {
+				  version = "2006"
                   up {}
 				  down {}
 				}`,
@@ -93,11 +69,13 @@ migration "create_tenants" {
 				"src/public.krab.hcl",
 				`
 migration "abc" {
+  version = "2006"
   up { sql = "" }
   down { sql = "" }
 }
 
 migration "abc" {
+  version = "2006"
   up { sql = "" }
   down { sql = "" }
 }
@@ -114,16 +92,19 @@ migration "abc" {
 				"src/migrations.krab.hcl",
 				`
 migration "abc" {
+  version = "2006"
   up {}
   down {}
 }
 
 migration "def" {
+  version = "2006"
   up {}
   down {}
 }
 
 migration "xyz" {
+  version = "2006"
   up {}
   down {}
 }
@@ -205,6 +186,7 @@ migration_set "abc" {
 				"src/migrations.krab.hcl",
 				`
 migration "abc" {
+  version = "2006"
   up {
 	sql = file_read("src/up.sql")
   }
@@ -235,6 +217,7 @@ migration "abc" {
 				"src/migrations.krab.hcl",
 				`
 migration "abc" {
+  version = "2006"
   up {
 	sql = file_read("src/up.sql")
   }
