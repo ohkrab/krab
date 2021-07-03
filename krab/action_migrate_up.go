@@ -45,7 +45,7 @@ func (a *ActionMigrateUp) Run(args []string) int {
 	switch len(args) {
 	case 0: // ok
 	default:
-		ui.Info(a.Help())
+		ui.Output(a.Help())
 		ui.Error("Invalid number of arguments")
 		return 1
 	}
@@ -58,6 +58,8 @@ func (a *ActionMigrateUp) Run(args []string) int {
 		ui.Error(err.Error())
 		return 1
 	}
+
+	ui.Info("Done")
 
 	return 0
 }

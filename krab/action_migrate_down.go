@@ -41,8 +41,8 @@ func (a *ActionMigrateDown) Run(args []string) int {
 		ui.Error(err.Error())
 		return 1
 	}
-	args = flags.Args()
 
+	args = flags.Args()
 	switch len(args) {
 	case 1:
 		a.DownMigration = SchemaMigration{args[0]}
@@ -60,6 +60,8 @@ func (a *ActionMigrateDown) Run(args []string) int {
 		ui.Error(err.Error())
 		return 1
 	}
+
+	ui.Info("Done")
 
 	return 0
 }
