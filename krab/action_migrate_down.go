@@ -47,7 +47,7 @@ func (a *ActionMigrateDown) Run(args []string) int {
 	case 1:
 		a.DownMigration = SchemaMigration{args[0]}
 	default:
-		ui.Info(a.Help())
+		ui.Output(a.Help())
 		ui.Error("Invalid number of arguments")
 		return 1
 	}

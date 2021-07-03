@@ -13,6 +13,12 @@ type MigrationSet struct {
 	Migrations     []*Migration   // populated from refs in expression
 }
 
+func (ms *MigrationSet) Validate() error {
+	return ErrorCoalesce(
+		ValidateRefName(ms.RefName),
+	)
+}
+
 // FindMigrationByVersion looks up for the migration in current set.
 func (ms *MigrationSet) FindMigrationByVersion(version string) *Migration {
 	for _, m := range ms.Migrations {

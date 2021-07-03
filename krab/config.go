@@ -44,6 +44,19 @@ func NewConfig(files []*File) (*Config, error) {
 		}
 	}
 
+	// validate
+	for _, validatable := range c.MigrationSets {
+		if err := validatable.Validate(); err != nil {
+			return nil, err
+		}
+	}
+
+	for _, validatable := range c.Migrations {
+		if err := validatable.Validate(); err != nil {
+			return nil, err
+		}
+	}
+
 	return c, nil
 }
 

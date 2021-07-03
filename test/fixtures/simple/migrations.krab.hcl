@@ -1,4 +1,6 @@
 migration "add_tenants" {
+  version = "202006_01"
+
   up {
     sql = "CREATE TABLE tenants(name varchar PRIMARY KEY)"
   }
@@ -15,6 +17,8 @@ migration_set "public" {
 }
 
 migration "add_users" {
+  version = "202006_01"
+
   up {
     sql = "CREATE TABLE users(email varchar PRIMARY KEY)"
   }
@@ -26,11 +30,12 @@ migration "add_users" {
 
 migration_set "tenant" {
   migrations = [
-    migration.add_users
   ]
 }
 
 migration "create_users" {
+  version = "202006_02"
+
   up {
     # alter_table "users" {
     #     add_column "email" {
