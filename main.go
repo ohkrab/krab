@@ -31,6 +31,10 @@ func main() {
 	for _, set := range config.MigrationSets {
 		localSet := set
 
+		c.RegisterCmd("version", func() cli.Command {
+			return &krab.ActionVersion{}
+		})
+
 		c.RegisterCmd(fmt.Sprintln("migrate", "up", set.RefName), func() cli.Command {
 			return &krab.ActionMigrateUp{Set: localSet}
 		})

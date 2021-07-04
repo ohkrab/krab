@@ -1,0 +1,11 @@
+*.md
+*.yml
+.dockerignore
+.gitignore
+Makefile
+bin/
+docs/
+res/
+test/
+tmp/
+vendor/
