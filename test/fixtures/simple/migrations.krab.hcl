@@ -10,9 +10,23 @@ migration "add_tenants" {
   }
 }
 
+migration "add_tenants_index" {
+  version = "202108_01"
+  transaction = false
+
+  up {
+    sql = "CREATE INDEX CONCURRENTLY idx_tenants_name ON tenants(name)"
+  }
+
+  down {
+    sql = "DROP INDEX CONCURRENTLY idx_tenants_name"
+  }
+}
+
 migration_set "public" {
   migrations = [
-    migration.add_tenants
+    migration.add_tenants,
+    migration.add_tenants_index,
   ]
 }
 
