@@ -67,44 +67,48 @@ func (a *ActionMigrateUp) Run(args []string) int {
 // Run performs the action. All pending migrations will be executed.
 // Migration schema is created if does not exist.
 func (a *ActionMigrateUp) Do(ctx context.Context, db *sqlx.DB) error {
-	mainTx, err := db.BeginTxx(ctx, nil)
-	if err != nil {
-		return errors.Wrap(err, "Failed to start transaction")
-	}
+	lockID := int64(1)
 
-	_, err = krabdb.TryAdvisoryXactLock(ctx, mainTx, 1)
+	_, err := krabdb.TryAdvisoryLock(ctx, db, lockID)
 	if err != nil {
-		mainTx.Rollback()
 		return errors.Wrap(err, "Possibly another migration in progress")
 	}
+	defer krabdb.AdvisoryUnlock(ctx, db, lockID)
 
-	err = SchemaMigrationInit(ctx, mainTx)
+	err = SchemaMigrationInit(ctx, db)
 	if err != nil {
-		mainTx.Rollback()
 		return errors.Wrap(err, "Failed to create default table for migrations")
 	}
 
-	migrationRefsInDb, err := SchemaMigrationSelectAll(ctx, mainTx)
+	migrationRefsInDb, err := SchemaMigrationSelectAll(ctx, db)
 	if err != nil {
-		mainTx.Rollback()
 		return err
 	}
 
 	pendingMigrations := SchemaMigrationFilterPending(a.Set.Migrations, migrationRefsInDb)
 
 	for _, pending := range pendingMigrations {
-		err := a.migrateUp(ctx, mainTx, pending)
+		tx, err := krabdb.NewTx(ctx, db, pending.ShouldRunInTransaction())
 		if err != nil {
-			mainTx.Rollback()
+			return errors.Wrap(err, "Failed to start transaction")
+		}
+
+		err = a.migrateUp(ctx, tx, pending)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+
+		err = tx.Commit()
+		if err != nil {
 			return err
 		}
 	}
 
-	err = mainTx.Commit()
-	return err
+	return nil
 }
 
-func (a *ActionMigrateUp) migrateUp(ctx context.Context, tx *sqlx.Tx, migration *Migration) error {
+func (a *ActionMigrateUp) migrateUp(ctx context.Context, tx krabdb.TransactionExecerContext, migration *Migration) error {
 	_, err := tx.ExecContext(ctx, migration.Up.SQL)
 	if err != nil {
 		return errors.Wrap(err, "Failed to execute migration")

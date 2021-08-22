@@ -76,28 +76,30 @@ func (a *ActionMigrateDown) Do(ctx context.Context, db *sqlx.DB) error {
 			a.Set.RefName)
 	}
 
-	mainTx, err := db.BeginTxx(ctx, nil)
+	lockID := int64(1)
+
+	_, err := krabdb.TryAdvisoryLock(ctx, db, lockID)
+	if err != nil {
+		return errors.Wrap(err, "Possibly another migration in progress")
+	}
+	defer krabdb.AdvisoryUnlock(ctx, db, lockID)
+
+	tx, err := krabdb.NewTx(ctx, db, migration.ShouldRunInTransaction())
 	if err != nil {
 		return errors.Wrap(err, "Failed to start transaction")
 	}
 
-	_, err = krabdb.TryAdvisoryXactLock(ctx, mainTx, 1)
+	err = a.migrateDown(ctx, tx, migration)
 	if err != nil {
-		mainTx.Rollback()
-		return errors.Wrap(err, "Possibly another migration in progress")
-	}
-
-	err = a.migrateDown(ctx, mainTx, migration)
-	if err != nil {
-		mainTx.Rollback()
+		tx.Rollback()
 		return err
 	}
 
-	err = mainTx.Commit()
+	err = tx.Commit()
 	return err
 }
 
-func (a *ActionMigrateDown) migrateDown(ctx context.Context, tx *sqlx.Tx, migration *Migration) error {
+func (a *ActionMigrateDown) migrateDown(ctx context.Context, tx krabdb.TransactionExecerContext, migration *Migration) error {
 	_, err := tx.ExecContext(ctx, migration.Down.SQL)
 	if err != nil {
 		return errors.Wrap(err, "Failed to execute migration")
