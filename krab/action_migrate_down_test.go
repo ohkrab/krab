@@ -154,6 +154,73 @@ func Test_ActionMigrateDown(t *testing.T) {
 				colsBefore, _ := rowsAfter.Columns()
 				g.Assert(colsBefore).Eql([]string{"name", "emoji"}, "Columns must match")
 			})
+
+			g.It("Migration is executed when does not exist in schema", func() {
+				// setup
+				set := &MigrationSet{
+					Migrations: []*Migration{
+						{
+							Version: "v1",
+							Up: MigrationUp{
+								SQL: `CREATE TABLE animals(name VARCHAR)`,
+							},
+							Down: MigrationDown{
+								SQL: `DROP TABLE animals`,
+							},
+						},
+						{
+							Version: "v2",
+							Up: MigrationUp{
+								SQL: `ALTER TABLE animals ADD COLUMN emoji VARCHAR`,
+							},
+							Down: MigrationDown{
+								SQL: `ALTER TABLE animals DROP COLUMN emoji`,
+							},
+						},
+					},
+				}
+
+				err := (&ActionMigrateUp{Set: set}).Do(ctx, db)
+				g.Assert(err).IsNil("Up migration should pass")
+
+				// state before action 1
+				schema, _ := SchemaMigrationSelectAll(ctx, db)
+				g.Assert(len(schema)).Eql(2)
+				g.Assert(schema[0].Version).Eql("v1")
+				g.Assert(schema[1].Version).Eql("v2")
+
+				// action 1
+				action_1 := &ActionMigrateDown{Set: set, DownMigration: SchemaMigration{"v2"}}
+				err = action_1.Do(ctx, db)
+				g.Assert(err).IsNil("Migrate down should pass")
+
+				// state after action 1
+				schema, err = SchemaMigrationSelectAll(ctx, db)
+				g.Assert(len(schema)).Eql(1)
+				g.Assert(schema[0].Version).Eql("v1")
+
+				// prepare data for action 2
+				_, err = db.ExecContext(ctx, "INSERT INTO animals VALUES('Crab')")
+				g.Assert(err).IsNil("Crab must be inserted")
+				rowsAfter, err := db.QueryxContext(ctx, "SELECT * FROM animals")
+				g.Assert(err).IsNil("Animals exist")
+				defer rowsAfter.Close()
+
+				animals := sqlxRowsMapScan(rowsAfter)
+				g.Assert(len(animals)).Eql(1)
+				g.Assert(animals[0]["name"]).Eql("Crab")
+
+				// action 2
+				action_2 := &ActionMigrateDown{Set: set, DownMigration: SchemaMigration{"v2"}}
+				err = action_2.Do(ctx, db)
+				g.Assert(err).IsNotNil("Second migrate down should fail")
+				g.Assert(
+					strings.Contains(
+						err.Error(),
+						`Migration has not been run yet, nothing to rollback`,
+					),
+				).Eql(true, err)
+			})
 		})
 	})
 }

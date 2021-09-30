@@ -11,7 +11,7 @@ migration "add_tenants" {
 }
 
 migration "add_tenants_index" {
-  version = "202108_01"
+  version     = "202108_01"
   transaction = false
 
   up {

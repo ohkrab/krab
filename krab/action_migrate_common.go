@@ -31,6 +31,31 @@ func SchemaMigrationTruncate(ctx context.Context, db sqlx.ExecerContext) error {
 	return err
 }
 
+// SchemaMigrationExists checks if migration exists in database.
+func SchemaMigrationExists(ctx context.Context, db sqlx.QueryerContext, migration SchemaMigration) (bool, error) {
+	var schema []SchemaMigration
+	err := sqlx.SelectContext(
+		ctx,
+		db,
+		&schema,
+		fmt.Sprintf("SELECT version FROM %s WHERE version = $1", krabdb.QuoteIdent(defaultMigrationsTableName)),
+		migration.Version,
+	)
+	return len(schema) > 0, err
+}
+
+// SchemaMigrationSelectLastN fetches last N migrations in Z-A order.
+func SchemaMigrationSelectLastN(ctx context.Context, db sqlx.QueryerContext, limit int) ([]SchemaMigration, error) {
+	var schema []SchemaMigration
+	err := sqlx.SelectContext(
+		ctx,
+		db,
+		&schema,
+		fmt.Sprintf("SELECT version FROM %s ORDER BY 1 DESC LIMIT %d", krabdb.QuoteIdent(defaultMigrationsTableName), limit),
+	)
+	return schema, err
+}
+
 // SchemaMigrationSelectAll fetches all migrations from a database.
 func SchemaMigrationSelectAll(ctx context.Context, db sqlx.QueryerContext) ([]SchemaMigration, error) {
 	var schema []SchemaMigration
