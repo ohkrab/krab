@@ -51,7 +51,7 @@ func (a *ActionMigrateUp) Run(args []string) int {
 	}
 
 	err = krabdb.WithConnection(func(db *sqlx.DB) error {
-		return a.Do(context.Background(), db)
+		return a.Do(context.Background(), db, ui)
 	})
 
 	if err != nil {
@@ -66,7 +66,7 @@ func (a *ActionMigrateUp) Run(args []string) int {
 
 // Run performs the action. All pending migrations will be executed.
 // Migration schema is created if does not exist.
-func (a *ActionMigrateUp) Do(ctx context.Context, db *sqlx.DB) error {
+func (a *ActionMigrateUp) Do(ctx context.Context, db *sqlx.DB, ui cli.UI) error {
 	lockID := int64(1)
 
 	_, err := krabdb.TryAdvisoryLock(ctx, db, lockID)
@@ -88,6 +88,7 @@ func (a *ActionMigrateUp) Do(ctx context.Context, db *sqlx.DB) error {
 	pendingMigrations := SchemaMigrationFilterPending(a.Set.Migrations, migrationRefsInDb)
 
 	for _, pending := range pendingMigrations {
+		ui.Output(fmt.Sprint(pending.RefName, " ", pending.Version))
 		tx, err := krabdb.NewTx(ctx, db, pending.ShouldRunInTransaction())
 		if err != nil {
 			return errors.Wrap(err, "Failed to start transaction")

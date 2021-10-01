@@ -8,6 +8,7 @@ import (
 	"github.com/franela/goblin"
 	_ "github.com/jackc/pgx/v4"
 	"github.com/jmoiron/sqlx"
+	"github.com/ohkrab/krab/cli"
 )
 
 func Test_ActionMigrateDown(t *testing.T) {
@@ -46,7 +47,7 @@ func Test_ActionMigrateDown(t *testing.T) {
 					},
 				}
 
-				err := (&ActionMigrateUp{Set: set}).Do(ctx, db)
+				err := (&ActionMigrateUp{Set: set}).Do(ctx, db, cli.NullUI())
 				g.Assert(err).IsNil("Up migration should pass")
 
 				_, err = db.ExecContext(ctx, "INSERT INTO animals(name, emoji) VALUES('Elephant', '🐘')")
@@ -118,7 +119,7 @@ func Test_ActionMigrateDown(t *testing.T) {
 					},
 				}
 
-				err := (&ActionMigrateUp{Set: set}).Do(ctx, db)
+				err := (&ActionMigrateUp{Set: set}).Do(ctx, db, cli.NullUI())
 				g.Assert(err).IsNil("Up migration should pass")
 
 				_, err = db.ExecContext(ctx, "INSERT INTO animals(name, emoji) VALUES('Elephant', '🐘')")
@@ -180,7 +181,7 @@ func Test_ActionMigrateDown(t *testing.T) {
 					},
 				}
 
-				err := (&ActionMigrateUp{Set: set}).Do(ctx, db)
+				err := (&ActionMigrateUp{Set: set}).Do(ctx, db, cli.NullUI())
 				g.Assert(err).IsNil("Up migration should pass")
 
 				// state before action 1

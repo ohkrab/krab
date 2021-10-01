@@ -8,6 +8,7 @@ import (
 	"github.com/franela/goblin"
 	_ "github.com/jackc/pgx/v4"
 	"github.com/jmoiron/sqlx"
+	"github.com/ohkrab/krab/cli"
 )
 
 func Test_ActionMigrateUp(t *testing.T) {
@@ -34,7 +35,7 @@ func Test_ActionMigrateUp(t *testing.T) {
 					},
 				}
 
-				err := action.Do(ctx, db)
+				err := action.Do(ctx, db, cli.NullUI())
 				if err != nil {
 					t.Error("Migration error:", err)
 					return
@@ -66,7 +67,7 @@ func Test_ActionMigrateUp(t *testing.T) {
 					},
 				}
 
-				err := action.Do(ctx, db)
+				err := action.Do(ctx, db, cli.NullUI())
 
 				g.Assert(err).IsNotNil("Invalid migration should return error")
 				g.Assert(strings.Contains(

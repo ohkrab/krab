@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"io"
 	"os"
 
 	mcli "github.com/mitchellh/cli"
@@ -18,6 +19,12 @@ func DefaultUI() UI {
 		ErrorColor: mcli.UiColorRed,
 		InfoColor:  mcli.UiColorGreen,
 	}
+
+	return ui
+}
+
+func NullUI() UI {
+	ui := &mcli.BasicUi{ErrorWriter: io.Discard, Writer: io.Discard}
 
 	return ui
 }

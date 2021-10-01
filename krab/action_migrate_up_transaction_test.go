@@ -7,6 +7,7 @@ import (
 	"github.com/franela/goblin"
 	_ "github.com/jackc/pgx/v4"
 	"github.com/jmoiron/sqlx"
+	"github.com/ohkrab/krab/cli"
 )
 
 func Test_ActionMigrateUpTransactions(t *testing.T) {
@@ -35,7 +36,7 @@ func Test_ActionMigrateUpTransactions(t *testing.T) {
 					},
 				}
 
-				err := (&ActionMigrateUp{Set: set}).Do(ctx, db)
+				err := (&ActionMigrateUp{Set: set}).Do(ctx, db, cli.NullUI())
 				g.Assert(err).IsNil("First migration should pass")
 
 				inTransaction := false
@@ -52,7 +53,7 @@ func Test_ActionMigrateUpTransactions(t *testing.T) {
 					},
 				}
 
-				err = (&ActionMigrateUp{Set: set}).Do(ctx, db)
+				err = (&ActionMigrateUp{Set: set}).Do(ctx, db, cli.NullUI())
 				g.Assert(err).IsNil("Second migration should pass")
 
 				schema, err := SchemaMigrationSelectAll(ctx, db)

@@ -47,10 +47,34 @@ migration_set "tenant" {
   ]
 }
 
-migration "create_users" {
-  version = "202006_02"
+migration "create_assets" {
+  version = "202010_01"
 
   up {
+    # create_table "assets" {
+    #   column "id" {
+    #     type = "int"
+    #     identity {
+    #       always = true
+    #     }
+    #   }
+
+    #   column "name" {
+    #     type = "varchar"
+    #     null = false
+    #   }
+
+    #   column "size" {
+    #     type    = "int"
+    #     default = 0
+    #   }
+
+
+    #   constraint "ensure_positive_size" {
+    #     check = "size > 0"
+    #   }
+    # }
+
     # alter_table "users" {
     #     add_column "email" {
     #       type = "varchar"
