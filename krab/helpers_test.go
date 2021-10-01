@@ -65,7 +65,7 @@ BEGIN
   END LOOP;
 END
 $$`)
-	db.MustExec(fmt.Sprint("DROP TABLE IF EXISTS ", defaultMigrationsTableName))
+	db.MustExec(fmt.Sprint("DROP TABLE IF EXISTS ", SchemaMigrationTable{}.TableName()))
 }
 
 func sqlxRowsMapScan(rows *sqlx.Rows) []map[string]interface{} {

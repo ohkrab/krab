@@ -41,7 +41,7 @@ func Test_ActionMigrateUp(t *testing.T) {
 					return
 				}
 
-				schema, err := SchemaMigrationSelectAll(ctx, db)
+				schema, err := SchemaMigrationTable{}.SelectAll(ctx, db)
 				if err != nil {
 					t.Error("Fetching migrations failed", err)
 					return
@@ -52,7 +52,7 @@ func Test_ActionMigrateUp(t *testing.T) {
 			})
 
 			g.It("Migration is not saved when error occurred", func() {
-				SchemaMigrationInit(ctx, db)
+				SchemaMigrationTable{}.Init(ctx, db)
 
 				action := &ActionMigrateUp{
 					Set: &MigrationSet{
@@ -75,7 +75,7 @@ func Test_ActionMigrateUp(t *testing.T) {
 					`column "invalid" does not exist`,
 				)).Eql(true)
 
-				schema, err := SchemaMigrationSelectAll(ctx, db)
+				schema, err := SchemaMigrationTable{}.SelectAll(ctx, db)
 				if err != nil {
 					t.Error("Fetching migrations failed", err)
 					return

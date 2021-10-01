@@ -15,6 +15,7 @@ import (
 type ActionMigrateDown struct {
 	Set           *MigrationSet
 	DownMigration SchemaMigration
+	SchemaMigrationTable
 }
 
 func (a *ActionMigrateDown) Help() string {
@@ -49,7 +50,7 @@ func (a *ActionMigrateDown) Run(args []string) int {
 	default:
 		err = krabdb.WithConnection(func(db *sqlx.DB) error {
 			ui.Output("Latest migrations:")
-			migrations, err := SchemaMigrationSelectLastN(context.TODO(), db, 5)
+			migrations, err := a.SchemaMigrationTable.SelectLastN(context.TODO(), db, 5)
 			for _, m := range migrations {
 				ui.Info(fmt.Sprint("* ", m.Version))
 			}
@@ -104,7 +105,7 @@ func (a *ActionMigrateDown) Do(ctx context.Context, db *sqlx.DB) error {
 		return errors.Wrap(err, "Failed to start transaction")
 	}
 
-	ok, _ := SchemaMigrationExists(ctx, db, SchemaMigration{migration.Version})
+	ok, _ := a.SchemaMigrationTable.Exists(ctx, db, SchemaMigration{migration.Version})
 	if ok {
 		err = a.migrateDown(ctx, tx, migration)
 		if err != nil {
@@ -126,7 +127,7 @@ func (a *ActionMigrateDown) migrateDown(ctx context.Context, tx krabdb.Transacti
 		return errors.Wrap(err, "Failed to execute migration")
 	}
 
-	err = SchemaMigrationDelete(ctx, tx, migration.Version)
+	err = a.SchemaMigrationTable.Delete(ctx, tx, migration.Version)
 	if err != nil {
 		return errors.Wrap(err, "Failed to delete migration")
 	}

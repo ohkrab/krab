@@ -56,7 +56,7 @@ func Test_ActionMigrateUpTransactions(t *testing.T) {
 				err = (&ActionMigrateUp{Set: set}).Do(ctx, db, cli.NullUI())
 				g.Assert(err).IsNil("Second migration should pass")
 
-				schema, err := SchemaMigrationSelectAll(ctx, db)
+				schema, err := SchemaMigrationTable{}.SelectAll(ctx, db)
 				if err != nil {
 					t.Error("Fetching migrations failed", err)
 					return

@@ -14,6 +14,7 @@ import (
 // ActionMigrateUp keeps data needed to perform this action.
 type ActionMigrateUp struct {
 	Set *MigrationSet
+	SchemaMigrationTable
 }
 
 func (a *ActionMigrateUp) Help() string {
@@ -75,17 +76,17 @@ func (a *ActionMigrateUp) Do(ctx context.Context, db *sqlx.DB, ui cli.UI) error 
 	}
 	defer krabdb.AdvisoryUnlock(ctx, db, lockID)
 
-	err = SchemaMigrationInit(ctx, db)
+	err = a.SchemaMigrationTable.Init(ctx, db)
 	if err != nil {
 		return errors.Wrap(err, "Failed to create default table for migrations")
 	}
 
-	migrationRefsInDb, err := SchemaMigrationSelectAll(ctx, db)
+	migrationRefsInDb, err := a.SchemaMigrationTable.SelectAll(ctx, db)
 	if err != nil {
 		return err
 	}
 
-	pendingMigrations := SchemaMigrationFilterPending(a.Set.Migrations, migrationRefsInDb)
+	pendingMigrations := a.SchemaMigrationTable.FilterPending(a.Set.Migrations, migrationRefsInDb)
 
 	for _, pending := range pendingMigrations {
 		ui.Output(fmt.Sprint(pending.RefName, " ", pending.Version))
@@ -115,7 +116,7 @@ func (a *ActionMigrateUp) migrateUp(ctx context.Context, tx krabdb.TransactionEx
 		return errors.Wrap(err, "Failed to execute migration")
 	}
 
-	err = SchemaMigrationInsert(ctx, tx, migration.Version)
+	err = a.SchemaMigrationTable.Insert(ctx, tx, migration.Version)
 	if err != nil {
 		return errors.Wrap(err, "Failed to insert migration")
 	}

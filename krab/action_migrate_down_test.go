@@ -54,7 +54,7 @@ func Test_ActionMigrateDown(t *testing.T) {
 				g.Assert(err).IsNil("Elephant must be inserted")
 
 				// state before
-				schema, _ := SchemaMigrationSelectAll(ctx, db)
+				schema, _ := SchemaMigrationTable{}.SelectAll(ctx, db)
 				g.Assert(len(schema)).Eql(2)
 				g.Assert(schema[0].Version).Eql("v1")
 				g.Assert(schema[1].Version).Eql("v2")
@@ -77,7 +77,7 @@ func Test_ActionMigrateDown(t *testing.T) {
 				g.Assert(err).IsNil("Action must succeed", err)
 
 				// state after
-				schema, _ = SchemaMigrationSelectAll(ctx, db)
+				schema, _ = SchemaMigrationTable{}.SelectAll(ctx, db)
 				g.Assert(len(schema)).Eql(1)
 				g.Assert(schema[0].Version).Eql("v1")
 
@@ -126,7 +126,7 @@ func Test_ActionMigrateDown(t *testing.T) {
 				g.Assert(err).IsNil("Elephant must be inserted")
 
 				// state before
-				schema, _ := SchemaMigrationSelectAll(ctx, db)
+				schema, _ := SchemaMigrationTable{}.SelectAll(ctx, db)
 				g.Assert(len(schema)).Eql(2)
 				g.Assert(schema[0].Version).Eql("v1")
 				g.Assert(schema[1].Version).Eql("v2")
@@ -143,7 +143,7 @@ func Test_ActionMigrateDown(t *testing.T) {
 				).Eql(true, err)
 
 				// state after
-				schema, err = SchemaMigrationSelectAll(ctx, db)
+				schema, err = SchemaMigrationTable{}.SelectAll(ctx, db)
 				g.Assert(len(schema)).Eql(2)
 				g.Assert(schema[0].Version).Eql("v1")
 				g.Assert(schema[1].Version).Eql("v2", "Schema information should remain untouched")
@@ -185,7 +185,7 @@ func Test_ActionMigrateDown(t *testing.T) {
 				g.Assert(err).IsNil("Up migration should pass")
 
 				// state before action 1
-				schema, _ := SchemaMigrationSelectAll(ctx, db)
+				schema, _ := SchemaMigrationTable{}.SelectAll(ctx, db)
 				g.Assert(len(schema)).Eql(2)
 				g.Assert(schema[0].Version).Eql("v1")
 				g.Assert(schema[1].Version).Eql("v2")
@@ -196,7 +196,7 @@ func Test_ActionMigrateDown(t *testing.T) {
 				g.Assert(err).IsNil("Migrate down should pass")
 
 				// state after action 1
-				schema, err = SchemaMigrationSelectAll(ctx, db)
+				schema, err = SchemaMigrationTable{}.SelectAll(ctx, db)
 				g.Assert(len(schema)).Eql(1)
 				g.Assert(schema[0].Version).Eql("v1")
 
