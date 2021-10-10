@@ -44,6 +44,11 @@ func NewConfig(files []*File) (*Config, error) {
 		}
 	}
 
+	// defaults
+	for _, defaultable := range c.MigrationSets {
+		defaultable.InitDefaults()
+	}
+
 	// validate
 	for _, validatable := range c.MigrationSets {
 		if err := validatable.Validate(); err != nil {

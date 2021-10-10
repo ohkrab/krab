@@ -43,7 +43,14 @@ migration "add_users" {
 }
 
 migration_set "tenant" {
+  arguments {
+    arg "schema" {
+      type = "string"
+    }
+  }
+
   migrations = [
+    migration.create_assets
   ]
 }
 

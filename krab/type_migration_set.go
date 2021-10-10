@@ -8,9 +8,17 @@ import (
 type MigrationSet struct {
 	RefName string `hcl:"ref_name,label"`
 
+	Arguments *Arguments `hcl:"arguments,block"`
+
 	// SchemaMigrationsTable string         `hcl:"schema_migrations_table"`
 	MigrationsExpr hcl.Expression `hcl:"migrations"`
 	Migrations     []*Migration   // populated from refs in expression
+}
+
+func (ms *MigrationSet) InitDefaults() {
+	if ms.Arguments != nil {
+		ms.Arguments.InitDefaults()
+	}
 }
 
 func (ms *MigrationSet) Validate() error {
