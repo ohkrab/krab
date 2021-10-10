@@ -3,39 +3,34 @@ package krab
 import (
 	"testing"
 
-	"github.com/franela/goblin"
+	"github.com/stretchr/testify/assert"
 )
 
-func TestValidators(t *testing.T) {
-	g := goblin.Goblin(t)
+func TestValidateRefName(t *testing.T) {
+	assert := assert.New(t)
 
-	g.Describe("ValidateRefName", func() {
-		g.It("Allow alphanumeric and underscore", func() {
-			g.Assert(ValidateRefName("valid_ref")).IsNil()
-			g.Assert(ValidateRefName("valid_123")).IsNil()
-			g.Assert(ValidateRefName("ValidRef")).IsNil()
-			g.Assert(ValidateRefName("___")).IsNil()
-		})
+	// allow alphanumeric and underscore
+	assert.Nil(ValidateRefName("valid_ref"))
+	assert.Nil(ValidateRefName("valid_123"))
+	assert.Nil(ValidateRefName("ValidRef"))
+	assert.Nil(ValidateRefName("___"))
 
-		g.It("Cannot start with number", func() {
-			g.Assert(ValidateRefName("123")).IsNotNil()
-			g.Assert(ValidateRefName("123_abc")).IsNotNil()
-		})
+	// cannot start with number
+	assert.NotNil(ValidateRefName("123"))
+	assert.NotNil(ValidateRefName("123_abc"))
 
-		g.It("Cannot be empty", func() {
-			g.Assert(ValidateRefName("")).IsNotNil()
-		})
+	// cannot be empty
+	assert.NotNil(ValidateRefName(""))
 
-		g.It("No other separators", func() {
-			g.Assert(ValidateRefName("abc-def")).IsNotNil()
-			g.Assert(ValidateRefName("abc def")).IsNotNil()
-		})
-	})
+	// no other separators
+	assert.NotNil(ValidateRefName("abc-def"))
+	assert.NotNil(ValidateRefName("abc def"))
+}
 
-	g.Describe("ValidateStringNonEmpty", func() {
-		g.It("Length must be > 0", func() {
-			g.Assert(ValidateStringNonEmpty("field", "a")).IsNil()
-			g.Assert(ValidateStringNonEmpty("field", "")).IsNotNil()
-		})
-	})
+func TestValidateStringNonEmpty(t *testing.T) {
+	assert := assert.New(t)
+
+	// Length must be > 0
+	assert.Nil(ValidateStringNonEmpty("field", "a"))
+	assert.NotNil(ValidateStringNonEmpty("field", ""))
 }
