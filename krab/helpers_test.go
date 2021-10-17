@@ -1,7 +1,6 @@
 package krab
 
 import (
-	"fmt"
 	"os"
 	"testing"
 
@@ -56,16 +55,15 @@ $$
 BEGIN
   FOR r IN 
     (
-      SELECT table_name 
+      SELECT table_schema, table_name 
         FROM information_schema.tables 
-       WHERE table_schema = 'public'
+       WHERE table_schema NOT IN ('pg_catalog', 'information_schema')
     ) 
   LOOP
-     EXECUTE 'DROP TABLE ' || quote_ident(r.table_name) || ' CASCADE';
+     EXECUTE 'DROP TABLE ' || quote_ident(r.table_schema) || '.' || quote_ident(r.table_name) || ' CASCADE';
   END LOOP;
 END
 $$`)
-	db.MustExec(fmt.Sprint("DROP TABLE IF EXISTS ", SchemaMigrationTable{}.TableName()))
 }
 
 func sqlxRowsMapScan(rows *sqlx.Rows) []map[string]interface{} {

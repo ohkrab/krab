@@ -14,7 +14,6 @@ import (
 // ActionMigrateUp keeps data needed to perform this action.
 type ActionMigrateUp struct {
 	Set *MigrationSet
-	SchemaMigrationTable
 }
 
 func (a *ActionMigrateUp) Help() string {
@@ -68,6 +67,8 @@ func (a *ActionMigrateUp) Run(args []string) int {
 // Run performs the action. All pending migrations will be executed.
 // Migration schema is created if does not exist.
 func (a *ActionMigrateUp) Do(ctx context.Context, db *sqlx.DB, ui cli.UI) error {
+	versions := NewSchemaMigrationTable(a.Set.Schema)
+
 	// locking
 	lockID := int64(1)
 
@@ -77,30 +78,24 @@ func (a *ActionMigrateUp) Do(ctx context.Context, db *sqlx.DB, ui cli.UI) error 
 	}
 	defer krabdb.AdvisoryUnlock(ctx, db, lockID)
 
-	// hooks
-	hooks := Hooks{}
-	tpls := Templates{}
-	hooks.Before, err = tpls.ProcessArguments(a.Set.Hooks.Before, EmptyArgs())
+	hooksRunner := HookRunner{}
+	err = hooksRunner.SetSearchPath(ctx, db, a.Set.Schema)
 	if err != nil {
-		return errors.Wrap(err, "Cannot process arguments")
-	}
-	err = HookRunner{&hooks}.RunBefore(ctx, db)
-	if err != nil {
-		return errors.Wrap(err, "Failed to run hook")
+		return errors.Wrap(err, "Failed to run SetSearchPath hook")
 	}
 
 	// schema migration
-	err = a.SchemaMigrationTable.Init(ctx, db)
+	err = versions.Init(ctx, db)
 	if err != nil {
 		return errors.Wrap(err, "Failed to create default table for migrations")
 	}
 
-	migrationRefsInDb, err := a.SchemaMigrationTable.SelectAll(ctx, db)
+	migrationRefsInDb, err := versions.SelectAll(ctx, db)
 	if err != nil {
 		return err
 	}
 
-	pendingMigrations := a.SchemaMigrationTable.FilterPending(a.Set.Migrations, migrationRefsInDb)
+	pendingMigrations := versions.FilterPending(a.Set.Migrations, migrationRefsInDb)
 
 	for _, pending := range pendingMigrations {
 		ui.Output(fmt.Sprint(pending.RefName, " ", pending.Version))
@@ -108,8 +103,12 @@ func (a *ActionMigrateUp) Do(ctx context.Context, db *sqlx.DB, ui cli.UI) error 
 		if err != nil {
 			return errors.Wrap(err, "Failed to start transaction")
 		}
+		err = hooksRunner.SetSearchPath(ctx, tx, a.Set.Schema)
+		if err != nil {
+			return errors.Wrap(err, "Failed to run SetSearchPath hook")
+		}
 
-		err = a.migrateUp(ctx, tx, pending)
+		err = a.migrateUp(ctx, tx, pending, versions)
 		if err != nil {
 			tx.Rollback()
 			return err
@@ -124,13 +123,13 @@ func (a *ActionMigrateUp) Do(ctx context.Context, db *sqlx.DB, ui cli.UI) error 
 	return nil
 }
 
-func (a *ActionMigrateUp) migrateUp(ctx context.Context, tx krabdb.TransactionExecerContext, migration *Migration) error {
+func (a *ActionMigrateUp) migrateUp(ctx context.Context, tx krabdb.TransactionExecerContext, migration *Migration, versions SchemaMigrationTable) error {
 	_, err := tx.ExecContext(ctx, migration.Up.SQL)
 	if err != nil {
 		return errors.Wrap(err, "Failed to execute migration")
 	}
 
-	err = a.SchemaMigrationTable.Insert(ctx, tx, migration.Version)
+	err = versions.Insert(ctx, tx, migration.Version)
 	if err != nil {
 		return errors.Wrap(err, "Failed to insert migration")
 	}

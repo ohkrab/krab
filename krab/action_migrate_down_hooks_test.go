@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestActionMigrateUpHooks(t *testing.T) {
+func TestActionMigrateDownHooks(t *testing.T) {
 	assert := assert.New(t)
 
 	withPg(t, func(db *sqlx.DB) {
@@ -20,21 +20,25 @@ func TestActionMigrateUpHooks(t *testing.T) {
 			"v1",
 			`CREATE TABLE animals(name VARCHAR)`,
 			`DROP TABLE animals`,
+			"v2",
+			`ALTER TABLE animals ADD COLUMN emoji VARCHAR`,
+			`ALTER TABLE animals DROP COLUMN emoji`,
 		)
 		set.Schema = "tenants"
 
 		err := (&ActionMigrateUp{Set: set}).Do(ctx, db, cli.NullUI())
 		assert.NoError(err, "First migration should pass")
 
-		schema, err := SchemaMigrationTable{"public.schema_migrations"}.SelectAll(ctx, db)
-		assert.Equal(0, len(schema))
-		if assert.Error(err) {
-			assert.Contains(err.Error(), `relation "public.schema_migrations" does not exist`)
+		schema, _ := SchemaMigrationTable{"tenants.schema_migrations"}.SelectAll(ctx, db)
+		if assert.Equal(2, len(schema)) {
+			assert.Equal("v1", schema[0].Version)
+			assert.Equal("v2", schema[1].Version)
 		}
 
-		schema, err = SchemaMigrationTable{"tenants.schema_migrations"}.SelectAll(ctx, db)
-		assert.NoError(err, "Fetching migrations from tenant schema should be successful")
+		err = (&ActionMigrateDown{Set: set, DownMigration: SchemaMigration{"v2"}}).Do(ctx, db)
+		assert.NoError(err, "Rollback migration should pass")
 
+		schema, _ = SchemaMigrationTable{"tenants.schema_migrations"}.SelectAll(ctx, db)
 		if assert.Equal(1, len(schema)) {
 			assert.Equal("v1", schema[0].Version)
 		}

@@ -9,8 +9,23 @@ import (
 	"github.com/ohkrab/krab/krabdb"
 )
 
+const DefaultSchemaMigrationTableName = "schema_migrations"
+
 type SchemaMigrationTable struct {
 	Name string
+}
+
+// NewSchemaMigrationTable creates SchemaMigrationTable with default table name and specified schema.
+func NewSchemaMigrationTable(schema string) SchemaMigrationTable {
+	return SchemaMigrationTable{
+		Name: strings.Join(
+			[]string{
+				schema,
+				DefaultSchemaMigrationTableName,
+			},
+			".",
+		),
+	}
 }
 
 // SchemaMigration represents a single row from migrations table.
@@ -20,9 +35,21 @@ type SchemaMigration struct {
 
 // Init creates a migrations table.
 func (s SchemaMigrationTable) Init(ctx context.Context, db sqlx.ExecerContext) error {
+	parts := strings.Split(s.Name, ".")
+	if len(parts) > 1 {
+		schema := parts[0]
+		_, err := db.ExecContext(ctx, fmt.Sprintf(
+			"CREATE SCHEMA IF NOT EXISTS %s",
+			krabdb.QuoteIdent(schema),
+		))
+		if err != nil {
+			return err
+		}
+	}
+
 	_, err := db.ExecContext(ctx, fmt.Sprintf(
 		"CREATE TABLE IF NOT EXISTS %s(version varchar PRIMARY KEY)",
-		s.QuotedSchemaQualifiedTableName(),
+		krabdb.QuoteIdentWithDots(s.Name),
 	))
 
 	return err
@@ -32,7 +59,7 @@ func (s SchemaMigrationTable) Init(ctx context.Context, db sqlx.ExecerContext) e
 func (s SchemaMigrationTable) Truncate(ctx context.Context, db sqlx.ExecerContext) error {
 	_, err := db.ExecContext(ctx, fmt.Sprintf(
 		"TRUNCATE %s",
-		s.QuotedSchemaQualifiedTableName(),
+		krabdb.QuoteIdentWithDots(s.Name),
 	))
 	return err
 }
@@ -44,7 +71,7 @@ func (s SchemaMigrationTable) Exists(ctx context.Context, db sqlx.QueryerContext
 		ctx,
 		db,
 		&schema,
-		fmt.Sprintf("SELECT version FROM %s WHERE version = $1", s.QuotedSchemaQualifiedTableName()),
+		fmt.Sprintf("SELECT version FROM %s WHERE version = $1", krabdb.QuoteIdentWithDots(s.Name)),
 		migration.Version,
 	)
 	return len(schema) > 0, err
@@ -57,7 +84,7 @@ func (s SchemaMigrationTable) SelectLastN(ctx context.Context, db sqlx.QueryerCo
 		ctx,
 		db,
 		&schema,
-		fmt.Sprintf("SELECT version FROM %s ORDER BY 1 DESC LIMIT %d", s.QuotedSchemaQualifiedTableName(), limit),
+		fmt.Sprintf("SELECT version FROM %s ORDER BY 1 DESC LIMIT %d", krabdb.QuoteIdentWithDots(s.Name), limit),
 	)
 	return schema, err
 }
@@ -69,7 +96,7 @@ func (s SchemaMigrationTable) SelectAll(ctx context.Context, db sqlx.QueryerCont
 		ctx,
 		db,
 		&schema,
-		fmt.Sprintf("SELECT version FROM %s ORDER BY 1", s.QuotedSchemaQualifiedTableName()),
+		fmt.Sprintf("SELECT version FROM %s ORDER BY 1", krabdb.QuoteIdentWithDots(s.Name)),
 	)
 	return schema, err
 }
@@ -78,7 +105,7 @@ func (s SchemaMigrationTable) SelectAll(ctx context.Context, db sqlx.QueryerCont
 func (s SchemaMigrationTable) Insert(ctx context.Context, db sqlx.ExecerContext, version string) error {
 	_, err := db.ExecContext(
 		ctx,
-		fmt.Sprintf("INSERT INTO %s(version) VALUES ($1) RETURNING *", s.QuotedSchemaQualifiedTableName()),
+		fmt.Sprintf("INSERT INTO %s(version) VALUES ($1) RETURNING *", krabdb.QuoteIdentWithDots(s.Name)),
 		version,
 	)
 	return err
@@ -88,7 +115,7 @@ func (s SchemaMigrationTable) Insert(ctx context.Context, db sqlx.ExecerContext,
 func (s SchemaMigrationTable) Delete(ctx context.Context, db sqlx.ExecerContext, version string) error {
 	_, err := db.ExecContext(
 		ctx,
-		fmt.Sprintf("DELETE FROM %s WHERE version = $1 RETURNING *", s.QuotedSchemaQualifiedTableName()),
+		fmt.Sprintf("DELETE FROM %s WHERE version = $1 RETURNING *", krabdb.QuoteIdentWithDots(s.Name)),
 		version,
 	)
 	return err
@@ -113,20 +140,4 @@ func (s SchemaMigrationTable) FilterPending(all []*Migration, refsInDb []SchemaM
 	}
 
 	return pendingMigrations
-}
-
-func (s SchemaMigrationTable) TableName() string {
-	if s.Name == "" {
-		return "schema_migrations"
-	}
-
-	return s.Name
-}
-
-func (s SchemaMigrationTable) QuotedSchemaQualifiedTableName() string {
-	names := strings.Split(s.TableName(), ".")
-	for i, name := range names {
-		names[i] = krabdb.QuoteIdent(name)
-	}
-	return strings.Join(names, ".")
 }

@@ -15,7 +15,6 @@ import (
 type ActionMigrateDown struct {
 	Set           *MigrationSet
 	DownMigration SchemaMigration
-	SchemaMigrationTable
 }
 
 func (a *ActionMigrateDown) Help() string {
@@ -50,7 +49,8 @@ func (a *ActionMigrateDown) Run(args []string) int {
 	default:
 		err = krabdb.WithConnection(func(db *sqlx.DB) error {
 			ui.Output("Latest migrations:")
-			migrations, err := a.SchemaMigrationTable.SelectLastN(context.TODO(), db, 5)
+			versions := NewSchemaMigrationTable(a.Set.Schema)
+			migrations, err := versions.SelectLastN(context.TODO(), db, 5)
 			for _, m := range migrations {
 				ui.Info(fmt.Sprint("* ", m.Version))
 			}
@@ -85,6 +85,8 @@ func (a *ActionMigrateDown) Run(args []string) int {
 // Do performs the action.
 // Schema migration must exist before running it.
 func (a *ActionMigrateDown) Do(ctx context.Context, db *sqlx.DB) error {
+	versions := NewSchemaMigrationTable(a.Set.Schema)
+
 	migration := a.Set.FindMigrationByVersion(a.DownMigration.Version)
 	if migration == nil {
 		return fmt.Errorf("Migration `%s` not found in `%s` set",
@@ -100,14 +102,21 @@ func (a *ActionMigrateDown) Do(ctx context.Context, db *sqlx.DB) error {
 	}
 	defer krabdb.AdvisoryUnlock(ctx, db, lockID)
 
+	hooksRunner := HookRunner{}
+	err = hooksRunner.SetSearchPath(ctx, db, a.Set.Schema)
+	if err != nil {
+		return errors.Wrap(err, "Failed to run SetSearchPath hook")
+	}
+
+	// schema migration
 	tx, err := krabdb.NewTx(ctx, db, migration.ShouldRunInTransaction())
 	if err != nil {
 		return errors.Wrap(err, "Failed to start transaction")
 	}
 
-	ok, _ := a.SchemaMigrationTable.Exists(ctx, db, SchemaMigration{migration.Version})
-	if ok {
-		err = a.migrateDown(ctx, tx, migration)
+	migrationExists, _ := versions.Exists(ctx, db, SchemaMigration{migration.Version})
+	if migrationExists {
+		err = a.migrateDown(ctx, tx, migration, versions)
 		if err != nil {
 			tx.Rollback()
 			return err
@@ -121,13 +130,13 @@ func (a *ActionMigrateDown) Do(ctx context.Context, db *sqlx.DB) error {
 	return err
 }
 
-func (a *ActionMigrateDown) migrateDown(ctx context.Context, tx krabdb.TransactionExecerContext, migration *Migration) error {
+func (a *ActionMigrateDown) migrateDown(ctx context.Context, tx krabdb.TransactionExecerContext, migration *Migration, versions SchemaMigrationTable) error {
 	_, err := tx.ExecContext(ctx, migration.Down.SQL)
 	if err != nil {
 		return errors.Wrap(err, "Failed to execute migration")
 	}
 
-	err = a.SchemaMigrationTable.Delete(ctx, tx, migration.Version)
+	err = versions.Delete(ctx, tx, migration.Version)
 	if err != nil {
 		return errors.Wrap(err, "Failed to delete migration")
 	}

@@ -49,9 +49,7 @@ migration_set "tenant" {
     }
   }
 
-  hooks {
-    before = "SET search_path TO {{args.schema}}"
-  }
+  schema = "tenants"
 
   migrations = [
     migration.create_assets
@@ -59,7 +57,7 @@ migration_set "tenant" {
 }
 
 migration "create_assets" {
-  version = "202010_01"
+  version = "tenants_v1"
 
   up {
     # create_table "assets" {

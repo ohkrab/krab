@@ -32,7 +32,7 @@ func TestActionMigrateUp(t *testing.T) {
 		err := action.Do(ctx, db, cli.NullUI())
 		assert.NoError(err)
 
-		schema, err := SchemaMigrationTable{}.SelectAll(ctx, db)
+		schema, err := NewSchemaMigrationTable("public").SelectAll(ctx, db)
 		assert.NoError(err)
 
 		assert.Equal(1, len(schema))
@@ -45,7 +45,7 @@ func TestActionMigrateUpWithError(t *testing.T) {
 	ctx := context.Background()
 
 	withPg(t, func(db *sqlx.DB) {
-		SchemaMigrationTable{}.Init(ctx, db)
+		NewSchemaMigrationTable("public").Init(ctx, db)
 
 		action := &ActionMigrateUp{
 			Set: &MigrationSet{
@@ -69,7 +69,7 @@ func TestActionMigrateUpWithError(t *testing.T) {
 			`column "invalid" does not exist`,
 		)
 
-		schema, err := SchemaMigrationTable{}.SelectAll(ctx, db)
+		schema, err := NewSchemaMigrationTable("public").SelectAll(ctx, db)
 		assert.Equal(len(schema), 0)
 	})
 }

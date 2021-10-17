@@ -51,7 +51,7 @@ func TestActionMigrateDownTransactions(t *testing.T) {
 		err = (&ActionMigrateUp{Set: set}).Do(ctx, db, cli.NullUI())
 		assert.NoError(err, "Second migration should pass")
 
-		schema, err := SchemaMigrationTable{}.SelectAll(ctx, db)
+		schema, err := NewSchemaMigrationTable("public").SelectAll(ctx, db)
 		assert.NoError(err, "Fetching migrations failed")
 
 		assert.Equal(2, len(schema))
@@ -61,7 +61,7 @@ func TestActionMigrateDownTransactions(t *testing.T) {
 		err = (&ActionMigrateDown{Set: set, DownMigration: SchemaMigration{"v2"}}).Do(ctx, db)
 		assert.NoError(err, "Rollback of v2 migration should pass")
 
-		schema, err = SchemaMigrationTable{}.SelectAll(ctx, db)
+		schema, err = NewSchemaMigrationTable("public").SelectAll(ctx, db)
 		if assert.NoError(err, "Fetching migrations failed") {
 			assert.Equal(1, len(schema))
 			assert.Equal("v1", schema[0].Version)

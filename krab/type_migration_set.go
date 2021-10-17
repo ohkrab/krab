@@ -7,6 +7,7 @@ import (
 // MigrationSet represents collection of migrations.
 type MigrationSet struct {
 	RefName string `hcl:"ref_name,label"`
+	Schema  string `hcl:"schema,optional"`
 	// SchemaMigrationTableName `hcl:"schema_migrations_table,optional"`
 
 	Arguments *Arguments `hcl:"arguments,block"`
@@ -18,6 +19,10 @@ type MigrationSet struct {
 }
 
 func (ms *MigrationSet) InitDefaults() {
+	if ms.Schema == "" {
+		ms.Schema = "public"
+	}
+
 	if ms.Arguments != nil {
 		ms.Arguments.InitDefaults()
 	}

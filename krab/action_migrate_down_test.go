@@ -48,7 +48,7 @@ func TestActionMigrateDown(t *testing.T) {
 		assert.NoError(err, "Elephant must be inserted")
 
 		// state before
-		schema, _ := SchemaMigrationTable{}.SelectAll(ctx, db)
+		schema, _ := NewSchemaMigrationTable("public").SelectAll(ctx, db)
 		if assert.Equal(2, len(schema)) {
 			assert.Equal("v1", schema[0].Version)
 			assert.Equal("v2", schema[1].Version)
@@ -73,7 +73,7 @@ func TestActionMigrateDown(t *testing.T) {
 		assert.NoError(err, "Action must succeed")
 
 		// state after
-		schema, _ = SchemaMigrationTable{}.SelectAll(ctx, db)
+		schema, _ = NewSchemaMigrationTable("public").SelectAll(ctx, db)
 		assert.Equal(1, len(schema))
 		assert.Equal("v1", schema[0].Version)
 
@@ -128,7 +128,7 @@ func TestActionMigrateDownOnError(t *testing.T) {
 		assert.NoError(err, "Elephant must be inserted")
 
 		// state before
-		schema, _ := SchemaMigrationTable{}.SelectAll(ctx, db)
+		schema, _ := NewSchemaMigrationTable("public").SelectAll(ctx, db)
 		assert.Equal(len(schema), 2)
 		assert.Equal("v1", schema[0].Version)
 		assert.Equal("v2", schema[1].Version)
@@ -143,7 +143,7 @@ func TestActionMigrateDownOnError(t *testing.T) {
 		)
 
 		// state after
-		schema, err = SchemaMigrationTable{}.SelectAll(ctx, db)
+		schema, _ = NewSchemaMigrationTable("public").SelectAll(ctx, db)
 		assert.Equal(2, len(schema))
 		assert.Equal("v1", schema[0].Version)
 		assert.Equal("v2", schema[1].Version, "Schema information should remain untouched")
@@ -191,7 +191,7 @@ func TestActionMigrateDownWhenSchemaDoesNotExist(t *testing.T) {
 		assert.NoError(err, "Up migration should pass")
 
 		// state before action 1
-		schema, _ := SchemaMigrationTable{}.SelectAll(ctx, db)
+		schema, _ := NewSchemaMigrationTable("public").SelectAll(ctx, db)
 		assert.Equal(2, len(schema))
 		assert.Equal("v1", schema[0].Version)
 		assert.Equal("v2", schema[1].Version)
@@ -202,7 +202,7 @@ func TestActionMigrateDownWhenSchemaDoesNotExist(t *testing.T) {
 		assert.NoError(err, "Migrate down should pass")
 
 		// state after action 1
-		schema, err = SchemaMigrationTable{}.SelectAll(ctx, db)
+		schema, _ = NewSchemaMigrationTable("public").SelectAll(ctx, db)
 		assert.Equal(1, len(schema))
 		assert.Equal("v1", schema[0].Version)
 

@@ -17,6 +17,7 @@ func createMigrationSet(
 			},
 		}
 	}
-
-	return &MigrationSet{RefName: refName, Migrations: migrations, Hooks: &Hooks{}}
+	set := &MigrationSet{RefName: refName, Migrations: migrations, Hooks: &Hooks{}}
+	set.InitDefaults()
+	return set
 }
