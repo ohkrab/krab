@@ -90,7 +90,6 @@ func (a *ActionMigrateUp) Do(ctx context.Context, db *sqlx.DB, ui cli.UI) error 
 	}
 
 	// schema migration
-	fmt.Println("before", hooks.Before)
 	err = a.SchemaMigrationTable.Init(ctx, db)
 	if err != nil {
 		return errors.Wrap(err, "Failed to create default table for migrations")
