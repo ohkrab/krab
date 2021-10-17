@@ -19,24 +19,12 @@ func TestActionMigrateUpHooks(t *testing.T) {
 		db.MustExec("CREATE SCHEMA tenants")
 		defer db.MustExec("DROP SCHEMA tenants CASCADE")
 
-		set := &MigrationSet{
-			Hooks: &Hooks{
-				Before: "SET search_path TO tenants",
-			},
-			RefName: "tenants",
-			Migrations: []*Migration{
-				{
-					Version: "v1",
-					Up: MigrationUp{
-						SQL: `CREATE TABLE animals(name VARCHAR)`,
-					},
-					Down: MigrationDown{
-						SQL: `DROP TABLE animals`,
-					},
-				},
-			},
-		}
-		set.InitDefaults()
+		set := createMigrationSet("tenants",
+			"v1",
+			`CREATE TABLE animals(name VARCHAR)`,
+			`DROP TABLE animals`,
+		)
+		set.Hooks = &Hooks{Before: "SET search_path TO tenants"}
 
 		err := (&ActionMigrateUp{Set: set}).Do(ctx, db, cli.NullUI())
 		assert.NoError(err, "First migration should pass")
