@@ -34,6 +34,7 @@ func Test_ActionMigrateUp(t *testing.T) {
 						},
 					},
 				}
+				action.Set.InitDefaults()
 
 				err := action.Do(ctx, db, cli.NullUI())
 				if err != nil {
@@ -66,6 +67,7 @@ func Test_ActionMigrateUp(t *testing.T) {
 						},
 					},
 				}
+				action.Set.InitDefaults()
 
 				err := action.Do(ctx, db, cli.NullUI())
 

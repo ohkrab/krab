@@ -7,8 +7,10 @@ import (
 // MigrationSet represents collection of migrations.
 type MigrationSet struct {
 	RefName string `hcl:"ref_name,label"`
+	// SchemaMigrationTableName `hcl:"schema_migrations_table,optional"`
 
 	Arguments *Arguments `hcl:"arguments,block"`
+	Hooks     *Hooks     `hcl:"hooks,block"`
 
 	// SchemaMigrationsTable string         `hcl:"schema_migrations_table"`
 	MigrationsExpr hcl.Expression `hcl:"migrations"`
@@ -18,6 +20,10 @@ type MigrationSet struct {
 func (ms *MigrationSet) InitDefaults() {
 	if ms.Arguments != nil {
 		ms.Arguments.InitDefaults()
+	}
+
+	if ms.Hooks == nil {
+		ms.Hooks = &Hooks{}
 	}
 }
 

@@ -68,6 +68,7 @@ func (a *ActionMigrateUp) Run(args []string) int {
 // Run performs the action. All pending migrations will be executed.
 // Migration schema is created if does not exist.
 func (a *ActionMigrateUp) Do(ctx context.Context, db *sqlx.DB, ui cli.UI) error {
+	// locking
 	lockID := int64(1)
 
 	_, err := krabdb.TryAdvisoryLock(ctx, db, lockID)
@@ -76,6 +77,20 @@ func (a *ActionMigrateUp) Do(ctx context.Context, db *sqlx.DB, ui cli.UI) error 
 	}
 	defer krabdb.AdvisoryUnlock(ctx, db, lockID)
 
+	// hooks
+	hooks := Hooks{}
+	tpls := Templates{}
+	hooks.Before, err = tpls.ProcessArguments(a.Set.Hooks.Before, EmptyArgs())
+	if err != nil {
+		return errors.Wrap(err, "Cannot process arguments")
+	}
+	err = HookRunner{&hooks}.RunBefore(ctx, db)
+	if err != nil {
+		return errors.Wrap(err, "Failed to run hook")
+	}
+
+	// schema migration
+	fmt.Println("before", hooks.Before)
 	err = a.SchemaMigrationTable.Init(ctx, db)
 	if err != nil {
 		return errors.Wrap(err, "Failed to create default table for migrations")

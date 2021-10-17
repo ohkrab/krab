@@ -35,6 +35,7 @@ func Test_ActionMigrateUpTransactions(t *testing.T) {
 						},
 					},
 				}
+				set.InitDefaults()
 
 				err := (&ActionMigrateUp{Set: set}).Do(ctx, db, cli.NullUI())
 				g.Assert(err).IsNil("First migration should pass")

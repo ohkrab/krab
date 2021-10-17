@@ -49,6 +49,10 @@ migration_set "tenant" {
     }
   }
 
+  hooks {
+    before = "SET search_path TO {{args.schema}}"
+  }
+
   migrations = [
     migration.create_assets
   ]

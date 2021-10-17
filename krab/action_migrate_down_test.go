@@ -46,6 +46,7 @@ func Test_ActionMigrateDown(t *testing.T) {
 						},
 					},
 				}
+				set.InitDefaults()
 
 				err := (&ActionMigrateUp{Set: set}).Do(ctx, db, cli.NullUI())
 				g.Assert(err).IsNil("Up migration should pass")
@@ -118,6 +119,7 @@ func Test_ActionMigrateDown(t *testing.T) {
 						},
 					},
 				}
+				set.InitDefaults()
 
 				err := (&ActionMigrateUp{Set: set}).Do(ctx, db, cli.NullUI())
 				g.Assert(err).IsNil("Up migration should pass")
@@ -180,6 +182,7 @@ func Test_ActionMigrateDown(t *testing.T) {
 						},
 					},
 				}
+				set.InitDefaults()
 
 				err := (&ActionMigrateUp{Set: set}).Do(ctx, db, cli.NullUI())
 				g.Assert(err).IsNil("Up migration should pass")
