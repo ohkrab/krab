@@ -15,7 +15,6 @@ func TestActionMigrateDown(t *testing.T) {
 	ctx := context.Background()
 
 	withPg(t, func(db *sqlx.DB) {
-		defer cleanDb(db)
 		// setup
 		set := &MigrationSet{
 			RefName: "public",
@@ -97,8 +96,6 @@ func TestActionMigrateDownOnError(t *testing.T) {
 	ctx := context.Background()
 
 	withPg(t, func(db *sqlx.DB) {
-		defer cleanDb(db)
-
 		// setup
 		set := &MigrationSet{
 			Migrations: []*Migration{
@@ -165,8 +162,6 @@ func TestActionMigrateDownWhenSchemaDoesNotExist(t *testing.T) {
 	ctx := context.Background()
 
 	withPg(t, func(db *sqlx.DB) {
-		defer cleanDb(db)
-
 		// setup
 		set := &MigrationSet{
 			Migrations: []*Migration{

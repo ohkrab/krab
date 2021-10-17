@@ -15,8 +15,6 @@ func TestActionMigrateUp(t *testing.T) {
 	ctx := context.Background()
 
 	withPg(t, func(db *sqlx.DB) {
-		defer cleanDb(db)
-
 		action := &ActionMigrateUp{
 			Set: &MigrationSet{
 				Migrations: []*Migration{
@@ -47,7 +45,6 @@ func TestActionMigrateUpWithError(t *testing.T) {
 	ctx := context.Background()
 
 	withPg(t, func(db *sqlx.DB) {
-		defer cleanDb(db)
 		SchemaMigrationTable{}.Init(ctx, db)
 
 		action := &ActionMigrateUp{

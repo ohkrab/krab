@@ -14,7 +14,6 @@ func TestActionMigrateUpHooks(t *testing.T) {
 	assert := assert.New(t)
 
 	withPg(t, func(db *sqlx.DB) {
-		defer cleanDb(db)
 		ctx := context.Background()
 
 		db.MustExec("CREATE SCHEMA tenants")
