@@ -2,89 +2,77 @@ package krab
 
 import (
 	"context"
-	"strings"
 	"testing"
 
-	"github.com/franela/goblin"
 	_ "github.com/jackc/pgx/v4"
 	"github.com/jmoiron/sqlx"
 	"github.com/ohkrab/krab/cli"
+	"github.com/stretchr/testify/assert"
 )
 
-func Test_ActionMigrateUp(t *testing.T) {
+func TestActionMigrateUp(t *testing.T) {
+	assert := assert.New(t)
+	ctx := context.Background()
+
 	withPg(t, func(db *sqlx.DB) {
-		g := goblin.Goblin(t)
-		ctx := context.Background()
+		defer cleanDb(db)
 
-		g.Describe("Running migrate up action", func() {
-			g.AfterEach(func() {
-				cleanDb(db)
-			})
-
-			g.It("Migration passess successfully", func() {
-				action := &ActionMigrateUp{
-					Set: &MigrationSet{
-						Migrations: []*Migration{
-							{
-								Version: "v1",
-								Up: MigrationUp{
-									SQL: `SELECT 1`,
-								},
-							},
+		action := &ActionMigrateUp{
+			Set: &MigrationSet{
+				Migrations: []*Migration{
+					{
+						Version: "v1",
+						Up: MigrationUp{
+							SQL: `SELECT 1`,
 						},
 					},
-				}
-				action.Set.InitDefaults()
+				},
+			},
+		}
+		action.Set.InitDefaults()
 
-				err := action.Do(ctx, db, cli.NullUI())
-				if err != nil {
-					t.Error("Migration error:", err)
-					return
-				}
+		err := action.Do(ctx, db, cli.NullUI())
+		assert.NoError(err)
 
-				schema, err := SchemaMigrationTable{}.SelectAll(ctx, db)
-				if err != nil {
-					t.Error("Fetching migrations failed", err)
-					return
-				}
+		schema, err := SchemaMigrationTable{}.SelectAll(ctx, db)
+		assert.NoError(err)
 
-				g.Assert(len(schema)).Eql(1)
-				g.Assert(schema[0].Version).Eql("v1")
-			})
+		assert.Equal(1, len(schema))
+		assert.Equal("v1", schema[0].Version)
+	})
+}
 
-			g.It("Migration is not saved when error occurred", func() {
-				SchemaMigrationTable{}.Init(ctx, db)
+func TestActionMigrateUpWithError(t *testing.T) {
+	assert := assert.New(t)
+	ctx := context.Background()
 
-				action := &ActionMigrateUp{
-					Set: &MigrationSet{
-						Migrations: []*Migration{
-							{
-								Version: "v1",
-								Up: MigrationUp{
-									SQL: `SELECT invalid`,
-								},
-							},
+	withPg(t, func(db *sqlx.DB) {
+		defer cleanDb(db)
+		SchemaMigrationTable{}.Init(ctx, db)
+
+		action := &ActionMigrateUp{
+			Set: &MigrationSet{
+				Migrations: []*Migration{
+					{
+						Version: "v1",
+						Up: MigrationUp{
+							SQL: `SELECT invalid`,
 						},
 					},
-				}
-				action.Set.InitDefaults()
+				},
+			},
+		}
+		action.Set.InitDefaults()
 
-				err := action.Do(ctx, db, cli.NullUI())
+		err := action.Do(ctx, db, cli.NullUI())
 
-				g.Assert(err).IsNotNil("Invalid migration should return error")
-				g.Assert(strings.Contains(
-					err.Error(),
-					`column "invalid" does not exist`,
-				)).Eql(true)
+		assert.Error(err)
+		assert.Contains(
+			err.Error(),
+			`column "invalid" does not exist`,
+		)
 
-				schema, err := SchemaMigrationTable{}.SelectAll(ctx, db)
-				if err != nil {
-					t.Error("Fetching migrations failed", err)
-					return
-				}
-
-				g.Assert(len(schema)).Eql(0)
-			})
-		})
+		schema, err := SchemaMigrationTable{}.SelectAll(ctx, db)
+		assert.Equal(len(schema), 0)
 	})
 }
