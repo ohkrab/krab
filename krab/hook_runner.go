@@ -12,6 +12,7 @@ type HookRunner struct {
 	Hooks *Hooks
 }
 
+// SetSearchPath sets Postgres search_path.
 func (h HookRunner) SetSearchPath(ctx context.Context, db sqlx.ExecerContext, schema string) error {
 	_, err := db.ExecContext(ctx, fmt.Sprint("SET search_path TO ", krabdb.QuoteIdent(schema)))
 	return err

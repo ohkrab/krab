@@ -2,11 +2,11 @@ package krab
 
 import (
 	"context"
-	"flag"
 	"fmt"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/ohkrab/krab/cli"
+	"github.com/ohkrab/krab/cliargs"
 	"github.com/ohkrab/krab/krabdb"
 	"github.com/pkg/errors"
 )
@@ -34,19 +34,17 @@ func (a *ActionMigrateUp) Synopsis() string {
 // Run in CLI.
 func (a *ActionMigrateUp) Run(args []string) int {
 	ui := cli.DefaultUI()
-	flags := flag.NewFlagSet("", flag.ContinueOnError)
-	err := flags.Parse(args)
-	if err != nil {
-		ui.Error(err.Error())
-		return 1
-	}
+	flags := cliargs.New(args)
+	flags.RequireNonFlagArgs(0)
 
-	args = flags.Args()
-	switch len(args) {
-	case 0: // ok
-	default:
+	// for _, arg := range a.Set.Arguments.Args {
+	// 	flags.Add(arg.Name)
+	// }
+
+	err := flags.Parse()
+	if err != nil {
 		ui.Output(a.Help())
-		ui.Error("Invalid number of arguments")
+		ui.Error(err.Error())
 		return 1
 	}
 
