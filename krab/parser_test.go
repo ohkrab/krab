@@ -1,20 +1,17 @@
 package krab
 
 import (
-	"strings"
 	"testing"
 
-	"github.com/franela/goblin"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestParser(t *testing.T) {
-	g := goblin.Goblin(t)
+	assert := assert.New(t)
 
-	g.Describe("Simple migration resource", func() {
-		g.It("Should parse config without errors", func() {
-			p := mockParser(
-				"src/public.krab.hcl",
-				`
+	p := mockParser(
+		"src/public.krab.hcl",
+		`
 migration "create_tenants" {
   version = "2006"
 
@@ -27,47 +24,43 @@ migration "create_tenants" {
   }
 }
 `)
-			c, err := p.LoadConfigDir("src")
-			g.Assert(err).IsNil()
+	c, err := p.LoadConfigDir("src")
+	if assert.NoError(err) {
+		migration, _ := c.Migrations["create_tenants"]
 
-			if migration, ok := c.Migrations["create_tenants"]; ok {
-				g.Assert(migration.RefName).Eql("create_tenants")
-				g.Assert(migration.Version).Eql("2006")
-				g.Assert(migration.Up.SQL).Eql("CREATE TABLE tenants(name VARCHAR PRIMARY KEY)")
-				g.Assert(migration.Down.SQL).Eql("DROP TABLE tenants")
-			} else {
-				g.Failf("Can't get migration %s", "create_tenants")
-			}
-		})
-	})
+		assert.Equal(migration.RefName, "create_tenants")
+		assert.Equal(migration.Version, "2006")
+		assert.Equal(migration.Up.SQL, "CREATE TABLE tenants(name VARCHAR PRIMARY KEY)")
+		assert.Equal(migration.Down.SQL, "DROP TABLE tenants")
+	}
+}
 
-	g.Describe("Optional content in up/down blocks for migrations", func() {
-		g.It("Parses successfully without providing up/down details", func() {
-			p := mockParser(
-				"src/public.krab.hcl",
-				`migration "abc" {
+func TestParserWithoutMigrationDetails(t *testing.T) {
+	assert := assert.New(t)
+
+	p := mockParser(
+		"src/public.krab.hcl",
+		`migration "abc" {
 				  version = "2006"
                   up {}
 				  down {}
 				}`,
-			)
-			c, err := p.LoadConfigDir("src")
-			g.Assert(err).IsNil()
-			if migration, ok := c.Migrations["abc"]; ok {
-				g.Assert(migration.RefName).Eql("abc")
-				g.Assert(migration.Up.SQL).Eql("")
-				g.Assert(migration.Down.SQL).Eql("")
-			} else {
-				g.Failf("Can't get migration %s", "abc")
-			}
-		})
-	})
+	)
+	c, err := p.LoadConfigDir("src")
+	if assert.NoError(err) {
+		migration, _ := c.Migrations["abc"]
+		assert.Equal(migration.RefName, "abc")
+		assert.Equal(migration.Up.SQL, "")
+		assert.Equal(migration.Down.SQL, "")
+	}
+}
 
-	g.Describe("Duplicated migration resource with the same ref name", func() {
-		g.It("Config parsing should fail because of duplicates", func() {
-			p := mockParser(
-				"src/public.krab.hcl",
-				`
+func TestParserWithDuplicatedRefNames(t *testing.T) {
+	assert := assert.New(t)
+
+	p := mockParser(
+		"src/public.krab.hcl",
+		`
 migration "abc" {
   version = "2006"
   up { sql = "" }
@@ -80,17 +73,18 @@ migration "abc" {
   down { sql = "" }
 }
 `)
-			_, err := p.LoadConfigDir("src")
-			g.Assert(err).IsNotNil()
-			g.Assert(strings.Contains(err.Error(), "Migration with the name 'abc' already exists")).IsTrue("Names must be unique")
-		})
-	})
+	_, err := p.LoadConfigDir("src")
+	if assert.Error(err) {
+		assert.Contains(err.Error(), "Migration with the name 'abc' already exists")
+	}
+}
 
-	g.Describe("Simple migration_set resource", func() {
-		g.It("Should parse config without errors", func() {
-			p := mockParser(
-				"src/migrations.krab.hcl",
-				`
+func TestParserMigrationSet(t *testing.T) {
+	assert := assert.New(t)
+
+	p := mockParser(
+		"src/migrations.krab.hcl",
+		`
 migration "abc" {
   version = "2006"
   up {}
@@ -109,8 +103,8 @@ migration "xyz" {
   down {}
 }
 `,
-				"src/sets.krab.hcl",
-				`
+		"src/sets.krab.hcl",
+		`
 migration_set "public" {
   migrations = [
   	migration.abc,
@@ -122,35 +116,30 @@ migration_set "private" {
   migrations = [migration.xyz]
 }
 `)
-			c, err := p.LoadConfigDir("src")
-			g.Assert(err).IsNil()
+	c, err := p.LoadConfigDir("src")
+	assert.NoError(err)
 
-			// public set
-			publicSet, ok := c.MigrationSets["public"]
-			if !ok {
-				g.Fail("Failed to fetch 'public' set")
-			}
-			g.Assert(publicSet.RefName).Eql("public")
-			g.Assert(len(publicSet.Migrations)).Eql(2)
-			g.Assert(publicSet.Migrations[0].RefName).Eql("abc")
-			g.Assert(publicSet.Migrations[1].RefName).Eql("def")
+	// public set
+	publicSet, _ := c.MigrationSets["public"]
+	assert.Equal(publicSet.RefName, "public")
+	assert.Equal(len(publicSet.Migrations), 2)
+	assert.Equal(publicSet.Migrations[0].RefName, "abc")
+	assert.Equal(publicSet.Migrations[1].RefName, "def")
 
-			// private set
-			privateSet, ok := c.MigrationSets["private"]
-			if !ok {
-				g.Fail("Failed to fetch 'private' set")
-			}
-			g.Assert(privateSet.RefName).Eql("private")
-			g.Assert(len(privateSet.Migrations)).Eql(1)
-			g.Assert(privateSet.Migrations[0].RefName).Eql("xyz")
-		})
-	})
+	// private set
+	privateSet, _ := c.MigrationSets["private"]
+	assert.Equal(privateSet.RefName, "private")
+	assert.Equal(len(privateSet.Migrations), 1)
+	assert.Equal(privateSet.Migrations[0].RefName, "xyz")
 
-	g.Describe("Duplicated migration_set resource with the same ref name", func() {
-		g.It("Config parsing should fail because of duplicates", func() {
-			p := mockParser(
-				"src/sets.krab.hcl",
-				`
+}
+
+func TestParserMigrationSetWithDuplicatedRefName(t *testing.T) {
+	assert := assert.New(t)
+
+	p := mockParser(
+		"src/sets.krab.hcl",
+		`
 migration_set "abc" {
   migrations = []
 }
@@ -159,32 +148,34 @@ migration_set "abc" {
   migrations = []
 }
 `)
-			_, err := p.LoadConfigDir("src")
-			g.Assert(err).IsNotNil()
-			g.Assert(strings.Contains(err.Error(), "Migration Set with the name 'abc' already exists")).IsTrue("Names must be unique")
-		})
-	})
+	_, err := p.LoadConfigDir("src")
+	if assert.Error(err) {
+		assert.Contains(err.Error(), "Migration Set with the name 'abc' already exists", "Names must be unique")
+	}
+}
 
-	g.Describe("Missing migration referenced in migration set", func() {
-		g.It("Should fail with the error", func() {
-			p := mockParser(
-				"src/sets.krab.hcl",
-				`
+func TestParserMigrationSetWithMissingMigrationReference(t *testing.T) {
+	assert := assert.New(t)
+
+	p := mockParser(
+		"src/sets.krab.hcl",
+		`
 migration_set "abc" {
   migrations = [migration.does_not_exist]
 }
 `)
-			_, err := p.LoadConfigDir("src")
-			g.Assert(err).IsNotNil("Parsing config should fail")
-			g.Assert(strings.Contains(err.Error(), "Migration Set references 'does_not_exist' migration that does not exist")).IsTrue("Missing migration")
-		})
-	})
+	_, err := p.LoadConfigDir("src")
+	if assert.Error(err, "Parsing config should fail") {
+		assert.Contains(err.Error(), "Migration Set references 'does_not_exist' migration that does not exist", "Missing migration")
+	}
+}
 
-	g.Describe("Migrations defined in SQL files", func() {
-		g.It("Should read SQL file content when file exists", func() {
-			p := mockParser(
-				"src/migrations.krab.hcl",
-				`
+func TestParserWithMigrationsDefinedInSQLFiles(t *testing.T) {
+	assert := assert.New(t)
+
+	p := mockParser(
+		"src/migrations.krab.hcl",
+		`
 migration "abc" {
   version = "2006"
   up {
@@ -195,27 +186,30 @@ migration "abc" {
   }
 }
 `,
-				"src/up.sql",
-				"CREATE TABLE abc",
-				"src/down.sql",
-				"DROP TABLE abc",
-			)
+		"src/up.sql",
+		"CREATE TABLE abc",
+		"src/down.sql",
+		"DROP TABLE abc",
+	)
 
-			config, err := p.LoadConfigDir("src")
-			g.Assert(err).IsNil("Parsing config should not fail")
+	config, err := p.LoadConfigDir("src")
+	if assert.NoError(err, "Parsing config should not fail") {
 
-			migration, exists := config.Migrations["abc"]
-			g.Assert(exists).Eql(true, "Migration `abc` must exists")
+		migration, exists := config.Migrations["abc"]
+		if assert.True(exists) {
+			assert.Equal(migration.RefName, "abc")
+			assert.Equal(migration.Up.SQL, "CREATE TABLE abc")
+			assert.Equal(migration.Down.SQL, "DROP TABLE abc")
+		}
+	}
+}
 
-			g.Assert(migration.RefName).Eql("abc")
-			g.Assert(migration.Up.SQL).Eql("CREATE TABLE abc")
-			g.Assert(migration.Down.SQL).Eql("DROP TABLE abc")
-		})
+func TestParserWithMigrationsDefinedInSQLFilesThatAreMissing(t *testing.T) {
+	assert := assert.New(t)
 
-		g.It("Should return error when file does not exist", func() {
-			p := mockParser(
-				"src/migrations.krab.hcl",
-				`
+	p := mockParser(
+		"src/migrations.krab.hcl",
+		`
 migration "abc" {
   version = "2006"
   up {
@@ -226,17 +220,13 @@ migration "abc" {
   }
 }
 `,
-			)
+	)
 
-			_, err := p.LoadConfigDir("src")
-			g.Assert(err).IsNotNil("Parsing config should not fail")
-
-			g.Assert(
-				strings.Contains(
-					err.Error(),
-					`Call to function "file_read" failed`,
-				),
-			).IsTrue(err)
-		})
-	})
+	_, err := p.LoadConfigDir("src")
+	if assert.Error(err, "Parsing config should fail") {
+		assert.Contains(
+			err.Error(),
+			`Call to function "file_read" failed`,
+		)
+	}
 }
