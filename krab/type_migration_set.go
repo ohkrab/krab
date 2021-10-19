@@ -23,9 +23,10 @@ func (ms *MigrationSet) InitDefaults() {
 		ms.Schema = "public"
 	}
 
-	if ms.Arguments != nil {
-		ms.Arguments.InitDefaults()
+	if ms.Arguments == nil {
+		ms.Arguments = &Arguments{}
 	}
+	ms.Arguments.InitDefaults()
 
 	if ms.Hooks == nil {
 		ms.Hooks = &Hooks{}
