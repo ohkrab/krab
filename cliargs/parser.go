@@ -9,11 +9,17 @@ type parser struct {
 	args                []string
 	flags               *flag.FlagSet
 	requiredNonFlagArgs int
+	stringValues        map[string]*string
 }
 
 func New(args []string) *parser {
 	flags := flag.NewFlagSet("", flag.ExitOnError)
-	return &parser{args: args, flags: flags, requiredNonFlagArgs: -1}
+	return &parser{
+		args:                args,
+		flags:               flags,
+		requiredNonFlagArgs: -1,
+		stringValues:        map[string]*string{},
+	}
 }
 
 func (p *parser) RequireNonFlagArgs(n int) {
@@ -36,9 +42,19 @@ func (p *parser) Parse() error {
 }
 
 func (p *parser) Add(name string) {
-	p.flags.String(name, "", "")
+	p.stringValues[name] = p.flags.String(name, "", "")
 }
 
 func (p *parser) Args() []string {
 	return p.flags.Args()
+}
+
+func (p *parser) Values() map[string]interface{} {
+	r := map[string]interface{}{}
+
+	for k, v := range p.stringValues {
+		r[k] = *v
+	}
+
+	return r
 }

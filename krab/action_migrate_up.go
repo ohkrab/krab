@@ -8,6 +8,7 @@ import (
 	"github.com/ohkrab/krab/cli"
 	"github.com/ohkrab/krab/cliargs"
 	"github.com/ohkrab/krab/krabdb"
+	"github.com/ohkrab/krab/tpls"
 	"github.com/pkg/errors"
 )
 
@@ -37,9 +38,9 @@ func (a *ActionMigrateUp) Run(args []string) int {
 	flags := cliargs.New(args)
 	flags.RequireNonFlagArgs(0)
 
-	// for _, arg := range a.Set.Arguments.Args {
-	// 	flags.Add(arg.Name)
-	// }
+	for _, arg := range a.Set.Arguments.Args {
+		flags.Add(arg.Name)
+	}
 
 	err := flags.Parse()
 	if err != nil {
@@ -48,8 +49,10 @@ func (a *ActionMigrateUp) Run(args []string) int {
 		return 1
 	}
 
+	templates := tpls.New(flags.Values())
+
 	err = krabdb.WithConnection(func(db *sqlx.DB) error {
-		return a.Do(context.Background(), db, ui)
+		return a.Do(context.Background(), db, templates, ui)
 	})
 
 	if err != nil {
@@ -64,8 +67,8 @@ func (a *ActionMigrateUp) Run(args []string) int {
 
 // Run performs the action. All pending migrations will be executed.
 // Migration schema is created if does not exist.
-func (a *ActionMigrateUp) Do(ctx context.Context, db *sqlx.DB, ui cli.UI) error {
-	versions := NewSchemaMigrationTable(a.Set.Schema)
+func (a *ActionMigrateUp) Do(ctx context.Context, db *sqlx.DB, tpl *tpls.Templates, ui cli.UI) error {
+	versions := NewSchemaMigrationTable(tpl.Render(a.Set.Schema))
 
 	// locking
 	lockID := int64(1)
@@ -77,7 +80,7 @@ func (a *ActionMigrateUp) Do(ctx context.Context, db *sqlx.DB, ui cli.UI) error 
 	defer krabdb.AdvisoryUnlock(ctx, db, lockID)
 
 	hooksRunner := HookRunner{}
-	err = hooksRunner.SetSearchPath(ctx, db, a.Set.Schema)
+	err = hooksRunner.SetSearchPath(ctx, db, tpl.Render(a.Set.Schema))
 	if err != nil {
 		return errors.Wrap(err, "Failed to run SetSearchPath hook")
 	}
@@ -101,7 +104,7 @@ func (a *ActionMigrateUp) Do(ctx context.Context, db *sqlx.DB, ui cli.UI) error 
 		if err != nil {
 			return errors.Wrap(err, "Failed to start transaction")
 		}
-		err = hooksRunner.SetSearchPath(ctx, tx, a.Set.Schema)
+		err = hooksRunner.SetSearchPath(ctx, tx, tpl.Render(a.Set.Schema))
 		if err != nil {
 			return errors.Wrap(err, "Failed to run SetSearchPath hook")
 		}

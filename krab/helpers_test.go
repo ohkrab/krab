@@ -7,8 +7,13 @@ import (
 	_ "github.com/jackc/pgx/v4"
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/jmoiron/sqlx"
+	"github.com/ohkrab/krab/tpls"
 	"github.com/spf13/afero"
 )
+
+func emptyTemplates() *tpls.Templates {
+	return tpls.New(map[string]interface{}{})
+}
 
 // mockParser expects args: "path", "content", "path2", "content2", ...
 func mockParser(pathContentPair ...string) *Parser {

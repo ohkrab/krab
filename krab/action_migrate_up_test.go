@@ -29,7 +29,7 @@ func TestActionMigrateUp(t *testing.T) {
 		}
 		action.Set.InitDefaults()
 
-		err := action.Do(ctx, db, cli.NullUI())
+		err := action.Do(ctx, db, emptyTemplates(), cli.NullUI())
 		assert.NoError(err)
 
 		schema, err := NewSchemaMigrationTable("public").SelectAll(ctx, db)
@@ -61,7 +61,7 @@ func TestActionMigrateUpWithError(t *testing.T) {
 		}
 		action.Set.InitDefaults()
 
-		err := action.Do(ctx, db, cli.NullUI())
+		err := action.Do(ctx, db, emptyTemplates(), cli.NullUI())
 
 		assert.Error(err)
 		assert.Contains(

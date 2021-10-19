@@ -41,7 +41,7 @@ func TestActionMigrateDown(t *testing.T) {
 		}
 		set.InitDefaults()
 
-		err := (&ActionMigrateUp{Set: set}).Do(ctx, db, cli.NullUI())
+		err := (&ActionMigrateUp{Set: set}).Do(ctx, db, emptyTemplates(), cli.NullUI())
 		assert.NoError(err, "Up migration should pass")
 
 		_, err = db.ExecContext(ctx, "INSERT INTO animals(name, emoji) VALUES('Elephant', '🐘')")
@@ -121,7 +121,7 @@ func TestActionMigrateDownOnError(t *testing.T) {
 		}
 		set.InitDefaults()
 
-		err := (&ActionMigrateUp{Set: set}).Do(ctx, db, cli.NullUI())
+		err := (&ActionMigrateUp{Set: set}).Do(ctx, db, emptyTemplates(), cli.NullUI())
 		assert.NoError(err, "Up migration should pass")
 
 		_, err = db.ExecContext(ctx, "INSERT INTO animals(name, emoji) VALUES('Elephant', '🐘')")
@@ -187,7 +187,7 @@ func TestActionMigrateDownWhenSchemaDoesNotExist(t *testing.T) {
 		}
 		set.InitDefaults()
 
-		err := (&ActionMigrateUp{Set: set}).Do(ctx, db, cli.NullUI())
+		err := (&ActionMigrateUp{Set: set}).Do(ctx, db, emptyTemplates(), cli.NullUI())
 		assert.NoError(err, "Up migration should pass")
 
 		// state before action 1

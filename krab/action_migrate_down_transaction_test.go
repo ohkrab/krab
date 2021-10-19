@@ -31,7 +31,7 @@ func TestActionMigrateDownTransactions(t *testing.T) {
 		}
 		set.InitDefaults()
 
-		err := (&ActionMigrateUp{Set: set}).Do(ctx, db, cli.NullUI())
+		err := (&ActionMigrateUp{Set: set}).Do(ctx, db, emptyTemplates(), cli.NullUI())
 		assert.NoError(err, "First migration should pass")
 
 		inTransaction := false
@@ -48,7 +48,7 @@ func TestActionMigrateDownTransactions(t *testing.T) {
 			},
 		}
 
-		err = (&ActionMigrateUp{Set: set}).Do(ctx, db, cli.NullUI())
+		err = (&ActionMigrateUp{Set: set}).Do(ctx, db, emptyTemplates(), cli.NullUI())
 		assert.NoError(err, "Second migration should pass")
 
 		schema, err := NewSchemaMigrationTable("public").SelectAll(ctx, db)

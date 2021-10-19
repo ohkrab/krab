@@ -26,7 +26,7 @@ func TestActionMigrateDownHooks(t *testing.T) {
 		)
 		set.Schema = "tenants"
 
-		err := (&ActionMigrateUp{Set: set}).Do(ctx, db, cli.NullUI())
+		err := (&ActionMigrateUp{Set: set}).Do(ctx, db, emptyTemplates(), cli.NullUI())
 		assert.NoError(err, "First migration should pass")
 
 		schema, _ := SchemaMigrationTable{"tenants.schema_migrations"}.SelectAll(ctx, db)

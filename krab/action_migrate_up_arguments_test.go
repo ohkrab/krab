@@ -7,10 +7,11 @@ import (
 	_ "github.com/jackc/pgx/v4"
 	"github.com/jmoiron/sqlx"
 	"github.com/ohkrab/krab/cli"
+	"github.com/ohkrab/krab/tpls"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestActionMigrateUpHooks(t *testing.T) {
+func TestActionMigrateUpArguments(t *testing.T) {
 	assert := assert.New(t)
 
 	withPg(t, func(db *sqlx.DB) {
@@ -21,9 +22,20 @@ func TestActionMigrateUpHooks(t *testing.T) {
 			`CREATE TABLE animals(name VARCHAR)`,
 			`DROP TABLE animals`,
 		)
-		set.Schema = "tenants"
+		set.Schema = "{{.Args.schema}}"
+		set.Arguments = &Arguments{
+			Args: []*Argument{
+				{
+					Name: "schema",
+					Type: "string",
+				},
+			},
+		}
 
-		err := (&ActionMigrateUp{Set: set}).Do(ctx, db, emptyTemplates(), cli.NullUI())
+		templates := tpls.New(map[string]interface{}{
+			"schema": "custom",
+		})
+		err := (&ActionMigrateUp{Set: set}).Do(ctx, db, templates, cli.NullUI())
 		assert.NoError(err, "First migration should pass")
 
 		schema, err := SchemaMigrationTable{"public.schema_migrations"}.SelectAll(ctx, db)
@@ -32,7 +44,7 @@ func TestActionMigrateUpHooks(t *testing.T) {
 			assert.Contains(err.Error(), `relation "public.schema_migrations" does not exist`)
 		}
 
-		schema, err = SchemaMigrationTable{"tenants.schema_migrations"}.SelectAll(ctx, db)
+		schema, err = SchemaMigrationTable{"custom.schema_migrations"}.SelectAll(ctx, db)
 		assert.NoError(err, "Fetching migrations from tenant schema should be successful")
 
 		if assert.Equal(1, len(schema)) {
