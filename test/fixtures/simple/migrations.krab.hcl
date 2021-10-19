@@ -49,7 +49,7 @@ migration_set "tenant" {
     }
   }
 
-  schema = "tenants"
+  schema = "{{.Args.schema}}"
 
   migrations = [
     migration.create_assets
