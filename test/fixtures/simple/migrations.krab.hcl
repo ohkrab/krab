@@ -45,7 +45,8 @@ migration "add_users" {
 migration_set "tenant" {
   arguments {
     arg "schema" {
-      type = "string"
+      type        = "string"
+      description = "Schema where to create everything"
     }
   }
 

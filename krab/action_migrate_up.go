@@ -18,14 +18,17 @@ type ActionMigrateUp struct {
 }
 
 func (a *ActionMigrateUp) Help() string {
-	return `Usage: krab migrate up [set]
-  
+	return fmt.Sprint(
+		`Usage: krab migrate up [set]`,
+		a.Set.Arguments.Help(),
+		`
 Migrate all pending migrations in given [set].
 
 Example:
 
     krab migrate up default
-`
+`,
+	)
 }
 
 func (a *ActionMigrateUp) Synopsis() string {
@@ -43,6 +46,13 @@ func (a *ActionMigrateUp) Run(args []string) int {
 	}
 
 	err := flags.Parse()
+	if err != nil {
+		ui.Output(a.Help())
+		ui.Error(err.Error())
+		return 1
+	}
+
+	err = a.Set.Arguments.Validate(flags.Values())
 	if err != nil {
 		ui.Output(a.Help())
 		ui.Error(err.Error())
