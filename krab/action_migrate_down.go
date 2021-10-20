@@ -2,12 +2,13 @@ package krab
 
 import (
 	"context"
-	"flag"
 	"fmt"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/ohkrab/krab/cli"
+	"github.com/ohkrab/krab/cliargs"
 	"github.com/ohkrab/krab/krabdb"
+	"github.com/ohkrab/krab/tpls"
 	"github.com/pkg/errors"
 )
 
@@ -35,9 +36,16 @@ func (a *ActionMigrateDown) Synopsis() string {
 // Run in CLI.
 func (a *ActionMigrateDown) Run(args []string) int {
 	ui := cli.DefaultUI()
-	flags := flag.NewFlagSet("", flag.ContinueOnError)
-	err := flags.Parse(args)
+	flags := cliargs.New(args)
+	flags.RequireNonFlagArgs(1)
+
+	for _, arg := range a.Set.Arguments.Args {
+		flags.Add(arg.Name)
+	}
+
+	err := flags.Parse()
 	if err != nil {
+		ui.Output(a.Help())
 		ui.Error(err.Error())
 		return 1
 	}
@@ -68,8 +76,10 @@ func (a *ActionMigrateDown) Run(args []string) int {
 		return 1
 	}
 
+	templates := tpls.New(flags.Values())
+
 	err = krabdb.WithConnection(func(db *sqlx.DB) error {
-		return a.Do(context.Background(), db)
+		return a.Do(context.Background(), db, templates)
 	})
 
 	if err != nil {
@@ -84,8 +94,8 @@ func (a *ActionMigrateDown) Run(args []string) int {
 
 // Do performs the action.
 // Schema migration must exist before running it.
-func (a *ActionMigrateDown) Do(ctx context.Context, db *sqlx.DB) error {
-	versions := NewSchemaMigrationTable(a.Set.Schema)
+func (a *ActionMigrateDown) Do(ctx context.Context, db *sqlx.DB, tpl *tpls.Templates) error {
+	versions := NewSchemaMigrationTable(tpl.Render(a.Set.Schema))
 
 	migration := a.Set.FindMigrationByVersion(a.DownMigration.Version)
 	if migration == nil {
@@ -103,7 +113,7 @@ func (a *ActionMigrateDown) Do(ctx context.Context, db *sqlx.DB) error {
 	defer krabdb.AdvisoryUnlock(ctx, db, lockID)
 
 	hooksRunner := HookRunner{}
-	err = hooksRunner.SetSearchPath(ctx, db, a.Set.Schema)
+	err = hooksRunner.SetSearchPath(ctx, db, tpl.Render(a.Set.Schema))
 	if err != nil {
 		return errors.Wrap(err, "Failed to run SetSearchPath hook")
 	}
@@ -112,6 +122,10 @@ func (a *ActionMigrateDown) Do(ctx context.Context, db *sqlx.DB) error {
 	tx, err := krabdb.NewTx(ctx, db, migration.ShouldRunInTransaction())
 	if err != nil {
 		return errors.Wrap(err, "Failed to start transaction")
+	}
+	err = hooksRunner.SetSearchPath(ctx, tx, tpl.Render(a.Set.Schema))
+	if err != nil {
+		return errors.Wrap(err, "Failed to run SetSearchPath hook")
 	}
 
 	migrationExists, _ := versions.Exists(ctx, db, SchemaMigration{migration.Version})

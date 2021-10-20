@@ -69,7 +69,7 @@ func TestActionMigrateDown(t *testing.T) {
 
 		// action
 		action := &ActionMigrateDown{Set: set, DownMigration: SchemaMigration{"v2"}}
-		err = action.Do(ctx, db)
+		err = action.Do(ctx, db, emptyTemplates())
 		assert.NoError(err, "Action must succeed")
 
 		// state after
@@ -135,7 +135,7 @@ func TestActionMigrateDownOnError(t *testing.T) {
 
 		// action
 		action := &ActionMigrateDown{Set: set, DownMigration: SchemaMigration{"v2"}}
-		err = action.Do(ctx, db)
+		err = action.Do(ctx, db, emptyTemplates())
 		assert.Error(err, "Migration should fail")
 		assert.Contains(
 			err.Error(),
@@ -198,7 +198,7 @@ func TestActionMigrateDownWhenSchemaDoesNotExist(t *testing.T) {
 
 		// action 1
 		action_1 := &ActionMigrateDown{Set: set, DownMigration: SchemaMigration{"v2"}}
-		err = action_1.Do(ctx, db)
+		err = action_1.Do(ctx, db, emptyTemplates())
 		assert.NoError(err, "Migrate down should pass")
 
 		// state after action 1
@@ -219,7 +219,7 @@ func TestActionMigrateDownWhenSchemaDoesNotExist(t *testing.T) {
 
 		// action 2
 		action_2 := &ActionMigrateDown{Set: set, DownMigration: SchemaMigration{"v2"}}
-		err = action_2.Do(ctx, db)
+		err = action_2.Do(ctx, db, emptyTemplates())
 		assert.Error(err, "Second migrate down should fail")
 		assert.Contains(
 			err.Error(),

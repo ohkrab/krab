@@ -58,7 +58,7 @@ func TestActionMigrateDownTransactions(t *testing.T) {
 		assert.Equal("v1", schema[0].Version)
 		assert.Equal("v2", schema[1].Version)
 
-		err = (&ActionMigrateDown{Set: set, DownMigration: SchemaMigration{"v2"}}).Do(ctx, db)
+		err = (&ActionMigrateDown{Set: set, DownMigration: SchemaMigration{"v2"}}).Do(ctx, db, emptyTemplates())
 		assert.NoError(err, "Rollback of v2 migration should pass")
 
 		schema, err = NewSchemaMigrationTable("public").SelectAll(ctx, db)
