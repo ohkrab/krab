@@ -6,6 +6,7 @@ import (
 
 	_ "github.com/jackc/pgx/v4"
 	_ "github.com/jackc/pgx/v4/stdlib"
+	"github.com/ohkrab/krab/agent"
 	"github.com/ohkrab/krab/cli"
 	"github.com/ohkrab/krab/krab"
 	"github.com/ohkrab/krab/krabenv"
@@ -31,6 +32,10 @@ func main() {
 
 	c.RegisterCmd("version", func() cli.Command {
 		return &krab.ActionVersion{}
+	})
+
+	c.RegisterCmd("agent", func() cli.Command {
+		return &agent.Agent{Config: config}
 	})
 
 	for _, set := range config.MigrationSets {
