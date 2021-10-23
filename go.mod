@@ -4,6 +4,9 @@ go 1.16
 
 require (
 	github.com/agext/levenshtein v1.2.3 // indirect
+	github.com/go-chi/chi v1.5.4 // indirect
+	github.com/go-chi/chi/v5 v5.0.4 // indirect
+	github.com/go-chi/cors v1.2.0 // indirect
 	github.com/graphql-go/graphql v0.8.0 // indirect
 	github.com/graphql-go/handler v0.2.3 // indirect
 	github.com/hashicorp/hcl/v2 v2.6.0
@@ -16,6 +19,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/afero v1.6.0
 	github.com/stretchr/testify v1.7.0
+	github.com/unrolled/secure v1.0.9 // indirect
 	github.com/wzshiming/ctc v1.2.3 // indirect
 	github.com/wzshiming/winseq v0.0.0-20200720163736-7fa652d2b50e // indirect
 	github.com/zclconf/go-cty v1.5.1
