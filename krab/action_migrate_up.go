@@ -40,7 +40,6 @@ func (a *ActionMigrateUp) Synopsis() string {
 func (a *ActionMigrateUp) Run(args []string) int {
 	ui := cli.DefaultUI()
 	flags := cliargs.New(args)
-	flags.RequireNonFlagArgs(0)
 
 	for _, arg := range a.Set.Arguments.Args {
 		flags.Add(arg.Name)

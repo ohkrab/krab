@@ -17,7 +17,7 @@ func New(args []string) *parser {
 	return &parser{
 		args:                args,
 		flags:               flags,
-		requiredNonFlagArgs: -1,
+		requiredNonFlagArgs: 0,
 		stringValues:        map[string]*string{},
 	}
 }

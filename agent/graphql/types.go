@@ -1,36 +1,15 @@
-package types
+package schema
 
-import "github.com/graphql-go/graphql"
+type Migration struct {
+	RefName     string `json:"refName"`
+	Version     string `json:"version"`
+	Transaction bool   `json:"transaction"`
+	Up          string `json:"up"`
+	Down        string `json:"down"`
+}
 
-var (
-	MigrationSet = graphql.NewObject(
-		graphql.ObjectConfig{
-			Name: "MigrationSet",
-			Fields: graphql.Fields{
-				"refName": &graphql.Field{
-					Type: graphql.String,
-				},
-				"schema": &graphql.Field{
-					Type: graphql.String,
-				},
-			},
-		},
-	)
-
-	Migration = graphql.NewObject(
-		graphql.ObjectConfig{
-			Name: "Migration",
-			Fields: graphql.Fields{
-				"refName": &graphql.Field{
-					Type: graphql.String,
-				},
-				"version": &graphql.Field{
-					Type: graphql.String,
-				},
-				"transaction": &graphql.Field{
-					Type: graphql.Boolean,
-				},
-			},
-		},
-	)
-)
+type MigrationSet struct {
+	RefName    string      `json:"refName"`
+	Schema     string      `json:"schema"`
+	Migrations []Migration `json:"migrations,omitempty"`
+}
