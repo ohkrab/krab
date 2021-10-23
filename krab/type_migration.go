@@ -10,7 +10,7 @@ type Migration struct {
 	Version     string        `hcl:"version"`
 	Up          MigrationUp   `hcl:"up,block"`
 	Down        MigrationDown `hcl:"down,block"`
-	Transaction *bool         `hcl:"transaction,optional"` // wrap operaiton in transaction
+	Transaction *bool         `hcl:"transaction,optional"` // wrap operation in transaction
 }
 
 // MigrationUp contains info how to migrate up.

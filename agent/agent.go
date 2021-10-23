@@ -6,6 +6,7 @@ import (
 
 	"github.com/graphql-go/graphql"
 	"github.com/graphql-go/handler"
+	types "github.com/ohkrab/krab/agent/graphql"
 	"github.com/ohkrab/krab/cli"
 	"github.com/ohkrab/krab/cliargs"
 	"github.com/ohkrab/krab/krab"
@@ -40,34 +41,33 @@ func (a *Agent) Run(args []string) int {
 		return 1
 	}
 	// Schema
-	migrationSetType := graphql.NewObject(
-		graphql.ObjectConfig{
-			Name: "MigrationSet",
-			Fields: graphql.Fields{
-				"ref_name": &graphql.Field{
-					Type: graphql.String,
-				},
-				"schema": &graphql.Field{
-					Type: graphql.String,
-				},
-			},
-		},
-	)
 
 	rootQuery := graphql.ObjectConfig{
 		Name: "RootQuery",
 		Fields: graphql.Fields{
-			"migration_set": &graphql.Field{
-				Type: migrationSetType,
+			"migrationSets": &graphql.Field{
+				Type: graphql.NewList(types.MigrationSet),
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					sets := []*krab.MigrationSet{}
+					for _, v := range a.Config.MigrationSets {
+						sets = append(sets, v)
+					}
+
+					return sets, nil
+				},
+			},
+			"migrationSet": &graphql.Field{
+				Type: types.MigrationSet,
 				Args: graphql.FieldConfigArgument{
-					"id": &graphql.ArgumentConfig{
+					"refName": &graphql.ArgumentConfig{
 						Type: graphql.String,
 					},
+					// "migration"
 				},
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-					id, ok := p.Args["ref_name"]
+					id, ok := p.Args["refName"].(string)
 					if ok {
-						return
+						return a.Config.MigrationSets[id], nil
 					}
 					return nil, nil
 				},
@@ -91,7 +91,7 @@ func (a *Agent) Run(args []string) int {
 	})
 
 	http.Handle("/graphql", h)
-	http.ListenAndServe(":8080", nil)
+	http.ListenAndServe(":8888", nil)
 
 	return 0
 }
