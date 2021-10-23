@@ -42,7 +42,6 @@ func (a *Arguments) InitDefaults() {
 func (a *Arguments) Help() string {
 	sb := strings.Builder{}
 	if len(a.Args) > 0 {
-		sb.WriteString("\nOptions:\n")
 		for _, arg := range a.Args {
 			sb.WriteString("  -")
 			sb.WriteString(arg.Name)

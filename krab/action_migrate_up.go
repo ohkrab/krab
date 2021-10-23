@@ -20,6 +20,7 @@ type ActionMigrateUp struct {
 func (a *ActionMigrateUp) Help() string {
 	return fmt.Sprint(
 		`Usage: krab migrate up [set]`,
+		"\n\n",
 		a.Set.Arguments.Help(),
 		`
 Migrate all pending migrations in given [set].

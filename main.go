@@ -28,19 +28,28 @@ func main() {
 	}
 
 	c := cli.New(krab.InfoName, krab.InfoVersion)
+
+	c.RegisterCmd("version", func() cli.Command {
+		return &krab.ActionVersion{}
+	})
+
 	for _, set := range config.MigrationSets {
 		localSet := set
-
-		c.RegisterCmd("version", func() cli.Command {
-			return &krab.ActionVersion{}
-		})
 
 		c.RegisterCmd(fmt.Sprintln("migrate", "up", set.RefName), func() cli.Command {
 			return &krab.ActionMigrateUp{Set: localSet}
 		})
 
 		c.RegisterCmd(fmt.Sprintln("migrate", "down", set.RefName), func() cli.Command {
-			return &krab.ActionMigrateDown{Set: localSet}
+			return &krab.ActionMigrateDown{Set: localSet, Arguments: krab.Arguments{
+				Args: []*krab.Argument{
+					{
+						Name:        "version",
+						Type:        "string",
+						Description: "Migration version to rollback",
+					},
+				},
+			}}
 		})
 	}
 

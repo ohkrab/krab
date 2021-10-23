@@ -16,17 +16,23 @@ import (
 type ActionMigrateDown struct {
 	Set           *MigrationSet
 	DownMigration SchemaMigration
+	Arguments     Arguments
 }
 
 func (a *ActionMigrateDown) Help() string {
-	return `Usage: krab migrate down [set] [version]
-  
-Rollback migration in given [set] identified by [version].
+	return fmt.Sprint(
+		`Usage: krab migrate down [set] -version VERSION`,
+		"\n\n",
+		a.Arguments.Help(),
+		a.Set.Arguments.Help(),
+		` 
+Rollback migration in given [set] identified by VERSION.
 
 Example:
 
-    krab migrate down default 20060102150405
-`
+    krab migrate down default -version 20060102150405
+`,
+	)
 }
 
 func (a *ActionMigrateDown) Synopsis() string {
@@ -37,9 +43,13 @@ func (a *ActionMigrateDown) Synopsis() string {
 func (a *ActionMigrateDown) Run(args []string) int {
 	ui := cli.DefaultUI()
 	flags := cliargs.New(args)
-	flags.RequireNonFlagArgs(1)
+	flags.RequireNonFlagArgs(0)
 
 	for _, arg := range a.Set.Arguments.Args {
+		flags.Add(arg.Name)
+	}
+	// default arguments always take precedence over custom ones
+	for _, arg := range a.Arguments.Args {
 		flags.Add(arg.Name)
 	}
 
@@ -49,34 +59,44 @@ func (a *ActionMigrateDown) Run(args []string) int {
 		ui.Error(err.Error())
 		return 1
 	}
-
-	args = flags.Args()
-	switch len(args) {
-	case 1:
-		a.DownMigration = SchemaMigration{args[0]}
-	default:
-		err = krabdb.WithConnection(func(db *sqlx.DB) error {
-			ui.Output("Latest migrations:")
-			versions := NewSchemaMigrationTable(a.Set.Schema)
-			migrations, err := versions.SelectLastN(context.TODO(), db, 5)
-			for _, m := range migrations {
-				ui.Info(fmt.Sprint("* ", m.Version))
-			}
-			ui.Output("")
-
-			return err
-		})
-		if err != nil {
-			ui.Error(err.Error())
-			return 1
-		}
-
+	err = a.Arguments.Validate(flags.Values())
+	if err != nil {
 		ui.Output(a.Help())
-		ui.Error("Invalid number of arguments")
+		ui.Error(err.Error())
+		return 1
+	}
+	err = a.Set.Arguments.Validate(flags.Values())
+	if err != nil {
+		ui.Output(a.Help())
+		ui.Error(err.Error())
 		return 1
 	}
 
 	templates := tpls.New(flags.Values())
+
+	a.DownMigration = SchemaMigration{
+		cliargs.Values(flags.Values()).Get("version"),
+	}
+
+	// err = krabdb.WithConnection(func(db *sqlx.DB) error {
+	// 	ui.Output("Latest migrations:")
+	// 	versions := NewSchemaMigrationTable(a.Set.Schema)
+	// 	migrations, err := versions.SelectLastN(context.TODO(), db, 5)
+	// 	for _, m := range migrations {
+	// 		ui.Info(fmt.Sprint("* ", m.Version))
+	// 	}
+	// 	ui.Output("")
+
+	// 	return err
+	// })
+	// if err != nil {
+	// 	ui.Error(err.Error())
+	// 	return 1
+	// }
+
+	// ui.Output(a.Help())
+	// ui.Error("Invalid number of arguments")
+	// return 1
 
 	err = krabdb.WithConnection(func(db *sqlx.DB) error {
 		return a.Do(context.Background(), db, templates)
