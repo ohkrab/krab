@@ -15,14 +15,14 @@ import (
 // Parser represents HCL simple parser.
 type Parser struct {
 	p  *hclparse.Parser
-	fs afero.Afero
+	FS afero.Afero
 }
 
 // NewParser initializes HCL parser and default file system.
 func NewParser() *Parser {
 	return &Parser{
 		p:  hclparse.NewParser(),
-		fs: afero.Afero{Fs: afero.OsFs{}},
+		FS: afero.Afero{Fs: afero.OsFs{}},
 	}
 }
 
@@ -48,7 +48,7 @@ func (p *Parser) LoadConfigDir(path string) (*Config, error) {
 
 func (p *Parser) loadConfigFiles(paths ...string) ([]*File, error) {
 	var files []*File
-	evalContext := krabfn.EvalContext(p.fs)
+	evalContext := krabfn.EvalContext(p.FS)
 
 	for _, path := range paths {
 		f, err := p.loadConfigFile(path, evalContext)
@@ -64,7 +64,7 @@ func (p *Parser) loadConfigFiles(paths ...string) ([]*File, error) {
 func (p *Parser) loadConfigFile(path string, evalContext *hcl.EvalContext) (*File, error) {
 	var file File
 
-	src, err := p.fs.ReadFile(path)
+	src, err := p.FS.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("[%w] Failed to load file %s", err, path)
 	}
@@ -79,7 +79,7 @@ func (p *Parser) loadConfigFile(path string, evalContext *hcl.EvalContext) (*Fil
 func (p *Parser) dirFiles(dir string) ([]string, error) {
 	paths := []string{}
 
-	infos, err := p.fs.ReadDir(dir)
+	infos, err := p.FS.ReadDir(dir)
 	if err != nil {
 		return nil, fmt.Errorf("Directory %s does not exist or cannot be read", dir)
 	}

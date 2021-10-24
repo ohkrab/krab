@@ -31,7 +31,7 @@ func mockParser(pathContentPair ...string) *Parser {
 	}
 
 	p := NewParser()
-	p.fs = afero.Afero{Fs: memfs}
+	p.FS = afero.Afero{Fs: memfs}
 	return p
 }
 
