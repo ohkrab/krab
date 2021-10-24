@@ -12,15 +12,19 @@ type UI interface {
 	mcli.Ui
 }
 
-func DefaultUI() UI {
+func New(errorWriter io.Writer, writer io.Writer) UI {
 	ui := &mcli.ColoredUi{
-		Ui:         &mcli.BasicUi{ErrorWriter: os.Stderr, Writer: os.Stdout},
+		Ui:         &mcli.BasicUi{ErrorWriter: errorWriter, Writer: writer},
 		WarnColor:  mcli.UiColorYellow,
 		ErrorColor: mcli.UiColorRed,
 		InfoColor:  mcli.UiColorGreen,
 	}
 
 	return ui
+}
+
+func DefaultUI() UI {
+	return New(os.Stderr, os.Stdout)
 }
 
 func NullUI() UI {

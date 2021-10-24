@@ -14,6 +14,7 @@ import (
 
 // ActionMigrateDown keeps data needed to perform this action.
 type ActionMigrateDown struct {
+	Ui            cli.UI
 	Set           *MigrationSet
 	DownMigration SchemaMigration
 	Arguments     Arguments

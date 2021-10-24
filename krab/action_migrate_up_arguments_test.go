@@ -17,7 +17,7 @@ func TestActionMigrateUpArguments(t *testing.T) {
 	withPg(t, func(db *sqlx.DB) {
 		ctx := context.Background()
 
-		set := createMigrationSet("tenants",
+		set := CreateMigrationSet("tenants",
 			"v1",
 			`CREATE TABLE animals(name VARCHAR)`,
 			`DROP TABLE animals`,

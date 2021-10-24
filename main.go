@@ -8,6 +8,7 @@ import (
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/ohkrab/krab/cli"
 	"github.com/ohkrab/krab/krab"
+	"github.com/ohkrab/krab/krabcli"
 	"github.com/ohkrab/krab/krabenv"
 )
 
@@ -27,31 +28,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	c := cli.New(krab.InfoName, krab.InfoVersion)
-
-	c.RegisterCmd("version", func() cli.Command {
-		return &krab.ActionVersion{}
-	})
-
-	for _, set := range config.MigrationSets {
-		localSet := set
-
-		c.RegisterCmd(fmt.Sprintln("migrate", "up", set.RefName), func() cli.Command {
-			return &krab.ActionMigrateUp{Set: localSet}
-		})
-
-		c.RegisterCmd(fmt.Sprintln("migrate", "down", set.RefName), func() cli.Command {
-			return &krab.ActionMigrateDown{Set: localSet, Arguments: krab.Arguments{
-				Args: []*krab.Argument{
-					{
-						Name:        "version",
-						Type:        "string",
-						Description: "Migration version to rollback",
-					},
-				},
-			}}
-		})
-	}
+	c := krabcli.New(cli.DefaultUI(), os.Args[1:], config)
 
 	exitStatus, err := c.Run()
 	if err != nil {

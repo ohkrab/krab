@@ -14,6 +14,7 @@ import (
 
 // ActionMigrateUp keeps data needed to perform this action.
 type ActionMigrateUp struct {
+	Ui  cli.UI
 	Set *MigrationSet
 }
 
@@ -38,7 +39,7 @@ func (a *ActionMigrateUp) Synopsis() string {
 
 // Run in CLI.
 func (a *ActionMigrateUp) Run(args []string) int {
-	ui := cli.DefaultUI()
+	ui := a.Ui
 	flags := cliargs.New(args)
 	flags.RequireNonFlagArgs(0)
 

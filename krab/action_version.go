@@ -7,7 +7,9 @@ import (
 )
 
 // ActionVersion prints full version.
-type ActionVersion struct{}
+type ActionVersion struct {
+	Ui cli.UI
+}
 
 func (a *ActionVersion) Help() string {
 	return `Usage: krab version
@@ -22,8 +24,7 @@ func (a *ActionVersion) Synopsis() string {
 
 // Run in CLI.
 func (a *ActionVersion) Run(args []string) int {
-	ui := cli.DefaultUI()
-	ui.Output(fmt.Sprint(InfoName, " ", InfoVersion))
-	ui.Output(fmt.Sprint("Build ", InfoCommit, " ", InfoBuildDate))
+	a.Ui.Output(fmt.Sprint(InfoName, " ", InfoVersion))
+	a.Ui.Output(fmt.Sprint("Build ", InfoCommit, " ", InfoBuildDate))
 	return 0
 }

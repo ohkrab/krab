@@ -1,6 +1,6 @@
 package krab
 
-func createMigrationSet(
+func CreateMigrationSet(
 	refName string,
 	migrationData ...string,
 ) *MigrationSet {
