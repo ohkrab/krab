@@ -1,19 +1,10 @@
 package krab
 
 import (
-	"os"
-	"testing"
-
 	_ "github.com/jackc/pgx/v4"
 	_ "github.com/jackc/pgx/v4/stdlib"
-	"github.com/jmoiron/sqlx"
-	"github.com/ohkrab/krab/tpls"
 	"github.com/spf13/afero"
 )
-
-func emptyTemplates() *tpls.Templates {
-	return tpls.New(map[string]interface{}{})
-}
 
 // mockParser expects args: "path", "content", "path2", "content2", ...
 func mockParser(pathContentPair ...string) *Parser {
@@ -33,51 +24,4 @@ func mockParser(pathContentPair ...string) *Parser {
 	p := NewParser()
 	p.FS = afero.Afero{Fs: memfs}
 	return p
-}
-
-func withPg(t *testing.T, f func(db *sqlx.DB)) {
-	db, err := sqlx.Connect("pgx", os.Getenv("DATABASE_URL"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
-
-	err = db.Ping()
-	if err != nil {
-		t.Fatalf("Failed to ping db: %v", err)
-	}
-	defer cleanDb(db)
-
-	f(db)
-}
-
-func cleanDb(db *sqlx.DB) {
-	db.MustExec(`
-DO 
-$$ 
-  DECLARE 
-    r RECORD;
-BEGIN
-  FOR r IN 
-    (
-      SELECT table_schema, table_name 
-        FROM information_schema.tables 
-       WHERE table_schema NOT IN ('pg_catalog', 'information_schema')
-    ) 
-  LOOP
-     EXECUTE 'DROP TABLE ' || quote_ident(r.table_schema) || '.' || quote_ident(r.table_name) || ' CASCADE';
-  END LOOP;
-END
-$$`)
-}
-
-func sqlxRowsMapScan(rows *sqlx.Rows) []map[string]interface{} {
-	res := []map[string]interface{}{}
-	for rows.Next() {
-		row := map[string]interface{}{}
-		rows.MapScan(row)
-		res = append(res, row)
-	}
-
-	return res
 }

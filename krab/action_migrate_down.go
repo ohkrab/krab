@@ -42,7 +42,7 @@ func (a *ActionMigrateDown) Synopsis() string {
 
 // Run in CLI.
 func (a *ActionMigrateDown) Run(args []string) int {
-	ui := cli.DefaultUI()
+	ui := a.Ui
 	flags := cliargs.New(args)
 	flags.RequireNonFlagArgs(0)
 

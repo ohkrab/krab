@@ -107,6 +107,30 @@ func (m *cliMock) AssertSchemaMigrationTable(t *testing.T, db *sqlx.DB, schema s
 	return false
 }
 
+func (m *cliMock) Query(t *testing.T, db *sqlx.DB, query string) ([]string, []map[string]interface{}) {
+	rows, err := db.QueryxContext(context.TODO(), query)
+	assert.NoError(t, err, fmt.Sprint("Query ", query, " must execute successfully"))
+	defer rows.Close()
+
+	cols, _ := rows.Columns()
+	vals := sqlxRowsMapScan(rows)
+
+	return cols, vals
+}
+
+func (m *cliMock) Insert(t *testing.T, db *sqlx.DB, table string, cols string, vals string) bool {
+	_, err := db.ExecContext(
+		context.TODO(),
+		fmt.Sprintf(
+			"INSERT INTO %s(%s) VALUES%s",
+			table,
+			cols,
+			vals,
+		),
+	)
+	return assert.NoError(t, err, "Insertion must happen")
+}
+
 func mockCli(config *krab.Config) *cliMock {
 	mock := &cliMock{
 		config: config,
