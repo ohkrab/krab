@@ -75,6 +75,19 @@ func (m *cliMock) AssertUiErrorOutputContains(t *testing.T, output string) bool 
 	)
 }
 
+func (m *cliMock) AssertSchemaMigrationTableMissing(t *testing.T, db *sqlx.DB, schema string) bool {
+	_, err := krab.NewSchemaMigrationTable(schema).SelectAll(context.TODO(), db)
+	if assert.Error(t, err) {
+		return assert.Contains(
+			t,
+			err.Error(),
+			fmt.Sprintf(`relation "%s.schema_migrations" does not exist`, schema),
+		)
+	}
+
+	return false
+}
+
 func (m *cliMock) AssertSchemaMigrationTable(t *testing.T, db *sqlx.DB, schema string, expectedVersions ...string) bool {
 	versions, err := krab.NewSchemaMigrationTable(schema).SelectAll(context.TODO(), db)
 	if assert.NoError(t, err) {
