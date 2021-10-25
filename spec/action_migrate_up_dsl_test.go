@@ -46,12 +46,25 @@ migration "create_animals" {
 
 	  column "weight_kg" "int" { null = false }
 
+	  column "category_id" "bigint" {
+	    null = false
+	  }
+
 	  constraint "pk" {
 		primary_key = ["id"]
 	  }
 
 	  constraint "ensure_positive_weight" {
 	    check = "length(weight_kg) > 0"
+	  }
+
+	  constraint "fk" {
+	    columns = ["category_id"]
+		references "categories" {
+		  columns = ["id"]
+		  on_delete = "cascade"
+		  on_update = "no action"
+		}
 	  }
 	}
 
