@@ -48,7 +48,7 @@ func (s SchemaMigrationTable) Init(ctx context.Context, db sqlx.ExecerContext) e
 	}
 
 	_, err := db.ExecContext(ctx, fmt.Sprintf(
-		"CREATE TABLE IF NOT EXISTS %s(version varchar PRIMARY KEY)",
+		"CREATE TABLE IF NOT EXISTS %s(version varchar PRIMARY KEY, migrated_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP)",
 		krabdb.QuoteIdentWithDots(s.Name),
 	))
 
