@@ -28,7 +28,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	c := krabcli.New(cli.DefaultUI(), os.Args[1:], config)
+	c := krabcli.New(ui, os.Args[1:], config)
 
 	exitStatus, err := c.Run()
 	if err != nil {

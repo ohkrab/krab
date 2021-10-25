@@ -1,59 +1,10 @@
-package krab
+package spec
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
-
-func TestParser(t *testing.T) {
-	assert := assert.New(t)
-
-	p := mockParser(
-		"src/public.krab.hcl",
-		`
-migration "create_tenants" {
-  version = "2006"
-
-  up {
-	sql = "CREATE TABLE tenants(name VARCHAR PRIMARY KEY)"
-  }
-
-  down {
-	sql = "DROP TABLE tenants"
-  }
-}
-`)
-	c, err := p.LoadConfigDir("src")
-	if assert.NoError(err) {
-		migration, _ := c.Migrations["create_tenants"]
-
-		assert.Equal(migration.RefName, "create_tenants")
-		assert.Equal(migration.Version, "2006")
-		assert.Equal(migration.Up.SQL, "CREATE TABLE tenants(name VARCHAR PRIMARY KEY)")
-		assert.Equal(migration.Down.SQL, "DROP TABLE tenants")
-	}
-}
-
-func TestParserWithoutMigrationDetails(t *testing.T) {
-	assert := assert.New(t)
-
-	p := mockParser(
-		"src/public.krab.hcl",
-		`migration "abc" {
-				  version = "2006"
-                  up {}
-				  down {}
-				}`,
-	)
-	c, err := p.LoadConfigDir("src")
-	if assert.NoError(err) {
-		migration, _ := c.Migrations["abc"]
-		assert.Equal(migration.RefName, "abc")
-		assert.Equal(migration.Up.SQL, "")
-		assert.Equal(migration.Down.SQL, "")
-	}
-}
 
 func TestParserWithDuplicatedRefNames(t *testing.T) {
 	assert := assert.New(t)
@@ -77,61 +28,6 @@ migration "abc" {
 	if assert.Error(err) {
 		assert.Contains(err.Error(), "Migration with the name 'abc' already exists")
 	}
-}
-
-func TestParserMigrationSet(t *testing.T) {
-	assert := assert.New(t)
-
-	p := mockParser(
-		"src/migrations.krab.hcl",
-		`
-migration "abc" {
-  version = "2006"
-  up {}
-  down {}
-}
-
-migration "def" {
-  version = "2006"
-  up {}
-  down {}
-}
-
-migration "xyz" {
-  version = "2006"
-  up {}
-  down {}
-}
-`,
-		"src/sets.krab.hcl",
-		`
-migration_set "public" {
-  migrations = [
-  	migration.abc,
-	migration.def,
-  ]
-}
-
-migration_set "private" {
-  migrations = [migration.xyz]
-}
-`)
-	c, err := p.LoadConfigDir("src")
-	assert.NoError(err)
-
-	// public set
-	publicSet, _ := c.MigrationSets["public"]
-	assert.Equal(publicSet.RefName, "public")
-	assert.Equal(len(publicSet.Migrations), 2)
-	assert.Equal(publicSet.Migrations[0].RefName, "abc")
-	assert.Equal(publicSet.Migrations[1].RefName, "def")
-
-	// private set
-	privateSet, _ := c.MigrationSets["private"]
-	assert.Equal(privateSet.RefName, "private")
-	assert.Equal(len(privateSet.Migrations), 1)
-	assert.Equal(privateSet.Migrations[0].RefName, "xyz")
-
 }
 
 func TestParserMigrationSetWithDuplicatedRefName(t *testing.T) {
