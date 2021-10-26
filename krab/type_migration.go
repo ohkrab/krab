@@ -23,6 +23,43 @@ type MigrationDown struct {
 	SQL string `hcl:"sql,optional"`
 }
 
+// CreateTable contains DSL for creating tables.
+type CreateTable struct {
+	Name     string `hcl:"name,label"`
+	Unlogged bool
+}
+
+// PrimaryKey constraint DSL for table DDL.
+type PrimaryKey struct {
+	Name string `hcl:"name,label"`
+}
+
+// ForeignKey constraint DSL for table DDL.
+type ForeignKey struct {
+	Name string `hcl:"name,label"`
+}
+
+// ForeignKey constraint DSL for table DDL.
+type Unique struct {
+	Name string `hcl:"name,label"`
+}
+
+// Column constraint DSL for table DDL.
+type Column struct {
+	Name string `hcl:"name,label"`
+	Type string `hcl:"type,label"`
+}
+
+// Check constraint DSL for table DDL.
+type Check struct {
+	Name string `hcl:"name,label"`
+}
+
+// DropTable contains DSL for dropping tables.
+type DropTable struct {
+	Table string `hcl:"table,label"`
+}
+
 func (ms *Migration) Validate() error {
 	return ErrorCoalesce(
 		ValidateRefName(ms.RefName),
