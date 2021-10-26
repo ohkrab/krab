@@ -14,12 +14,8 @@ migration "create_categories" {
 
   up {
     create_table "categories" {
-	  column "id" "bigint" { primary_key = true }
+	  column "id" "bigint" {}
 	  column "name" "varchar" { null = false }
-	  
-	  constraint "unique_name" {
-		unique = ["name"]
-	  }
 	}
   }
 
@@ -33,12 +29,14 @@ migration "create_animals" {
 
   up {
 	create_table "animals" {
+	  unlogged = false
+
 	  column "id" "bigint" {
-		identity = "always"
+		identity "always" {}
 	  }
 
 	  column "name" "varchar" { null = false }
-
+	  
 	  column "extinct" "boolean" {
 	    null    = false
 		default = false
@@ -46,38 +44,40 @@ migration "create_animals" {
 
 	  column "weight_kg" "int" { null = false }
 
+	  column "weight_g" "int" {
+		generated {
+		  as = "weight_kg * 1000"
+		}
+	  }
+
 	  column "category_id" "bigint" {
 	    null = false
 	  }
 
-	  constraint "pk" {
-		primary_key = ["id"]
+	  unique "unique_name" {
+		columns = ["name"]
+		include = ["weight_kg"]
 	  }
 
-	  constraint "ensure_positive_weight" {
-	    check = "length(weight_kg) > 0"
+	  primary_key "pk" {
+	    columns = ["id"]
+		include = ["name"]
 	  }
 
-	  constraint "fk" {
+	  check "ensure_positive_weight" {
+	    expression = "length(weight_kg) > 0"
+	  }
+
+	  foreign_key "fk" {
 	    columns = ["category_id"]
+
 		references "categories" {
 		  columns = ["id"]
+
 		  on_delete = "cascade"
-		  on_update = "no action"
+		  on_update = "cascade"
 		}
 	  }
-	}
-
-	create_index "idx_uniq_name" {
-	  unique  = true
-	  columns = ["name"]
-	  using   = "btree"
-	  include = ["weight_kg"]
-	}
-
-	create_index "idx_heavy_animals" {
-	  columns = ["weight_kg"]
-	  where   = "weight_kg > 5000"
 	}
   }
 
@@ -96,10 +96,24 @@ migration_set "animals" {
 		c.AssertSuccessfulRun(t, []string{"migrate", "up", "animals"})
 		c.AssertOutputContains(t,
 			`
-create_users v1
+create_categories v1
+create_animals v2
 Done
 `,
 		)
 		c.AssertSchemaMigrationTable(t, db, "public", "v1")
 	})
 }
+
+// 	create_index "idx_uniq_name" {
+// 	  unique  = true
+// 	  columns = ["name"]
+// 	  using   = "btree"
+// 	  include = ["weight_kg"]
+// 	  concurrently = false
+// 	}
+
+// 	create_index "idx_heavy_animals" {
+// 	  columns = ["weight_kg"]
+// 	  where   = "weight_kg > 5000"
+// 	}
