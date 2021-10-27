@@ -6,7 +6,7 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-func XTestActionMigrateUpDsl(t *testing.T) {
+func TestActionMigrateUpDsl(t *testing.T) {
 	withPg(t, func(db *sqlx.DB) {
 		c := mockCli(mockConfig(`
 migration "create_categories" {
@@ -101,7 +101,7 @@ create_animals v2
 Done
 `,
 		)
-		c.AssertSchemaMigrationTable(t, db, "public", "v1")
+		c.AssertSchemaMigrationTable(t, db, "public", "v1", "v2")
 	})
 }
 
