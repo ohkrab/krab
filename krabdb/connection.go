@@ -1,15 +1,17 @@
 package krabdb
 
 import (
-	"os"
-
-	"github.com/jmoiron/sqlx"
+	"github.com/ohkrab/krab/krabenv"
 )
 
-// WithConnection connects to database and performs actions.
-// After that connection is closed.
-func WithConnection(f func(db *sqlx.DB) error) error {
-	db, err := sqlx.Connect("pgx", os.Getenv("DATABASE_URL"))
+type Connection interface {
+	Get(f func(db *DB) error) error
+}
+
+type DefaultConnection struct{}
+
+func (d *DefaultConnection) Get(f func(db *DB) error) error {
+	db, err := Connect(krabenv.DatabaseURL())
 	if err != nil {
 		return err
 	}

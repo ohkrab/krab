@@ -6,6 +6,7 @@ import (
 	mcli "github.com/mitchellh/cli"
 	"github.com/ohkrab/krab/cli"
 	"github.com/ohkrab/krab/krab"
+	"github.com/ohkrab/krab/krabdb"
 )
 
 type Command mcli.Command
@@ -40,19 +41,23 @@ func (a *App) RegisterAll() {
 		localSet := set
 
 		a.RegisterCmd(fmt.Sprintln("migrate", "up", set.RefName), func() Command {
-			return &krab.ActionMigrateUp{Ui: a.Ui, Set: localSet}
+			return &krab.ActionMigrateUp{Ui: a.Ui, Set: localSet, Connection: &krabdb.DefaultConnection{}}
 		})
 
 		a.RegisterCmd(fmt.Sprintln("migrate", "down", set.RefName), func() Command {
-			return &krab.ActionMigrateDown{Ui: a.Ui, Set: localSet, Arguments: krab.Arguments{
-				Args: []*krab.Argument{
-					{
-						Name:        "version",
-						Type:        "string",
-						Description: "Migration version to rollback",
+			return &krab.ActionMigrateDown{
+				Ui:         a.Ui,
+				Set:        localSet,
+				Connection: &krabdb.DefaultConnection{},
+				Arguments: krab.Arguments{
+					Args: []*krab.Argument{
+						{
+							Name:        "version",
+							Type:        "string",
+							Description: "Migration version to rollback",
+						},
 					},
-				},
-			}}
+				}}
 		})
 	}
 }

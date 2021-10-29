@@ -36,17 +36,15 @@ func TryAdvisoryXactLock(ctx context.Context, tx *sqlx.Tx, id int64) (bool, erro
 //
 // https://www.postgresql.org/docs/current/functions-admin.html#FUNCTIONS-ADVISORY-LOCKS
 //
-func TryAdvisoryLock(ctx context.Context, q sqlx.QueryerContext, id int64) (bool, error) {
-	res, err := q.QueryContext(ctx, "SELECT pg_try_advisory_lock($1)", id)
+func TryAdvisoryLock(ctx context.Context, q QueryerContext, id int64) (bool, error) {
+	var res []bool
+	err := q.SelectContext(ctx, &res, "SELECT pg_try_advisory_lock($1)", id)
 	if err != nil {
 		return false, errors.Wrap(err, "Failed to obtain advisory lock")
 	}
-	defer res.Close()
 
-	for res.Next() {
-		var success bool
-		err = res.Scan(&success)
-		return success, err
+	for _, success := range res {
+		return success, nil
 	}
 
 	return false, errors.New("Failed to obtain advisory lock")
@@ -58,17 +56,15 @@ func TryAdvisoryLock(ctx context.Context, q sqlx.QueryerContext, id int64) (bool
 //
 // https://www.postgresql.org/docs/current/functions-admin.html#FUNCTIONS-ADVISORY-LOCKS
 //
-func AdvisoryUnlock(ctx context.Context, q sqlx.QueryerContext, id int64) (bool, error) {
-	res, err := q.QueryContext(ctx, "SELECT pg_advisory_unlock($1)", id)
+func AdvisoryUnlock(ctx context.Context, q QueryerContext, id int64) (bool, error) {
+	var res []bool
+	err := q.SelectContext(ctx, &res, "SELECT pg_advisory_unlock($1)", id)
 	if err != nil {
 		return false, errors.Wrap(err, "Failed to release advisory lock")
 	}
-	defer res.Close()
 
-	for res.Next() {
-		var success bool
-		err = res.Scan(&success)
-		return success, err
+	for _, success := range res {
+		return success, nil
 	}
 
 	return false, errors.New("Failed to release advisory lock")

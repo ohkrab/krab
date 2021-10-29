@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/jmoiron/sqlx"
 	"github.com/ohkrab/krab/krabdb"
 )
 
@@ -34,7 +33,7 @@ type SchemaMigration struct {
 }
 
 // Init creates a migrations table.
-func (s SchemaMigrationTable) Init(ctx context.Context, db sqlx.ExecerContext) error {
+func (s SchemaMigrationTable) Init(ctx context.Context, db krabdb.ExecerContext) error {
 	parts := strings.Split(s.Name, ".")
 	if len(parts) > 1 {
 		schema := parts[0]
@@ -56,7 +55,7 @@ func (s SchemaMigrationTable) Init(ctx context.Context, db sqlx.ExecerContext) e
 }
 
 // Truncate truncates migrations table.
-func (s SchemaMigrationTable) Truncate(ctx context.Context, db sqlx.ExecerContext) error {
+func (s SchemaMigrationTable) Truncate(ctx context.Context, db krabdb.ExecerContext) error {
 	_, err := db.ExecContext(ctx, fmt.Sprintf(
 		"TRUNCATE %s",
 		krabdb.QuoteIdentWithDots(s.Name),
@@ -65,11 +64,10 @@ func (s SchemaMigrationTable) Truncate(ctx context.Context, db sqlx.ExecerContex
 }
 
 // Exists checks if migration exists in database.
-func (s SchemaMigrationTable) Exists(ctx context.Context, db sqlx.QueryerContext, migration SchemaMigration) (bool, error) {
+func (s SchemaMigrationTable) Exists(ctx context.Context, db krabdb.QueryerContext, migration SchemaMigration) (bool, error) {
 	var schema []SchemaMigration
-	err := sqlx.SelectContext(
+	err := db.SelectContext(
 		ctx,
-		db,
 		&schema,
 		fmt.Sprintf("SELECT version FROM %s WHERE version = $1", krabdb.QuoteIdentWithDots(s.Name)),
 		migration.Version,
@@ -78,11 +76,10 @@ func (s SchemaMigrationTable) Exists(ctx context.Context, db sqlx.QueryerContext
 }
 
 // SelectLastN fetches last N migrations in Z-A order.
-func (s SchemaMigrationTable) SelectLastN(ctx context.Context, db sqlx.QueryerContext, limit int) ([]SchemaMigration, error) {
+func (s SchemaMigrationTable) SelectLastN(ctx context.Context, db krabdb.QueryerContext, limit int) ([]SchemaMigration, error) {
 	var schema []SchemaMigration
-	err := sqlx.SelectContext(
+	err := db.SelectContext(
 		ctx,
-		db,
 		&schema,
 		fmt.Sprintf("SELECT version FROM %s ORDER BY 1 DESC LIMIT %d", krabdb.QuoteIdentWithDots(s.Name), limit),
 	)
@@ -90,11 +87,10 @@ func (s SchemaMigrationTable) SelectLastN(ctx context.Context, db sqlx.QueryerCo
 }
 
 // SelectAll fetches all migrations from a database.
-func (s SchemaMigrationTable) SelectAll(ctx context.Context, db sqlx.QueryerContext) ([]SchemaMigration, error) {
+func (s SchemaMigrationTable) SelectAll(ctx context.Context, db krabdb.QueryerContext) ([]SchemaMigration, error) {
 	var schema []SchemaMigration
-	err := sqlx.SelectContext(
+	err := db.SelectContext(
 		ctx,
-		db,
 		&schema,
 		fmt.Sprintf("SELECT version FROM %s ORDER BY 1", krabdb.QuoteIdentWithDots(s.Name)),
 	)
@@ -102,7 +98,7 @@ func (s SchemaMigrationTable) SelectAll(ctx context.Context, db sqlx.QueryerCont
 }
 
 // Insert saves migration to a database.
-func (s SchemaMigrationTable) Insert(ctx context.Context, db sqlx.ExecerContext, version string) error {
+func (s SchemaMigrationTable) Insert(ctx context.Context, db krabdb.ExecerContext, version string) error {
 	_, err := db.ExecContext(
 		ctx,
 		fmt.Sprintf("INSERT INTO %s(version) VALUES ($1) RETURNING *", krabdb.QuoteIdentWithDots(s.Name)),
@@ -112,7 +108,7 @@ func (s SchemaMigrationTable) Insert(ctx context.Context, db sqlx.ExecerContext,
 }
 
 // Delete removes migration from a database.
-func (s SchemaMigrationTable) Delete(ctx context.Context, db sqlx.ExecerContext, version string) error {
+func (s SchemaMigrationTable) Delete(ctx context.Context, db krabdb.ExecerContext, version string) error {
 	_, err := db.ExecContext(
 		ctx,
 		fmt.Sprintf("DELETE FROM %s WHERE version = $1 RETURNING *", krabdb.QuoteIdentWithDots(s.Name)),

@@ -15,7 +15,7 @@ import (
 func main() {
 	ui := cli.DefaultUI()
 
-	dir, err := krabenv.GetConfigDir()
+	dir, err := krabenv.ConfigDif()
 	if err != nil {
 		ui.Error(fmt.Errorf("Can't read config dir: %w", err).Error())
 		os.Exit(1)

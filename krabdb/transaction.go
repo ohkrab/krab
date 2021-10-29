@@ -15,12 +15,12 @@ type TransactionExecerContext interface {
 }
 
 // NewTx is a helper that creates real transaction or null one based on createTransaction flag.
-func NewTx(ctx context.Context, db *sqlx.DB, createTransaction bool) (TransactionExecerContext, error) {
+func NewTx(ctx context.Context, db *DB, createTransaction bool) (TransactionExecerContext, error) {
 	if createTransaction {
-		return BeginTx(ctx, db)
+		return BeginTx(ctx, db.db)
 	}
 
-	return NullTx(ctx, db)
+	return NullTx(ctx, db.db)
 }
 
 // BeginTx starts new transaction
