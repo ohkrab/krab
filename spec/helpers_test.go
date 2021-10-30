@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"os"
 	"strings"
 	"testing"
 
@@ -14,6 +13,8 @@ import (
 	"github.com/ohkrab/krab/cli"
 	"github.com/ohkrab/krab/krab"
 	"github.com/ohkrab/krab/krabcli"
+	"github.com/ohkrab/krab/krabdb"
+	"github.com/ohkrab/krab/krabenv"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 )
@@ -75,7 +76,7 @@ func (m *cliMock) AssertUiErrorOutputContains(t *testing.T, output string) bool 
 	)
 }
 
-func (m *cliMock) AssertSchemaMigrationTableMissing(t *testing.T, db *sqlx.DB, schema string) bool {
+func (m *cliMock) AssertSchemaMigrationTableMissing(t *testing.T, db *krabdb.DB, schema string) bool {
 	_, err := krab.NewSchemaMigrationTable(schema).SelectAll(context.TODO(), db)
 	if assert.Error(t, err) {
 		return assert.Contains(
@@ -88,7 +89,7 @@ func (m *cliMock) AssertSchemaMigrationTableMissing(t *testing.T, db *sqlx.DB, s
 	return false
 }
 
-func (m *cliMock) AssertSchemaMigrationTable(t *testing.T, db *sqlx.DB, schema string, expectedVersions ...string) bool {
+func (m *cliMock) AssertSchemaMigrationTable(t *testing.T, db *krabdb.DB, schema string, expectedVersions ...string) bool {
 	versions, err := krab.NewSchemaMigrationTable(schema).SelectAll(context.TODO(), db)
 	if assert.NoError(t, err) {
 		if assert.Equal(t, len(versions), len(expectedVersions), "Scheme versions count mismatch") {
@@ -107,8 +108,8 @@ func (m *cliMock) AssertSchemaMigrationTable(t *testing.T, db *sqlx.DB, schema s
 	return false
 }
 
-func (m *cliMock) Query(t *testing.T, db *sqlx.DB, query string) ([]string, []map[string]interface{}) {
-	rows, err := db.QueryxContext(context.TODO(), query)
+func (m *cliMock) Query(t *testing.T, db *krabdb.DB, query string) ([]string, []map[string]interface{}) {
+	rows, err := db.QueryContext(context.TODO(), query)
 	assert.NoError(t, err, fmt.Sprint("Query ", query, " must execute successfully"))
 	defer rows.Close()
 
@@ -118,7 +119,7 @@ func (m *cliMock) Query(t *testing.T, db *sqlx.DB, query string) ([]string, []ma
 	return cols, vals
 }
 
-func (m *cliMock) Insert(t *testing.T, db *sqlx.DB, table string, cols string, vals string) bool {
+func (m *cliMock) Insert(t *testing.T, db *krabdb.DB, table string, cols string, vals string) bool {
 	_, err := db.ExecContext(
 		context.TODO(),
 		fmt.Sprintf(
@@ -170,24 +171,19 @@ func mockParser(pathContentPair ...string) *krab.Parser {
 	return p
 }
 
-func withPg(t *testing.T, f func(db *sqlx.DB)) {
-	db, err := sqlx.Connect("pgx", os.Getenv("DATABASE_URL"))
+func withPg(t *testing.T, f func(db *krabdb.DB)) {
+	db, err := krabdb.Connect(krabenv.DatabaseURL())
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer db.Close()
 
-	err = db.Ping()
-	if err != nil {
-		t.Fatalf("Failed to ping db: %v", err)
-	}
 	defer cleanDb(db)
-
 	f(db)
 }
 
-func cleanDb(db *sqlx.DB) {
-	db.MustExec(`
+func cleanDb(db *krabdb.DB) {
+	_, err := db.ExecContext(context.TODO(), `
 DO 
 $$ 
   DECLARE 
@@ -204,6 +200,10 @@ BEGIN
   END LOOP;
 END
 $$`)
+
+	if err != nil {
+		panic(err)
+	}
 }
 
 func sqlxRowsMapScan(rows *sqlx.Rows) []map[string]interface{} {

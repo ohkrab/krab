@@ -3,11 +3,11 @@ package spec
 import (
 	"testing"
 
-	"github.com/jmoiron/sqlx"
+	"github.com/ohkrab/krab/krabdb"
 )
 
 func TestActionMigrateDownHooks(t *testing.T) {
-	withPg(t, func(db *sqlx.DB) {
+	withPg(t, func(db *krabdb.DB) {
 		c := mockCli(mockConfig(`
 migration "create_animals" {
   version = "v1"

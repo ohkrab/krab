@@ -4,12 +4,12 @@ import (
 	"context"
 	"testing"
 
-	"github.com/jmoiron/sqlx"
 	"github.com/ohkrab/krab/krab"
+	"github.com/ohkrab/krab/krabdb"
 )
 
 func TestActionMigrateUp(t *testing.T) {
-	withPg(t, func(db *sqlx.DB) {
+	withPg(t, func(db *krabdb.DB) {
 		c := mockCli(mockConfig(`
 migration "do_nothing" {
   version = "v1"
@@ -34,9 +34,7 @@ Done
 }
 
 func TestActionMigrateUpWithError(t *testing.T) {
-	// assert := assert.New(t)
-
-	withPg(t, func(db *sqlx.DB) {
+	withPg(t, func(db *krabdb.DB) {
 		krab.NewSchemaMigrationTable("public").Init(context.TODO(), db)
 
 		c := mockCli(mockConfig(`

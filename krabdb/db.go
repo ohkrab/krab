@@ -14,6 +14,7 @@ type ExecerContext interface {
 
 type QueryerContext interface {
 	SelectContext(ctx context.Context, dest interface{}, query string, args ...interface{}) error
+	QueryContext(ctx context.Context, query string, args ...interface{}) (*sqlx.Rows, error)
 }
 
 type DB struct {
@@ -34,6 +35,10 @@ func (d *DB) Close() {
 
 func (d *DB) SelectContext(ctx context.Context, dest interface{}, query string, args ...interface{}) error {
 	return sqlx.SelectContext(ctx, d.db, dest, query, args...)
+}
+
+func (d *DB) QueryContext(ctx context.Context, query string, args ...interface{}) (*sqlx.Rows, error) {
+	return d.db.QueryxContext(ctx, query, args...)
 }
 
 func (d *DB) ExecContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
