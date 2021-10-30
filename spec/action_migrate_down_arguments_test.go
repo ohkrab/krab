@@ -5,8 +5,7 @@ import (
 )
 
 func TestActionMigrateDownArugments(t *testing.T) {
-	withPg(t, func(db *testDB) {
-		c := mockCli(mockConfig(`
+	c := mockCli(mockConfig(`
 migration "create_animals" {
   version = "v1"
 
@@ -31,12 +30,12 @@ migration_set "tenants" {
   migrations = [migration.create_animals, migration.add_column]
 }
 `))
+	defer c.Teardown()
 
-		c.AssertSuccessfulRun(t, []string{"migrate", "up", "tenants", "-schema", "tenants"})
-		c.AssertSchemaMigrationTableMissing(t, db, "public")
-		c.AssertSchemaMigrationTable(t, db, "tenants", "v1", "v2")
+	c.AssertSuccessfulRun(t, []string{"migrate", "up", "tenants", "-schema", "tenants"})
+	c.AssertSchemaMigrationTableMissing(t, "public")
+	c.AssertSchemaMigrationTable(t, "tenants", "v1", "v2")
 
-		c.AssertSuccessfulRun(t, []string{"migrate", "down", "tenants", "-schema", "tenants", "-version", "v2"})
-		c.AssertSchemaMigrationTable(t, db, "tenants", "v1")
-	})
+	c.AssertSuccessfulRun(t, []string{"migrate", "down", "tenants", "-schema", "tenants", "-version", "v2"})
+	c.AssertSchemaMigrationTable(t, "tenants", "v1")
 }

@@ -4,69 +4,49 @@ import (
 	"context"
 	"database/sql"
 	"io"
-	"os"
 	"strings"
-	"testing"
 
 	_ "github.com/jackc/pgx/v4"
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/jmoiron/sqlx"
 	"github.com/ohkrab/krab/krabdb"
+	"github.com/ohkrab/krab/krabenv"
 )
+
+type mockDBConnection struct{}
+
+func (m *mockDBConnection) Get(f func(db krabdb.DB) error) error {
+	db, err := krabdb.Connect(krabenv.DatabaseURL())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	return f(&testDB{recorder: &strings.Builder{}, db: db})
+}
 
 type testDB struct {
 	db       *sqlx.DB
 	recorder io.StringWriter
 }
 
+func (d *testDB) GetDatabase() *sqlx.DB {
+	return d.db
+}
+
 func (d *testDB) SelectContext(ctx context.Context, dest interface{}, query string, args ...interface{}) error {
 	d.recorder.WriteString(query)
-	return d.db.SelectContext(ctx, dest, query, args...)
+	return sqlx.SelectContext(ctx, d.GetDatabase(), dest, query, args...)
 }
 
 func (d *testDB) QueryContext(ctx context.Context, query string, args ...interface{}) (*sqlx.Rows, error) {
 	d.recorder.WriteString(query)
-	return d.db.QueryxContext(ctx, query, args...)
+	return d.GetDatabase().QueryxContext(ctx, query, args...)
 }
 
 func (d *testDB) ExecContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
 	d.recorder.WriteString(query)
-	return d.db.ExecContext(ctx, query, args...)
-}
-
-func withPg(t *testing.T, f func(db *testDB)) {
-	db, err := sqlx.Connect("pgx", os.Getenv("DATABASE_URL"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
-
-	defer cleanDb(db)
-	f(&testDB{db: db, recorder: &strings.Builder{}})
-}
-
-func cleanDb(db krabdb.ExecerContext) {
-	_, err := db.ExecContext(context.TODO(), `
-DO 
-$$ 
-  DECLARE 
-    r RECORD;
-BEGIN
-  FOR r IN 
-    (
-      SELECT table_schema, table_name 
-        FROM information_schema.tables 
-       WHERE table_schema NOT IN ('pg_catalog', 'information_schema')
-    ) 
-  LOOP
-     EXECUTE 'DROP TABLE ' || quote_ident(r.table_schema) || '.' || quote_ident(r.table_name) || ' CASCADE';
-  END LOOP;
-END
-$$`)
-
-	if err != nil {
-		panic(err)
-	}
+	return d.GetDatabase().ExecContext(ctx, query, args...)
 }
 
 func sqlxRowsMapScan(rows *sqlx.Rows) []map[string]interface{} {

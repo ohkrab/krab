@@ -12,20 +12,27 @@ import (
 type Command mcli.Command
 
 type App struct {
-	Ui     cli.UI
-	CLI    *mcli.CLI
-	Config *krab.Config
+	Ui         cli.UI
+	CLI        *mcli.CLI
+	Config     *krab.Config
+	connection krabdb.Connection
 }
 
-func New(ui cli.UI, args []string, config *krab.Config) *App {
+func New(
+	ui cli.UI,
+	args []string,
+	config *krab.Config,
+	connection krabdb.Connection,
+) *App {
 	c := mcli.NewCLI(krab.InfoName, krab.InfoVersion)
 	c.Args = args
 	c.Commands = make(map[string]mcli.CommandFactory, 0)
 
 	app := &App{
-		Ui:     ui,
-		CLI:    c,
-		Config: config,
+		Ui:         ui,
+		CLI:        c,
+		Config:     config,
+		connection: connection,
 	}
 	app.RegisterAll()
 
@@ -41,14 +48,14 @@ func (a *App) RegisterAll() {
 		localSet := set
 
 		a.RegisterCmd(fmt.Sprintln("migrate", "up", set.RefName), func() Command {
-			return &krab.ActionMigrateUp{Ui: a.Ui, Set: localSet, Connection: &krabdb.DefaultConnection{}}
+			return &krab.ActionMigrateUp{Ui: a.Ui, Set: localSet, Connection: a.connection}
 		})
 
 		a.RegisterCmd(fmt.Sprintln("migrate", "down", set.RefName), func() Command {
 			return &krab.ActionMigrateDown{
 				Ui:         a.Ui,
 				Set:        localSet,
-				Connection: &krabdb.DefaultConnection{},
+				Connection: a.connection,
 				Arguments: krab.Arguments{
 					Args: []*krab.Argument{
 						{

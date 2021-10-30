@@ -18,6 +18,7 @@ import (
 )
 
 type cliMock struct {
+	connection    krabdb.Connection
 	config        *krab.Config
 	app           *krabcli.App
 	exitCode      int
@@ -29,13 +30,47 @@ type cliMock struct {
 }
 
 func (m *cliMock) setup(args []string) {
+	m.connection = &mockDBConnection{}
 	m.errorWriter = bytes.Buffer{}
 	m.helpWriter = bytes.Buffer{}
 	m.uiErrorWriter = bytes.Buffer{}
 	m.uiWriter = bytes.Buffer{}
-	m.app = krabcli.New(cli.New(&m.uiErrorWriter, &m.uiWriter), args, m.config)
+	m.app = krabcli.New(
+		cli.New(&m.uiErrorWriter, &m.uiWriter),
+		args,
+		m.config,
+		m.connection,
+	)
 	m.app.CLI.ErrorWriter = &m.errorWriter
 	m.app.CLI.HelpWriter = &m.helpWriter
+}
+
+func (m *cliMock) Teardown() {
+	err := m.connection.Get(func(db krabdb.DB) error {
+		_, err := db.ExecContext(context.TODO(), `
+DO 
+$$ 
+  DECLARE 
+    r RECORD;
+BEGIN
+  FOR r IN 
+    (
+      SELECT table_schema, table_name 
+        FROM information_schema.tables 
+       WHERE table_schema NOT IN ('pg_catalog', 'information_schema')
+    ) 
+  LOOP
+     EXECUTE 'DROP TABLE ' || quote_ident(r.table_schema) || '.' || quote_ident(r.table_name) || ' CASCADE';
+  END LOOP;
+END
+$$`)
+
+		return err
+	})
+
+	if err != nil {
+		panic(err)
+	}
 }
 
 func (m *cliMock) AssertFailedRun(t *testing.T, args []string) bool {
@@ -74,9 +109,12 @@ func (m *cliMock) AssertUiErrorOutputContains(t *testing.T, output string) bool 
 	)
 }
 
-func (m *cliMock) AssertSchemaMigrationTableMissing(t *testing.T, db krabdb.QueryerContext, schema string) bool {
-	_, err := krab.NewSchemaMigrationTable(schema).SelectAll(context.TODO(), db)
-	if assert.Error(t, err) {
+func (m *cliMock) AssertSchemaMigrationTableMissing(t *testing.T, schema string) bool {
+	err := m.connection.Get(func(db krabdb.DB) error {
+		_, err := krab.NewSchemaMigrationTable(schema).SelectAll(context.TODO(), db)
+		return err
+	})
+	if assert.Error(t, err, "AssertSchemaMigrationTableMissing expects error") {
 		return assert.Contains(
 			t,
 			err.Error(),
@@ -87,8 +125,14 @@ func (m *cliMock) AssertSchemaMigrationTableMissing(t *testing.T, db krabdb.Quer
 	return false
 }
 
-func (m *cliMock) AssertSchemaMigrationTable(t *testing.T, db krabdb.QueryerContext, schema string, expectedVersions ...string) bool {
-	versions, err := krab.NewSchemaMigrationTable(schema).SelectAll(context.TODO(), db)
+func (m *cliMock) AssertSchemaMigrationTable(t *testing.T, schema string, expectedVersions ...string) bool {
+	var versions []krab.SchemaMigration
+
+	err := m.connection.Get(func(db krabdb.DB) error {
+		vers, err := krab.NewSchemaMigrationTable(schema).SelectAll(context.TODO(), db)
+		versions = vers
+		return err
+	})
 	if assert.NoError(t, err) {
 		if assert.Equal(t, len(versions), len(expectedVersions), "Scheme versions count mismatch") {
 			for i, v := range expectedVersions {
@@ -106,27 +150,37 @@ func (m *cliMock) AssertSchemaMigrationTable(t *testing.T, db krabdb.QueryerCont
 	return false
 }
 
-func (m *cliMock) Query(t *testing.T, db krabdb.QueryerContext, query string) ([]string, []map[string]interface{}) {
-	rows, err := db.QueryContext(context.TODO(), query)
-	assert.NoError(t, err, fmt.Sprint("Query ", query, " must execute successfully"))
-	defer rows.Close()
+func (m *cliMock) Query(t *testing.T, query string) ([]string, []map[string]interface{}) {
+	var cols []string
+	var vals []map[string]interface{}
 
-	cols, _ := rows.Columns()
-	vals := sqlxRowsMapScan(rows)
+	m.connection.Get(func(db krabdb.DB) error {
+		rows, err := db.QueryContext(context.TODO(), query)
+		defer rows.Close()
+		assert.NoError(t, err, fmt.Sprint("Query ", query, " must execute successfully"))
+
+		cols, _ = rows.Columns()
+		vals = sqlxRowsMapScan(rows)
+		return err
+	})
 
 	return cols, vals
 }
 
-func (m *cliMock) Insert(t *testing.T, db krabdb.ExecerContext, table string, cols string, vals string) bool {
-	_, err := db.ExecContext(
-		context.TODO(),
-		fmt.Sprintf(
-			"INSERT INTO %s(%s) VALUES%s",
-			table,
-			cols,
-			vals,
-		),
-	)
+func (m *cliMock) Insert(t *testing.T, table string, cols string, vals string) bool {
+	var err error
+	m.connection.Get(func(db krabdb.DB) error {
+		_, err = db.ExecContext(
+			context.TODO(),
+			fmt.Sprintf(
+				"INSERT INTO %s(%s) VALUES%s",
+				table,
+				cols,
+				vals,
+			),
+		)
+		return err
+	})
 	return assert.NoError(t, err, "Insertion must happen")
 }
 

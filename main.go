@@ -9,6 +9,7 @@ import (
 	"github.com/ohkrab/krab/cli"
 	"github.com/ohkrab/krab/krab"
 	"github.com/ohkrab/krab/krabcli"
+	"github.com/ohkrab/krab/krabdb"
 	"github.com/ohkrab/krab/krabenv"
 )
 
@@ -28,7 +29,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	c := krabcli.New(ui, os.Args[1:], config)
+	c := krabcli.New(ui, os.Args[1:], config, &krabdb.DefaultConnection{})
 
 	exitStatus, err := c.Run()
 	if err != nil {

@@ -5,8 +5,7 @@ import (
 )
 
 func TestActionMigrateUpArguments(t *testing.T) {
-	withPg(t, func(db *testDB) {
-		c := mockCli(mockConfig(`
+	c := mockCli(mockConfig(`
 migration "create_animals" {
   version = "v1"
 
@@ -24,9 +23,9 @@ migration_set "public" {
   migrations = [migration.create_animals]
 }
 `))
+	defer c.Teardown()
 
-		c.AssertSuccessfulRun(t, []string{"migrate", "up", "public", "-schema", "custom"})
-		c.AssertSchemaMigrationTableMissing(t, db, "public")
-		c.AssertSchemaMigrationTable(t, db, "custom", "v1")
-	})
+	c.AssertSuccessfulRun(t, []string{"migrate", "up", "public", "-schema", "custom"})
+	c.AssertSchemaMigrationTableMissing(t, "public")
+	c.AssertSchemaMigrationTable(t, "custom", "v1")
 }

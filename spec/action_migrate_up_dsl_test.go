@@ -5,8 +5,7 @@ import (
 )
 
 func TestActionMigrateUpDsl(t *testing.T) {
-	withPg(t, func(db *testDB) {
-		c := mockCli(mockConfig(`
+	c := mockCli(mockConfig(`
 migration "create_categories" {
   version = "v1"
 
@@ -91,16 +90,16 @@ migration_set "animals" {
   ]
 }
 `))
-		c.AssertSuccessfulRun(t, []string{"migrate", "up", "animals"})
-		c.AssertOutputContains(t,
-			`
+	defer c.Teardown()
+	c.AssertSuccessfulRun(t, []string{"migrate", "up", "animals"})
+	c.AssertOutputContains(t,
+		`
 create_categories v1
 create_animals v2
 Done
 `,
-		)
-		c.AssertSchemaMigrationTable(t, db, "public", "v1", "v2")
-	})
+	)
+	c.AssertSchemaMigrationTable(t, "public", "v1", "v2")
 }
 
 // 	create_index "idx_uniq_name" {

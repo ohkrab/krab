@@ -63,7 +63,7 @@ func (a *ActionMigrateUp) Run(args []string) int {
 
 	templates := tpls.New(flags.Values())
 
-	err = a.Connection.Get(func(db *krabdb.DB) error {
+	err = a.Connection.Get(func(db krabdb.DB) error {
 		return a.Do(context.Background(), db, templates, ui)
 	})
 
@@ -79,7 +79,7 @@ func (a *ActionMigrateUp) Run(args []string) int {
 
 // Run performs the action. All pending migrations will be executed.
 // Migration schema is created if does not exist.
-func (a *ActionMigrateUp) Do(ctx context.Context, db *krabdb.DB, tpl *tpls.Templates, ui cli.UI) error {
+func (a *ActionMigrateUp) Do(ctx context.Context, db krabdb.DB, tpl *tpls.Templates, ui cli.UI) error {
 	versions := NewSchemaMigrationTable(tpl.Render(a.Set.Schema))
 
 	// locking

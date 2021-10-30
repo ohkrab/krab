@@ -1,15 +1,11 @@
 package spec
 
 import (
-	"context"
 	"testing"
-
-	"github.com/ohkrab/krab/krab"
 )
 
 func TestActionMigrateUp(t *testing.T) {
-	withPg(t, func(db *testDB) {
-		c := mockCli(mockConfig(`
+	c := mockCli(mockConfig(`
 migration "do_nothing" {
   version = "v1"
 
@@ -21,22 +17,23 @@ migration_set "public" {
   migrations = [migration.do_nothing]
 }
 `))
-		c.AssertSuccessfulRun(t, []string{"migrate", "up", "public"})
-		c.AssertOutputContains(t,
-			`
+	defer c.Teardown()
+	c.AssertSuccessfulRun(t, []string{"migrate", "up", "public"})
+	c.AssertOutputContains(t,
+		`
 do_nothing v1
 Done
 `,
-		)
-		c.AssertSchemaMigrationTable(t, db, "public", "v1")
-	})
+	)
+	c.AssertSchemaMigrationTable(t, "public", "v1")
 }
 
 func TestActionMigrateUpWithError(t *testing.T) {
-	withPg(t, func(db *testDB) {
-		krab.NewSchemaMigrationTable("public").Init(context.TODO(), db)
+	c := mockCli(mockConfig(`migration_set "public" { migrations = [] }`))
+	defer c.Teardown()
+	c.AssertSuccessfulRun(t, []string{"migrate", "up", "public"})
 
-		c := mockCli(mockConfig(`
+	c = mockCli(mockConfig(`
 migration "do_nothing" {
   version = "v1"
 
@@ -49,10 +46,9 @@ migration_set "public" {
 }
 `))
 
-		c.AssertFailedRun(t, []string{"migrate", "up", "public"})
-		c.AssertUiErrorOutputContains(t,
-			`column "invalid" does not exist`,
-		)
-		c.AssertSchemaMigrationTable(t, db, "public")
-	})
+	c.AssertFailedRun(t, []string{"migrate", "up", "public"})
+	c.AssertUiErrorOutputContains(t,
+		`column "invalid" does not exist`,
+	)
+	c.AssertSchemaMigrationTable(t, "public")
 }

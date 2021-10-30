@@ -99,7 +99,7 @@ func (a *ActionMigrateDown) Run(args []string) int {
 	// ui.Error("Invalid number of arguments")
 	// return 1
 
-	err = a.Connection.Get(func(db *krabdb.DB) error {
+	err = a.Connection.Get(func(db krabdb.DB) error {
 		return a.Do(context.Background(), db, templates)
 	})
 
@@ -115,7 +115,7 @@ func (a *ActionMigrateDown) Run(args []string) int {
 
 // Do performs the action.
 // Schema migration must exist before running it.
-func (a *ActionMigrateDown) Do(ctx context.Context, db *krabdb.DB, tpl *tpls.Templates) error {
+func (a *ActionMigrateDown) Do(ctx context.Context, db krabdb.DB, tpl *tpls.Templates) error {
 	versions := NewSchemaMigrationTable(tpl.Render(a.Set.Schema))
 
 	migration := a.Set.FindMigrationByVersion(a.DownMigration.Version)

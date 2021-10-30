@@ -5,8 +5,7 @@ import (
 )
 
 func TestActionMigrateDownTransactions(t *testing.T) {
-	withPg(t, func(db *testDB) {
-		c := mockCli(mockConfig(`
+	c := mockCli(mockConfig(`
 migration "create_animals" {
   version = "v1"
 
@@ -27,11 +26,11 @@ migration_set "public" {
   migrations = [migration.create_animals, migration.add_index]
 }
 `))
+	defer c.Teardown()
 
-		c.AssertSuccessfulRun(t, []string{"migrate", "up", "public"})
-		c.AssertSchemaMigrationTable(t, db, "public", "v1", "v2")
+	c.AssertSuccessfulRun(t, []string{"migrate", "up", "public"})
+	c.AssertSchemaMigrationTable(t, "public", "v1", "v2")
 
-		c.AssertSuccessfulRun(t, []string{"migrate", "down", "public", "-version", "v2"})
-		c.AssertSchemaMigrationTable(t, db, "public", "v1")
-	})
+	c.AssertSuccessfulRun(t, []string{"migrate", "down", "public", "-version", "v2"})
+	c.AssertSchemaMigrationTable(t, "public", "v1")
 }
