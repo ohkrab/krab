@@ -2,12 +2,10 @@ package spec
 
 import (
 	"testing"
-
-	"github.com/ohkrab/krab/krabdb"
 )
 
 func TestActionMigrateUpDsl(t *testing.T) {
-	withPg(t, func(db *krabdb.DB) {
+	withPg(t, func(db *testDB) {
 		c := mockCli(mockConfig(`
 migration "create_categories" {
   version = "v1"

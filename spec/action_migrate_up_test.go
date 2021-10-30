@@ -5,11 +5,10 @@ import (
 	"testing"
 
 	"github.com/ohkrab/krab/krab"
-	"github.com/ohkrab/krab/krabdb"
 )
 
 func TestActionMigrateUp(t *testing.T) {
-	withPg(t, func(db *krabdb.DB) {
+	withPg(t, func(db *testDB) {
 		c := mockCli(mockConfig(`
 migration "do_nothing" {
   version = "v1"
@@ -34,7 +33,7 @@ Done
 }
 
 func TestActionMigrateUpWithError(t *testing.T) {
-	withPg(t, func(db *krabdb.DB) {
+	withPg(t, func(db *testDB) {
 		krab.NewSchemaMigrationTable("public").Init(context.TODO(), db)
 
 		c := mockCli(mockConfig(`

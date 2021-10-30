@@ -5,7 +5,6 @@ import (
 	"database/sql"
 
 	"github.com/jmoiron/sqlx"
-	"github.com/ohkrab/krab/krabenv"
 )
 
 type ExecerContext interface {
@@ -22,7 +21,7 @@ type DB struct {
 }
 
 func Connect(connectionString string) (*DB, error) {
-	db, err := sqlx.Connect("pgx", krabenv.DatabaseURL())
+	db, err := sqlx.Connect("pgx", connectionString)
 	if err != nil {
 		return nil, err
 	}

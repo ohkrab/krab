@@ -3,14 +3,13 @@ package spec
 import (
 	"testing"
 
-	"github.com/ohkrab/krab/krabdb"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestActionMigrateDown(t *testing.T) {
 	assert := assert.New(t)
 
-	withPg(t, func(db *krabdb.DB) {
+	withPg(t, func(db *testDB) {
 		c := mockCli(mockConfig(`
 migration "create_animals" {
   version = "v1"
@@ -65,7 +64,7 @@ Done
 func TestActionMigrateDownOnError(t *testing.T) {
 	assert := assert.New(t)
 
-	withPg(t, func(db *krabdb.DB) {
+	withPg(t, func(db *testDB) {
 		c := mockCli(mockConfig(`
 migration "create_animals" {
   version = "v1"
@@ -118,7 +117,7 @@ Done
 func TestActionMigrateDownWhenSchemaDoesNotExist(t *testing.T) {
 	assert := assert.New(t)
 
-	withPg(t, func(db *krabdb.DB) {
+	withPg(t, func(db *testDB) {
 		c := mockCli(mockConfig(`
 migration "create_animals" {
   version = "v1"
