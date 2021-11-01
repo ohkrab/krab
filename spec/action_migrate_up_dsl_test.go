@@ -13,6 +13,8 @@ migration "create_categories" {
     create_table "categories" {
 	  column "id" "bigint" {}
 	  column "name" "varchar" { null = false }
+
+	  primary_key { columns = ["id"] }
 	}
   }
 
@@ -26,17 +28,17 @@ migration "create_animals" {
 
   up {
 	create_table "animals" {
-	  unlogged = false
+	  unlogged = true
 
 	  column "id" "bigint" {
-		identity "always" {}
+		identity {}
 	  }
 
-	  column "name" "varchar" { null = false }
+	  column "name" "varchar" { null = true }
 	  
 	  column "extinct" "boolean" {
 	    null    = false
-		default = false
+		default = true
 	  }
 
 	  column "weight_kg" "int" { null = false }
@@ -51,21 +53,21 @@ migration "create_animals" {
 	    null = false
 	  }
 
-	  unique "unique_name" {
+	  unique {
 		columns = ["name"]
 		include = ["weight_kg"]
 	  }
 
-	  primary_key "pk" {
+	  primary_key {
 	    columns = ["id"]
 		include = ["name"]
 	  }
 
 	  check "ensure_positive_weight" {
-	    expression = "length(weight_kg) > 0"
+	    expression = "weight_kg > 0"
 	  }
 
-	  foreign_key "fk" {
+	  foreign_key {
 	    columns = ["category_id"]
 
 		references "categories" {
@@ -91,15 +93,49 @@ migration_set "animals" {
 }
 `))
 	defer c.Teardown()
-	c.AssertSuccessfulRun(t, []string{"migrate", "up", "animals"})
-	c.AssertOutputContains(t,
-		`
+	if c.AssertSuccessfulRun(t, []string{"migrate", "up", "animals"}) {
+		c.AssertSchemaMigrationTable(t, "public", "v1", "v2")
+		c.AssertOutputContains(t,
+			`
 create_categories v1
 create_animals v2
 Done
 `,
-	)
-	c.AssertSchemaMigrationTable(t, "public", "v1", "v2")
+		)
+		c.AssertSQLContains(t, `
+CREATE TABLE "categories"(
+  "id" bigint,
+  "name" varchar NOT NULL
+, PRIMARY KEY ("id")
+)
+	`)
+		c.AssertSQLContains(t, `
+CREATE UNLOGGED TABLE "animals"(
+  "id" bigint GENERATED ALWAYS AS IDENTITY,
+  "name" varchar NULL,
+  "extinct" boolean NOT NULL DEFAULT true,
+  "weight_kg" int NOT NULL,
+  "weight_g" int GENERATED ALWAYS AS (weight_kg * 1000) STORED,
+  "category_id" bigint NOT NULL
+, PRIMARY KEY ("id") INCLUDE ("name")
+, FOREIGN KEY ("category_id") REFERENCES "categories"("id") ON DELETE cascade ON UPDATE cascade
+, UNIQUE ("name") INCLUDE ("weight_kg")
+, CONSTRAINT "ensure_positive_weight" CHECK (weight_kg > 0)
+)
+	`)
+
+		if c.AssertSuccessfulRun(t, []string{"migrate", "down", "animals", "-version", "v2"}) {
+			c.AssertSchemaMigrationTable(t, "public", "v1")
+			c.AssertOutputContains(t,
+				`
+Done
+`,
+			)
+			c.AssertSQLContains(t, `
+DROP TABLE "animals"
+	`)
+		}
+	}
 }
 
 // 	create_index "idx_uniq_name" {

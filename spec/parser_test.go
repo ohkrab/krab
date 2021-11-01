@@ -1,6 +1,7 @@
 package spec
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -94,8 +95,12 @@ migration "abc" {
 		migration, exists := config.Migrations["abc"]
 		if assert.True(exists) {
 			assert.Equal(migration.RefName, "abc")
-			assert.Equal(migration.Up.SQL, "CREATE TABLE abc")
-			assert.Equal(migration.Down.SQL, "DROP TABLE abc")
+			var up strings.Builder
+			var down strings.Builder
+			migration.Up.ToSQL(&up)
+			migration.Down.ToSQL(&down)
+			assert.Equal(up.String(), "CREATE TABLE abc")
+			assert.Equal(down.String(), "DROP TABLE abc")
 		}
 	}
 }

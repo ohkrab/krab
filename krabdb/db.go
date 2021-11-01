@@ -21,6 +21,7 @@ type DB interface {
 	QueryerContext
 
 	GetDatabase() *sqlx.DB
+	NewTx(ctx context.Context, createTransaction bool) (TransactionExecerContext, error)
 }
 
 type Instance struct {
@@ -42,4 +43,17 @@ func (d *Instance) ExecContext(ctx context.Context, query string, args ...interf
 
 func (d *Instance) GetDatabase() *sqlx.DB {
 	return d.database
+}
+
+// NewTx is a helper that creates real transaction or null one based on createTransaction flag.
+func (d *Instance) NewTx(ctx context.Context, createTransaction bool) (TransactionExecerContext, error) {
+	if createTransaction {
+		tx, err := d.GetDatabase().BeginTxx(ctx, nil)
+		if err != nil {
+			return nil, err
+		}
+		return &Transaction{tx: tx}, nil
+	}
+
+	return &NullTransaction{db: d}, nil
 }

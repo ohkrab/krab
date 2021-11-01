@@ -3,8 +3,6 @@ package spec
 import (
 	"context"
 	"database/sql"
-	"io"
-	"strings"
 
 	_ "github.com/jackc/pgx/v4"
 	_ "github.com/jackc/pgx/v4/stdlib"
@@ -13,7 +11,9 @@ import (
 	"github.com/ohkrab/krab/krabenv"
 )
 
-type mockDBConnection struct{}
+type mockDBConnection struct {
+	recorder []string
+}
 
 func (m *mockDBConnection) Get(f func(db krabdb.DB) error) error {
 	db, err := krabdb.Connect(krabenv.DatabaseURL())
@@ -22,12 +22,12 @@ func (m *mockDBConnection) Get(f func(db krabdb.DB) error) error {
 	}
 	defer db.Close()
 
-	return f(&testDB{recorder: &strings.Builder{}, db: db})
+	return f(&testDB{recorder: &m.recorder, db: db})
 }
 
 type testDB struct {
 	db       *sqlx.DB
-	recorder io.StringWriter
+	recorder *[]string
 }
 
 func (d *testDB) GetDatabase() *sqlx.DB {
@@ -35,18 +35,30 @@ func (d *testDB) GetDatabase() *sqlx.DB {
 }
 
 func (d *testDB) SelectContext(ctx context.Context, dest interface{}, query string, args ...interface{}) error {
-	d.recorder.WriteString(query)
+	*d.recorder = append(*d.recorder, query)
 	return sqlx.SelectContext(ctx, d.GetDatabase(), dest, query, args...)
 }
 
 func (d *testDB) QueryContext(ctx context.Context, query string, args ...interface{}) (*sqlx.Rows, error) {
-	d.recorder.WriteString(query)
+	*d.recorder = append(*d.recorder, query)
 	return d.GetDatabase().QueryxContext(ctx, query, args...)
 }
 
 func (d *testDB) ExecContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
-	d.recorder.WriteString(query)
+	*d.recorder = append(*d.recorder, query)
 	return d.GetDatabase().ExecContext(ctx, query, args...)
+}
+
+func (d *testDB) NewTx(ctx context.Context, createTransaction bool) (krabdb.TransactionExecerContext, error) {
+	if createTransaction {
+		tx, err := d.GetDatabase().BeginTxx(ctx, nil)
+		if err != nil {
+			return nil, err
+		}
+		return &mockTransaction{tx: tx, recorder: d.recorder}, nil
+	}
+
+	return &mockNullTransaction{db: d, recorder: d.recorder}, nil
 }
 
 func sqlxRowsMapScan(rows *sqlx.Rows) []map[string]interface{} {
@@ -58,4 +70,40 @@ func sqlxRowsMapScan(rows *sqlx.Rows) []map[string]interface{} {
 	}
 
 	return res
+}
+
+type mockTransaction struct {
+	tx       *sqlx.Tx
+	recorder *[]string
+}
+
+func (t *mockTransaction) Rollback() error {
+	return t.tx.Rollback()
+}
+
+func (t *mockTransaction) Commit() error {
+	return t.tx.Commit()
+}
+
+func (t *mockTransaction) ExecContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
+	*t.recorder = append(*t.recorder, query)
+	return t.tx.ExecContext(ctx, query, args...)
+}
+
+type mockNullTransaction struct {
+	db       krabdb.DB
+	recorder *[]string
+}
+
+func (t *mockNullTransaction) Rollback() error {
+	return nil
+}
+
+func (t *mockNullTransaction) Commit() error {
+	return nil
+}
+
+func (t *mockNullTransaction) ExecContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
+	*t.recorder = append(*t.recorder, query)
+	return t.db.ExecContext(ctx, query, args...)
 }

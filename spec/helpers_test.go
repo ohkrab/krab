@@ -15,10 +15,11 @@ import (
 	"github.com/ohkrab/krab/krabdb"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
+	"github.com/wzshiming/ctc"
 )
 
 type cliMock struct {
-	connection    krabdb.Connection
+	connection    *mockDBConnection
 	config        *krab.Config
 	app           *krabcli.App
 	exitCode      int
@@ -30,7 +31,9 @@ type cliMock struct {
 }
 
 func (m *cliMock) setup(args []string) {
-	m.connection = &mockDBConnection{}
+	m.connection = &mockDBConnection{
+		recorder: []string{},
+	}
 	m.errorWriter = bytes.Buffer{}
 	m.helpWriter = bytes.Buffer{}
 	m.uiErrorWriter = bytes.Buffer{}
@@ -85,7 +88,12 @@ func (m *cliMock) AssertSuccessfulRun(t *testing.T, args []string) bool {
 	m.exitCode, m.err = m.app.Run()
 
 	if assert.NoError(t, m.err, "CLI should run successfully") {
-		return assert.Equal(t, 0, m.exitCode, "Exit code should be eql to 0")
+		if assert.Equal(t, 0, m.exitCode, "Exit code should be eql to 0") {
+			return true
+		} else {
+			fmt.Println(ctc.ForegroundRed, m.uiErrorWriter.String(), ctc.Reset)
+			return false
+		}
 	}
 
 	return false
@@ -148,6 +156,16 @@ func (m *cliMock) AssertSchemaMigrationTable(t *testing.T, schema string, expect
 	}
 
 	return false
+}
+
+func (m *cliMock) AssertSQLContains(t *testing.T, expected string) bool {
+	sql := strings.TrimSpace(strings.Join(m.connection.recorder, "\n"))
+	expected = strings.TrimSpace(expected)
+	return assert.Contains(t, sql, expected, fmt.Sprintf("SQL mismatch:\n%s\nwith:\n%s", expected, sql))
+}
+
+func (m *cliMock) ResetSQLRecorder() {
+	m.connection.recorder = []string{}
 }
 
 func (m *cliMock) Query(t *testing.T, query string) ([]string, []map[string]interface{}) {

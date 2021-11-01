@@ -25,3 +25,12 @@ func QuoteIdentWithDots(s string) string {
 	}
 	return strings.Join(names, ".")
 }
+
+// QuoteIdentStrings escapes identifiers in PG.
+func QuoteIdentStrings(in []string) []string {
+	out := make([]string, len(in))
+	for i, name := range in {
+		out[i] = QuoteIdent(name)
+	}
+	return out
+}

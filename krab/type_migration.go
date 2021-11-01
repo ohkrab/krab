@@ -2,7 +2,15 @@ package krab
 
 import (
 	"fmt"
+	"io"
+
+	"github.com/hashicorp/hcl/v2"
 )
+
+// ToSQL converts DSL struct to SQL.
+type ToSQL interface {
+	ToSQL(w io.StringWriter)
+}
 
 // Migration represents single up/down migration pair.
 //
@@ -26,6 +34,8 @@ func (ms *Migration) Validate() error {
 	return ErrorCoalesce(
 		ValidateRefName(ms.RefName),
 		ValidateStringNonEmpty(fmt.Sprint("`version` attribute in `", ms.RefName, "` migration"), ms.Version),
+		ms.Up.Validate(),
+		ms.Down.Validate(),
 	)
 }
 
@@ -35,4 +45,20 @@ func (ms *Migration) ShouldRunInTransaction() bool {
 		return true
 	}
 	return *ms.Transaction
+}
+
+func (m *MigrationUpOrDown) Validate() error {
+	return nil
+}
+
+// ToSQL converts migration definition to SQL.
+func (m *MigrationUpOrDown) ToSQL(w io.StringWriter) {
+	w.WriteString(m.SQL)
+
+	for _, t := range m.CreateTables {
+		t.ToSQL(w)
+	}
+	for _, t := range m.DropTables {
+		t.ToSQL(w)
+	}
 }

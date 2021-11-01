@@ -3,6 +3,7 @@ package krab
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/ohkrab/krab/cli"
 	"github.com/ohkrab/krab/cliargs"
@@ -112,7 +113,7 @@ func (a *ActionMigrateUp) Do(ctx context.Context, db krabdb.DB, tpl *tpls.Templa
 
 	for _, pending := range pendingMigrations {
 		ui.Output(fmt.Sprint(pending.RefName, " ", pending.Version))
-		tx, err := krabdb.NewTx(ctx, db, pending.ShouldRunInTransaction())
+		tx, err := db.NewTx(ctx, pending.ShouldRunInTransaction())
 		if err != nil {
 			return errors.Wrap(err, "Failed to start transaction")
 		}
@@ -137,7 +138,9 @@ func (a *ActionMigrateUp) Do(ctx context.Context, db krabdb.DB, tpl *tpls.Templa
 }
 
 func (a *ActionMigrateUp) migrateUp(ctx context.Context, tx krabdb.TransactionExecerContext, migration *Migration, versions SchemaMigrationTable) error {
-	_, err := tx.ExecContext(ctx, migration.Up.SQL)
+	sql := &strings.Builder{}
+	migration.Up.ToSQL(sql)
+	_, err := tx.ExecContext(ctx, sql.String())
 	if err != nil {
 		return errors.Wrap(err, "Failed to execute migration")
 	}

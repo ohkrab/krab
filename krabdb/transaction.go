@@ -8,28 +8,10 @@ import (
 )
 
 type TransactionExecerContext interface {
-	sqlx.ExecerContext
+	ExecerContext
 
 	Rollback() error
 	Commit() error
-}
-
-// NewTx is a helper that creates real transaction or null one based on createTransaction flag.
-func NewTx(ctx context.Context, db DB, createTransaction bool) (TransactionExecerContext, error) {
-	if createTransaction {
-		return BeginTx(ctx, db.GetDatabase())
-	}
-
-	return NullTx(ctx, db.GetDatabase())
-}
-
-// BeginTx starts new transaction
-func BeginTx(ctx context.Context, db *sqlx.DB) (TransactionExecerContext, error) {
-	tx, err := db.BeginTxx(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	return &Transaction{tx: tx}, nil
 }
 
 // Transaction represents database transaction.
@@ -49,14 +31,9 @@ func (t *Transaction) ExecContext(ctx context.Context, query string, args ...int
 	return t.tx.ExecContext(ctx, query, args...)
 }
 
-// NullTx returns fake transaction to satisfy TransactionExecerContext interface
-func NullTx(ctx context.Context, db *sqlx.DB) (TransactionExecerContext, error) {
-	return &NullTransaction{db: db}, nil
-}
-
 // NullTransaction represents fake transaction.
 type NullTransaction struct {
-	db *sqlx.DB
+	db DB
 }
 
 func (t *NullTransaction) Rollback() error {

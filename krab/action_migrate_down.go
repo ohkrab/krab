@@ -3,6 +3,7 @@ package krab
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/ohkrab/krab/cli"
 	"github.com/ohkrab/krab/cliargs"
@@ -140,7 +141,7 @@ func (a *ActionMigrateDown) Do(ctx context.Context, db krabdb.DB, tpl *tpls.Temp
 	}
 
 	// schema migration
-	tx, err := krabdb.NewTx(ctx, db, migration.ShouldRunInTransaction())
+	tx, err := db.NewTx(ctx, migration.ShouldRunInTransaction())
 	if err != nil {
 		return errors.Wrap(err, "Failed to start transaction")
 	}
@@ -166,7 +167,9 @@ func (a *ActionMigrateDown) Do(ctx context.Context, db krabdb.DB, tpl *tpls.Temp
 }
 
 func (a *ActionMigrateDown) migrateDown(ctx context.Context, tx krabdb.TransactionExecerContext, migration *Migration, versions SchemaMigrationTable) error {
-	_, err := tx.ExecContext(ctx, migration.Down.SQL)
+	sql := &strings.Builder{}
+	migration.Down.ToSQL(sql)
+	_, err := tx.ExecContext(ctx, sql.String())
 	if err != nil {
 		return errors.Wrap(err, "Failed to execute migration")
 	}

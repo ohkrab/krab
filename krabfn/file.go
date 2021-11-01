@@ -7,6 +7,7 @@ import (
 )
 
 // FnFileRead reads the whole file or returns error.
+// https://github.com/hashicorp/hcl/blob/main/guide/go_expression_eval.rst
 var FnFileRead = func(fs afero.Afero) function.Function {
 	return function.New(
 		&function.Spec{
