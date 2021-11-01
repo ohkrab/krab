@@ -7,12 +7,12 @@ import (
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/ohkrab/krab/krabdb"
+	"github.com/ohkrab/krab/krabhcl"
 	"github.com/wzshiming/ctc"
 	"github.com/zclconf/go-cty/cty"
-	"github.com/zclconf/go-cty/cty/gocty"
 )
 
-// DDLColumn constraint DSL for table DDL.
+// DDLColumn DSL for table DDL.
 type DDLColumn struct {
 	Name      string              `hcl:"name,label"`
 	Type      string              `hcl:"type,label"`
@@ -47,16 +47,13 @@ func (d *DDLColumn) ToSQL(w io.StringWriter) {
 		d.Generated.ToSQL(w)
 	}
 
-	val, _ := d.Default.Value(nil)
-	if val.IsWhollyKnown() && !val.IsNull() {
+	defaultExpr := krabhcl.Expression{Expr: d.Default}
+	if defaultExpr.Ok() {
 		w.WriteString(" DEFAULT ")
 
-		switch val.Type() {
+		switch defaultExpr.Type() {
 		case cty.Bool:
-			var boolean bool
-			if err := gocty.FromCtyValue(val, &boolean); err == nil {
-				w.WriteString(strconv.FormatBool(boolean))
-			}
+			w.WriteString(strconv.FormatBool(defaultExpr.AsBool()))
 
 		default:
 			panic(fmt.Sprint(
