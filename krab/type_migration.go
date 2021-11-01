@@ -3,8 +3,6 @@ package krab
 import (
 	"fmt"
 	"io"
-
-	"github.com/hashicorp/hcl/v2"
 )
 
 // ToSQL converts DSL struct to SQL.
