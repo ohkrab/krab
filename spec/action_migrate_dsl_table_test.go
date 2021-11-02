@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-func TestActionMigrateUpDsl(t *testing.T) {
+func TestActionMigrateDslTable(t *testing.T) {
 	c := mockCli(mockConfig(`
 migration "create_categories" {
   version = "v1"
@@ -137,16 +137,3 @@ DROP TABLE "animals"
 		}
 	}
 }
-
-// 	create_index "idx_uniq_name" {
-// 	  unique  = true
-// 	  columns = ["name"]
-// 	  using   = "btree"
-// 	  include = ["weight_kg"]
-// 	  concurrently = false
-// 	}
-
-// 	create_index "idx_heavy_animals" {
-// 	  columns = ["weight_kg"]
-// 	  where   = "weight_kg > 5000"
-// 	}
