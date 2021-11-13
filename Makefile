@@ -8,7 +8,7 @@ install:
 	cp bin/krab /usr/local/bin
 
 test:
-	DATABASE_URL="postgres://krab:secret@localhost:5432/krab?sslmode=disable&prefer_simple_protocol=true" go test -v ./... && echo -e "\e[32mok\e[0m"
+	DATABASE_URL="postgres://krab:secret@localhost:5432/krab?sslmode=disable&prefer_simple_protocol=true" go test -v ./... && echo "☑️ "
 
 docker_test:
 	docker run --rm -e DATABASE_URL="postgres://krab:secret@localhost:5432/krab?sslmode=disable" \
