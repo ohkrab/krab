@@ -99,8 +99,8 @@ migration "abc" {
 			var down strings.Builder
 			migration.Up.ToSQL(&up)
 			migration.Down.ToSQL(&down)
-			assert.Equal(up.String(), "CREATE TABLE abc;\n")
-			assert.Equal(down.String(), "DROP TABLE abc;\n")
+			assert.Equal(up.String(), "CREATE TABLE abc")
+			assert.Equal(down.String(), "DROP TABLE abc")
 		}
 	}
 }

@@ -36,6 +36,14 @@ migration "create_animals" {
   }
 
   down {
+    drop_index "public.idx_uniq_name" {
+	  cascade = true
+	}
+
+    drop_index "idx_heavy_animals" {
+	  concurrently = true
+	}
+
     drop_table "animals" {}
   }
 }
@@ -65,11 +73,9 @@ CREATE TABLE "animals"(
 	`)
 		c.AssertSQLContains(t, `
 CREATE UNIQUE INDEX "idx_uniq_name" ON "animals" USING btree ("name") INCLUDE ("weight_kg")
-)
 	`)
 		c.AssertSQLContains(t, `
-CREATE INDEX CONCURRENTLY "idx_heavy_animals" ON "animals" USING btree ("weight_kg") WHERE ("weight_kg > 5000")
-)
+CREATE INDEX CONCURRENTLY "idx_heavy_animals" ON "animals" ("weight_kg") WHERE (weight_kg > 5000)
 	`)
 
 		if c.AssertSuccessfulRun(t, []string{"migrate", "down", "animals", "-version", "v1"}) {
@@ -79,9 +85,9 @@ CREATE INDEX CONCURRENTLY "idx_heavy_animals" ON "animals" USING btree ("weight_
 Done
 `,
 			)
-			c.AssertSQLContains(t, `
-DROP TABLE "animals"
-	`)
+			c.AssertSQLContains(t, `DROP INDEX "public"."idx_uniq_name" CASCADE`)
+			c.AssertSQLContains(t, `DROP INDEX CONCURRENTLY "idx_heavy_animals"`)
+			c.AssertSQLContains(t, `DROP TABLE "animals"`)
 		}
 	}
 }

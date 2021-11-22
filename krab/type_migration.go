@@ -5,11 +5,6 @@ import (
 	"io"
 )
 
-// ToSQL converts DSL struct to SQL.
-type ToSQL interface {
-	ToSQL(w io.StringWriter)
-}
-
 // Migration represents single up/down migration pair.
 //
 type Migration struct {
@@ -27,6 +22,7 @@ type MigrationUpOrDown struct {
 	CreateTables  []*DDLCreateTable `hcl:"create_table,block"`
 	CreateIndices []*DDLCreateIndex `hcl:"create_index,block"`
 	DropTables    []*DDLDropTable   `hcl:"drop_table,block"`
+	DropIndices   []*DDLDropIndex   `hcl:"drop_index,block"`
 }
 
 func (ms *Migration) Validate() error {
@@ -50,23 +46,30 @@ func (m *MigrationUpOrDown) Validate() error {
 	return nil
 }
 
-// ToSQL converts migration definition to SQL.
 func (m *MigrationUpOrDown) ToSQL(w io.StringWriter) {
+	w.WriteString(m.SQL)
+}
+
+// ToSQLStatements returns list of SQL statements to executre during the migration.
+func (m *MigrationUpOrDown) ToSQLStatements() SQLStatements {
+	sqls := SQLStatements{}
+
 	if m.SQL != "" {
-		w.WriteString(m.SQL)
-		w.WriteString(";\n")
+		sqls.Append(m)
 	}
 
 	for _, t := range m.CreateTables {
-		t.ToSQL(w)
-		w.WriteString(";\n")
+		sqls.Append(t)
 	}
 	for _, t := range m.CreateIndices {
-		t.ToSQL(w)
-		w.WriteString(";\n")
+		sqls.Append(t)
+	}
+	for _, t := range m.DropIndices {
+		sqls.Append(t)
 	}
 	for _, t := range m.DropTables {
-		t.ToSQL(w)
-		w.WriteString(";\n")
+		sqls.Append(t)
 	}
+
+	return sqls
 }

@@ -3,7 +3,6 @@ package krab
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/ohkrab/krab/cli"
 	"github.com/ohkrab/krab/cliargs"
@@ -138,14 +137,16 @@ func (a *ActionMigrateUp) Do(ctx context.Context, db krabdb.DB, tpl *tpls.Templa
 }
 
 func (a *ActionMigrateUp) migrateUp(ctx context.Context, tx krabdb.TransactionExecerContext, migration *Migration, versions SchemaMigrationTable) error {
-	sql := &strings.Builder{}
-	migration.Up.ToSQL(sql)
-	_, err := tx.ExecContext(ctx, sql.String())
-	if err != nil {
-		return errors.Wrap(err, "Failed to execute migration")
+	sqls := migration.Up.ToSQLStatements()
+	for _, sql := range sqls {
+		// fmt.Println(ctc.ForegroundYellow, string(sql), ctc.Reset)
+		_, err := tx.ExecContext(ctx, string(sql))
+		if err != nil {
+			return errors.Wrap(err, "Failed to execute migration")
+		}
 	}
 
-	err = versions.Insert(ctx, tx, migration.Version)
+	err := versions.Insert(ctx, tx, migration.Version)
 	if err != nil {
 		return errors.Wrap(err, "Failed to insert migration")
 	}
