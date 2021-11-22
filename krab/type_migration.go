@@ -23,9 +23,10 @@ type Migration struct {
 
 // Migration contains info how to migrate up or down.
 type MigrationUpOrDown struct {
-	SQL          string            `hcl:"sql,optional"`
-	CreateTables []*DDLCreateTable `hcl:"create_table,block"`
-	DropTables   []*DDLDropTable   `hcl:"drop_table,block"`
+	SQL           string            `hcl:"sql,optional"`
+	CreateTables  []*DDLCreateTable `hcl:"create_table,block"`
+	CreateIndices []*DDLCreateIndex `hcl:"create_index,block"`
+	DropTables    []*DDLDropTable   `hcl:"drop_table,block"`
 }
 
 func (ms *Migration) Validate() error {
@@ -51,12 +52,21 @@ func (m *MigrationUpOrDown) Validate() error {
 
 // ToSQL converts migration definition to SQL.
 func (m *MigrationUpOrDown) ToSQL(w io.StringWriter) {
-	w.WriteString(m.SQL)
+	if m.SQL != "" {
+		w.WriteString(m.SQL)
+		w.WriteString(";\n")
+	}
 
 	for _, t := range m.CreateTables {
 		t.ToSQL(w)
+		w.WriteString(";\n")
+	}
+	for _, t := range m.CreateIndices {
+		t.ToSQL(w)
+		w.WriteString(";\n")
 	}
 	for _, t := range m.DropTables {
 		t.ToSQL(w)
+		w.WriteString(";\n")
 	}
 }

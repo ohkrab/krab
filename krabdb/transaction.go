@@ -45,5 +45,5 @@ func (t *NullTransaction) Commit() error {
 }
 
 func (t *NullTransaction) ExecContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
-	return t.db.ExecContext(ctx, query, args...)
+	return t.db.GetDatabase().ExecContext(ctx, query, args...)
 }
