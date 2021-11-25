@@ -1,4 +1,4 @@
-.PHONY: build install test docker_test docker_build docker_push
+.PHONY: build install test docker_test docker_build docker_push docker_nightly
 
 build:
 	mkdir -p bin/
