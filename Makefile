@@ -1,4 +1,4 @@
-.PHONY: build install test
+.PHONY: build install test docker_test docker_build docker_push
 
 build:
 	mkdir -p bin/
@@ -15,13 +15,22 @@ docker_test:
 		-v ${HOME}/oh/krab/test/fixtures/simple:/etc/krab:ro ohkrab/krab-cli:${BUILD_VERSION} version
 
 docker_build:
-	docker build -t ohkrab/krab-cli:${BUILD_VERSION} \
+	docker build -t ohkrab/krab:${BUILD_VERSION} \
 		--build-arg BUILD_VERSION=${BUILD_VERSION} \
 		--build-arg BUILD_COMMIT=${BUILD_COMMIT} \
 		--build-arg BUILD_DATE=${BUILD_DATE} \
 		.
 
 docker_push:
-	docker tag ohkrab/krab-cli:${BUILD_VERSION} ohkrab/krab-cli:latest
-	docker push ohkrab/krab-cli:${BUILD_VERSION}
-	docker push ohkrab/krab-cli:latest
+	docker tag ohkrab/krab:${BUILD_VERSION} ohkrab/krab:latest
+	docker push ohkrab/krab:${BUILD_VERSION}
+	docker push ohkrab/krab:latest
+
+docker_nightly:
+	docker build -t ohkrab/krab:nightly \
+		--build-arg BUILD_VERSION=nightly \
+		--build-arg BUILD_COMMIT=$$( git log -1 --pretty="format:%h" ) \
+		--build-arg BUILD_DATE=$$( date -u +"%Y-%m-%dT%H:%M:%SZ" ) \
+		.
+	docker tag ohkrab/krab:nightly ohkrab/krab:latest
+	docker push ohkrab/krab:nightly
