@@ -3,6 +3,8 @@ package krab
 import (
 	"fmt"
 	"io"
+
+	"github.com/hashicorp/hcl/v2"
 )
 
 // Migration represents single up/down migration pair.
@@ -16,6 +18,15 @@ type Migration struct {
 	Transaction *bool             `hcl:"transaction,optional"` // wrap operaiton in transaction
 }
 
+type RawMigration struct {
+	RefName string `hcl:",label"`
+
+	Up   RawMigrationUpOrDown `hcl:"up,block"`
+	Down RawMigrationUpOrDown `hcl:"down,block"`
+
+	Remain hcl.Body `hcl:",remain"`
+}
+
 // Migration contains info how to migrate up or down.
 type MigrationUpOrDown struct {
 	SQL           string            `hcl:"sql,optional"`
@@ -23,6 +34,10 @@ type MigrationUpOrDown struct {
 	CreateIndices []*DDLCreateIndex `hcl:"create_index,block"`
 	DropTables    []*DDLDropTable   `hcl:"drop_table,block"`
 	DropIndices   []*DDLDropIndex   `hcl:"drop_index,block"`
+}
+
+type RawMigrationUpOrDown struct {
+	Remain hcl.Body `hcl:",remain"`
 }
 
 func (ms *Migration) Validate() error {

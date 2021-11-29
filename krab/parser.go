@@ -62,16 +62,21 @@ func (p *Parser) loadConfigFiles(paths ...string) ([]*File, error) {
 }
 
 func (p *Parser) loadConfigFile(path string, evalContext *hcl.EvalContext) (*File, error) {
-	var file File
-
 	src, err := p.FS.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("[%w] Failed to load file %s", err, path)
 	}
 
+	var file File
 	if err := hclsimple.Decode(path, src, evalContext, &file); err != nil {
 		return nil, fmt.Errorf("[%w] Failed to decode file %s", err, path)
 	}
+
+	var rawFile RawFile
+	if err := hclsimple.Decode(path, src, evalContext, &rawFile); err != nil {
+		return nil, fmt.Errorf("[%w] Failed to decode raw file %s", err, path)
+	}
+	file.Raw = &rawFile
 
 	return &file, nil
 }

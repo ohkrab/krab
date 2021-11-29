@@ -3,6 +3,7 @@ package krab
 import (
 	"io"
 
+	"github.com/hashicorp/hcl/v2"
 	"github.com/ohkrab/krab/krabdb"
 )
 
@@ -17,6 +18,17 @@ type DDLCreateIndex struct {
 	Include      []string `hcl:"include,optional"`
 	Using        string   `hcl:"using,optional"`
 	Where        string   `hcl:"where,optional"`
+
+	DefRange hcl.Range
+}
+
+var DDLCreateIndexSchema = hcl.BodySchema{
+	Blocks: []hcl.BlockHeaderSchema{
+		{
+			Type:       "create_index",
+			LabelNames: []string{"table", "name"},
+		},
+	},
 }
 
 // ToSQL converts migration definition to SQL.

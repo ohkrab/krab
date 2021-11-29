@@ -2,6 +2,8 @@ package krab
 
 import (
 	"fmt"
+
+	"github.com/ohkrab/krab/krabhcl"
 )
 
 // Config represents all configuration loaded from directory.
@@ -66,12 +68,16 @@ func NewConfig(files []*File) (*Config, error) {
 }
 
 func (c *Config) appendFile(file *File) error {
-	for _, m := range file.Migrations {
+	for i, m := range file.Migrations {
 		if _, found := c.Migrations[m.RefName]; found {
 			return fmt.Errorf("Migration with the name '%s' already exists", m.RefName)
 		}
 
+		raw := file.Raw.Migrations[i]
 		c.Migrations[m.RefName] = m
+
+		applyDefRangesToMigration(&m.Up, &raw.Up)
+		applyDefRangesToMigration(&m.Down, &raw.Down)
 	}
 
 	for _, s := range file.MigrationSets {
@@ -83,4 +89,20 @@ func (c *Config) appendFile(file *File) error {
 	}
 
 	return nil
+}
+
+func applyDefRangesToMigration(m *MigrationUpOrDown, raw *RawMigrationUpOrDown) {
+	remain := krabhcl.Body{raw.Remain}
+	for i, defRange := range remain.DefRangesFromPartialContent(&DDLCreateTableSchema) {
+		m.CreateTables[i].DefRange = defRange
+	}
+	for i, defRange := range remain.DefRangesFromPartialContent(&DDLDropTableSchema) {
+		m.DropTables[i].DefRange = defRange
+	}
+	for i, defRange := range remain.DefRangesFromPartialContent(&DDLCreateIndexSchema) {
+		m.CreateIndices[i].DefRange = defRange
+	}
+	for i, defRange := range remain.DefRangesFromPartialContent(&DDLDropIndexSchema) {
+		m.DropIndices[i].DefRange = defRange
+	}
 }

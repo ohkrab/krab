@@ -3,6 +3,7 @@ package krab
 import (
 	"io"
 
+	"github.com/hashicorp/hcl/v2"
 	"github.com/ohkrab/krab/krabdb"
 )
 
@@ -12,6 +13,17 @@ type DDLDropIndex struct {
 
 	Cascade      bool `hcl:"cascade,optional"`
 	Concurrently bool `hcl:"concurrently,optional"`
+
+	DefRange hcl.Range
+}
+
+var DDLDropIndexSchema = hcl.BodySchema{
+	Blocks: []hcl.BlockHeaderSchema{
+		{
+			Type:       "drop_index",
+			LabelNames: []string{"name"},
+		},
+	},
 }
 
 // ToSQL converts migration definition to SQL.

@@ -3,6 +3,7 @@ package krab
 import (
 	"io"
 
+	"github.com/hashicorp/hcl/v2"
 	"github.com/ohkrab/krab/krabdb"
 )
 
@@ -15,6 +16,17 @@ type DDLCreateTable struct {
 	ForeignKeys []*DDLForeignKey `hcl:"foreign_key,block"`
 	Uniques     []*DDLUnique     `hcl:"unique,block"`
 	Checks      []*DDLCheck      `hcl:"check,block"`
+
+	DefRange hcl.Range
+}
+
+var DDLCreateTableSchema = hcl.BodySchema{
+	Blocks: []hcl.BlockHeaderSchema{
+		{
+			Type:       "create_table",
+			LabelNames: []string{"name"},
+		},
+	},
 }
 
 // ToSQL converts migration definition to SQL.
