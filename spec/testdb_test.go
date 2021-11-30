@@ -12,7 +12,8 @@ import (
 )
 
 type mockDBConnection struct {
-	recorder []string
+	recorder         []string
+	assertedSQLIndex int
 }
 
 func (m *mockDBConnection) Get(f func(db krabdb.DB) error) error {

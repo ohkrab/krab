@@ -32,7 +32,8 @@ type cliMock struct {
 
 func (m *cliMock) setup(args []string) {
 	m.connection = &mockDBConnection{
-		recorder: []string{},
+		recorder:         []string{},
+		assertedSQLIndex: 0,
 	}
 	m.errorWriter = bytes.Buffer{}
 	m.helpWriter = bytes.Buffer{}
@@ -158,13 +159,37 @@ func (m *cliMock) AssertSchemaMigrationTable(t *testing.T, schema string, expect
 	return false
 }
 
+// AssertSQLContains compares expected query with all recoreded queries.
+// Assertions must happen in order the queries are executed, otherwise assertion fails.
 func (m *cliMock) AssertSQLContains(t *testing.T, expected string) bool {
-	sql := strings.TrimSpace(strings.Join(m.connection.recorder, "\n"))
 	expected = strings.TrimSpace(expected)
-	return assert.Contains(t, sql, expected, fmt.Sprintf("SQL mismatch:\n%s\nwith:\n%s", expected, sql))
+	found := -1
+
+	// find matching query and remember last asserted query index
+	for i, sql := range m.connection.recorder {
+		if strings.Index(sql, expected) != -1 {
+			found = i
+			if i > m.connection.assertedSQLIndex {
+				m.connection.assertedSQLIndex = i
+			}
+			break
+		}
+	}
+
+	sql := ""
+	if found != -1 {
+		sql = m.connection.recorder[found]
+		// make sure assertion happen in the correct order
+		if found < m.connection.assertedSQLIndex {
+			return assert.True(t, false, "Queries asserted in the wrong order")
+		}
+	}
+
+	return assert.True(t, found != -1, fmt.Sprintf("SQL mismatch:\n%s\nwith:\n%s", expected, sql))
 }
 
 func (m *cliMock) ResetSQLRecorder() {
+	m.connection.assertedSQLIndex = 0
 	m.connection.recorder = []string{}
 }
 
