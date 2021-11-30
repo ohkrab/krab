@@ -34,6 +34,17 @@ type MigrationUpOrDown struct {
 	CreateIndices []*DDLCreateIndex `hcl:"create_index,block"`
 	DropTables    []*DDLDropTable   `hcl:"drop_table,block"`
 	DropIndices   []*DDLDropIndex   `hcl:"drop_index,block"`
+
+	AttrDefRanges map[string]hcl.Range
+}
+
+var MigrationUpOrDownSchema = hcl.BodySchema{
+	Attributes: []hcl.AttributeSchema{
+		{
+			Name:     "sql",
+			Required: false,
+		},
+	},
 }
 
 type RawMigrationUpOrDown struct {

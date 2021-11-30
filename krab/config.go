@@ -93,16 +93,19 @@ func (c *Config) appendFile(file *File) error {
 
 func applyDefRangesToMigration(m *MigrationUpOrDown, raw *RawMigrationUpOrDown) {
 	remain := krabhcl.Body{raw.Remain}
-	for i, defRange := range remain.DefRangesFromPartialContent(&DDLCreateTableSchema) {
+
+	for i, defRange := range remain.DefRangesFromPartialContentBlocks(&DDLCreateTableSchema) {
 		m.CreateTables[i].DefRange = defRange
 	}
-	for i, defRange := range remain.DefRangesFromPartialContent(&DDLDropTableSchema) {
+	for i, defRange := range remain.DefRangesFromPartialContentBlocks(&DDLDropTableSchema) {
 		m.DropTables[i].DefRange = defRange
 	}
-	for i, defRange := range remain.DefRangesFromPartialContent(&DDLCreateIndexSchema) {
+	for i, defRange := range remain.DefRangesFromPartialContentBlocks(&DDLCreateIndexSchema) {
 		m.CreateIndices[i].DefRange = defRange
 	}
-	for i, defRange := range remain.DefRangesFromPartialContent(&DDLDropIndexSchema) {
+	for i, defRange := range remain.DefRangesFromPartialContentBlocks(&DDLDropIndexSchema) {
 		m.DropIndices[i].DefRange = defRange
 	}
+
+	m.AttrDefRanges = remain.DefRangesFromPartialContentAttributes(&MigrationUpOrDownSchema)
 }
