@@ -80,21 +80,27 @@ func (m *MigrationUpOrDown) ToSQL(w io.StringWriter) {
 func (m *MigrationUpOrDown) ToSQLStatements() SQLStatements {
 	sqls := SQLStatements{}
 
+	toSort := map[int]ToSQL{}
+
 	if m.SQL != "" {
-		sqls.Append(m)
+		toSort[m.AttrDefRanges["sql"].Start.Byte] = m
 	}
 
 	for _, t := range m.CreateTables {
-		sqls.Append(t)
+		toSort[t.DefRange.Start.Byte] = t
 	}
 	for _, t := range m.CreateIndices {
-		sqls.Append(t)
+		toSort[t.DefRange.Start.Byte] = t
 	}
 	for _, t := range m.DropIndices {
-		sqls.Append(t)
+		toSort[t.DefRange.Start.Byte] = t
 	}
 	for _, t := range m.DropTables {
-		sqls.Append(t)
+		toSort[t.DefRange.Start.Byte] = t
+	}
+
+	for _, sql := range toSort {
+		sqls.Append(sql)
 	}
 
 	return sqls
