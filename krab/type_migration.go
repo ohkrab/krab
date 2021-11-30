@@ -78,30 +78,24 @@ func (m *MigrationUpOrDown) ToSQL(w io.StringWriter) {
 
 // ToSQLStatements returns list of SQL statements to executre during the migration.
 func (m *MigrationUpOrDown) ToSQLStatements() SQLStatements {
-	sqls := SQLStatements{}
-
-	toSort := map[int]ToSQL{}
+	sorter := SQLStatementsSorter{Statements: SQLStatements{}, Bytes: []int{}}
 
 	if m.SQL != "" {
-		toSort[m.AttrDefRanges["sql"].Start.Byte] = m
+		sorter.Insert(m.AttrDefRanges["sql"], m)
 	}
 
 	for _, t := range m.CreateTables {
-		toSort[t.DefRange.Start.Byte] = t
+		sorter.Insert(t.DefRange, t)
 	}
 	for _, t := range m.CreateIndices {
-		toSort[t.DefRange.Start.Byte] = t
+		sorter.Insert(t.DefRange, t)
 	}
 	for _, t := range m.DropIndices {
-		toSort[t.DefRange.Start.Byte] = t
+		sorter.Insert(t.DefRange, t)
 	}
 	for _, t := range m.DropTables {
-		toSort[t.DefRange.Start.Byte] = t
+		sorter.Insert(t.DefRange, t)
 	}
 
-	for _, sql := range toSort {
-		sqls.Append(sql)
-	}
-
-	return sqls
+	return sorter.Sort()
 }
