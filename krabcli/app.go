@@ -2,6 +2,7 @@ package krabcli
 
 import (
 	"fmt"
+	"strings"
 
 	mcli "github.com/mitchellh/cli"
 	"github.com/ohkrab/krab/cli"
@@ -43,6 +44,13 @@ func (a *App) RegisterAll() {
 	a.RegisterCmd("version", func() Command {
 		return &krab.ActionVersion{Ui: a.Ui}
 	})
+
+	for _, action := range a.Config.Actions {
+		localAction := action
+		a.RegisterCmd(strings.Join(action.Addr().Absolute(), " "), func() Command {
+			return &krab.ActionCustom{Ui: a.Ui, Action: localAction, Connection: a.connection}
+		})
+	}
 
 	for _, set := range a.Config.MigrationSets {
 		localSet := set

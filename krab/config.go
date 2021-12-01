@@ -11,14 +11,16 @@ import (
 type Config struct {
 	MigrationSets map[string]*MigrationSet
 	Migrations    map[string]*Migration
+	Actions       map[string]*Action
 }
 
 // NewConfig returns new configuration that was read from Parser.
 // Transient attributes are updated with parsed data.
 func NewConfig(files []*File) (*Config, error) {
 	c := &Config{
-		MigrationSets: make(map[string]*MigrationSet),
-		Migrations:    make(map[string]*Migration),
+		MigrationSets: map[string]*MigrationSet{},
+		Migrations:    map[string]*Migration{},
+		Actions:       map[string]*Action{},
 	}
 
 	// append files
@@ -30,7 +32,7 @@ func NewConfig(files []*File) (*Config, error) {
 
 	// parse refs
 	for _, set := range c.MigrationSets {
-		set.Migrations = make([]*Migration, 0)
+		set.Migrations = []*Migration{}
 
 		traversals := set.MigrationsExpr.Variables()
 		for _, t := range traversals {
@@ -86,6 +88,14 @@ func (c *Config) appendFile(file *File) error {
 		}
 
 		c.MigrationSets[s.RefName] = s
+	}
+
+	for _, a := range file.Actions {
+		if _, found := c.Actions[a.Addr().OnlyRefNames()]; found {
+			return fmt.Errorf("Action with the name '%s' already exists", a.Addr().OnlyRefNames())
+		}
+
+		c.Actions[a.Addr().OnlyRefNames()] = a
 	}
 
 	return nil

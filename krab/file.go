@@ -6,6 +6,7 @@ import "github.com/hashicorp/hcl/v2"
 type File struct {
 	Migrations    []*Migration    `hcl:"migration,block"`
 	MigrationSets []*MigrationSet `hcl:"migration_set,block"`
+	Actions       []*Action       `hcl:"action,block"`
 
 	Raw *RawFile
 }

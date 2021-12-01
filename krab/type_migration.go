@@ -1,7 +1,6 @@
 package krab
 
 import (
-	"fmt"
 	"io"
 
 	"github.com/hashicorp/hcl/v2"
@@ -54,7 +53,6 @@ type RawMigrationUpOrDown struct {
 func (ms *Migration) Validate() error {
 	return ErrorCoalesce(
 		ValidateRefName(ms.RefName),
-		ValidateStringNonEmpty(fmt.Sprint("`version` attribute in `", ms.RefName, "` migration"), ms.Version),
 		ms.Up.Validate(),
 		ms.Down.Validate(),
 	)

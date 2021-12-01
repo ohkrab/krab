@@ -14,12 +14,17 @@ type Addr struct {
 }
 
 // String returns full reference name including the keyword.
-func (a *Addr) String() string {
+func (a Addr) String() string {
 	return fmt.Sprintf("%s.%s", a.Keyword, a.OnlyRefNames())
 }
 
+// Absolute returns keyword and labels as a single slice.
+func (a Addr) Absolute() []string {
+	return append([]string{a.Keyword}, a.Labels...)
+}
+
 // OnlyRefNames returns reference name without the keyword.
-func (a *Addr) OnlyRefNames() string {
+func (a Addr) OnlyRefNames() string {
 	return strings.Join(a.Labels, ".")
 }
 
