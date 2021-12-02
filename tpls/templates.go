@@ -1,7 +1,7 @@
 package tpls
 
 import (
-	"bytes"
+	"strings"
 	"text/template"
 )
 
@@ -16,10 +16,10 @@ type root struct {
 }
 
 // New created template renderer with values to replace.
-func New(values map[string]interface{}) *Templates {
+func New(values map[string]interface{}, funcMap template.FuncMap) *Templates {
 	t := &Templates{
 		values:   values,
-		template: template.New(""),
+		template: template.New("").Funcs(funcMap),
 	}
 	return t
 }
@@ -32,17 +32,17 @@ func (t *Templates) Validate(s string) error {
 
 // Render applies values and renders final output.
 func (t *Templates) Render(s string) string {
-	w := bytes.NewBufferString("")
+	sb := strings.Builder{}
 	template, err := t.template.Parse(s)
 	if err != nil {
 		//TODO: handle error
 		panic(err)
 	}
 
-	err = template.Execute(w, root{Args: t.values})
+	err = template.Execute(&sb, root{Args: t.values})
 	if err != nil {
 		//TODO: handle error
 		panic(err)
 	}
-	return w.String()
+	return sb.String()
 }

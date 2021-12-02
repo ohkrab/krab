@@ -10,6 +10,8 @@ type Action struct {
 	Namespace string `hcl:"namespace,label"`
 	RefName   string `hcl:"ref_name,label"`
 
+	Arguments *Arguments `hcl:"arguments,block"`
+
 	SQL string `hcl:"sql"`
 }
 

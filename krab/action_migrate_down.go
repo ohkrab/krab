@@ -7,6 +7,7 @@ import (
 	"github.com/ohkrab/krab/cli"
 	"github.com/ohkrab/krab/cliargs"
 	"github.com/ohkrab/krab/krabdb"
+	"github.com/ohkrab/krab/krabtpl"
 	"github.com/ohkrab/krab/tpls"
 	"github.com/pkg/errors"
 )
@@ -73,7 +74,7 @@ func (a *ActionMigrateDown) Run(args []string) int {
 		return 1
 	}
 
-	templates := tpls.New(flags.Values())
+	templates := tpls.New(flags.Values(), krabtpl.Functions)
 
 	a.DownMigration = SchemaMigration{
 		cliargs.Values(flags.Values()).Get("version"),

@@ -38,7 +38,11 @@ migration_set "animals" {
 }
 
 action "view" "refresh" {
-  sql = "REFRESH VIEW anims"
+  arguments {
+    arg "name" {}
+  }
+
+  sql = "REFRESH MATERIALIZED VIEW {{ quote .Args.name }}"
 }
 `))
 	defer c.Teardown()
@@ -48,9 +52,10 @@ action "view" "refresh" {
 
 	_, vals := c.Query(t, "SELECT * FROM anims")
 	if assert.Len(t, vals, 0, "No values should be returned") {
-		c.AssertSuccessfulRun(t, []string{"action", "view", "refresh"})
+		c.AssertSuccessfulRun(t, []string{"action", "view", "refresh", "-name", "anims"})
 		_, vals := c.Query(t, "SELECT * FROM anims")
 		assert.Len(t, vals, 3, "There should be 3 animals after refresh")
+		c.AssertSQLContains(t, `REFRESH MATERIALIZED VIEW "anims"`)
 	}
 
 }

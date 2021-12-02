@@ -7,6 +7,7 @@ import (
 	"github.com/ohkrab/krab/cli"
 	"github.com/ohkrab/krab/cliargs"
 	"github.com/ohkrab/krab/krabdb"
+	"github.com/ohkrab/krab/krabtpl"
 	"github.com/ohkrab/krab/tpls"
 	"github.com/pkg/errors"
 )
@@ -61,7 +62,7 @@ func (a *ActionMigrateUp) Run(args []string) int {
 		return 1
 	}
 
-	templates := tpls.New(flags.Values())
+	templates := tpls.New(flags.Values(), krabtpl.Functions)
 
 	err = a.Connection.Get(func(db krabdb.DB) error {
 		return a.Do(context.Background(), db, templates, ui)
