@@ -34,3 +34,8 @@ func QuoteIdentStrings(in []string) []string {
 	}
 	return out
 }
+
+// Quote escapes values in PG.
+func Quote(o interface{}) string {
+	panic("Quote not implemented")
+}

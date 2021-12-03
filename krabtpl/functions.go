@@ -7,5 +7,6 @@ import (
 )
 
 var Functions template.FuncMap = template.FuncMap{
-	"quote": krabdb.QuoteIdent,
+	"quote_ident": krabdb.QuoteIdent,
+	"quote":       krabdb.Quote,
 }
