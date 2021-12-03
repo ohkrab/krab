@@ -19,6 +19,13 @@ func (a *Action) Addr() Addr {
 	return Addr{Keyword: "action", Labels: []string{a.Namespace, a.RefName}}
 }
 
+func (a *Action) InitDefaults() {
+	if a.Arguments == nil {
+		a.Arguments = &Arguments{}
+	}
+	a.Arguments.InitDefaults()
+}
+
 func (a *Action) Validate() error {
 	return ErrorCoalesce(
 		ValidateRefName(a.Namespace),
