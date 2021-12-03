@@ -2,6 +2,10 @@ builds:
   -
     ldflags:
       - -s -w -X github.com/ohkrab/krab/krab.InfoVersion={{.Version}} -X github.com/ohkrab/krab/krab.InfoCommit={{.Commit}} -X github.com/ohkrab/krab/krab.InfoBuildDate={{.Date}}
+    goos:
+      - linux
+      - darwin
+      - windows
     goarch:
       - amd64
       - arm64
@@ -9,6 +13,8 @@ builds:
       - 7
     ignore:
       - goos: linux
+        goarch: arm64
+      - goos: windows
         goarch: arm64
 
     binary: krab
