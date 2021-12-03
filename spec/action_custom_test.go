@@ -42,7 +42,7 @@ action "view" "refresh" {
     arg "name" {}
   }
 
-  sql = "REFRESH MATERIALIZED VIEW {{ quote .Args.name }}"
+  sql = "REFRESH MATERIALIZED VIEW {{ quote_ident .Args.name }}"
 }
 `))
 	defer c.Teardown()
