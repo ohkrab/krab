@@ -109,14 +109,13 @@ func (a *ActionMigrateDown) Run(args []string) int {
 		return 1
 	}
 
-	ui.Info("Done")
-
 	return 0
 }
 
 // Do performs the action.
 // Schema migration must exist before running it.
 func (a *ActionMigrateDown) Do(ctx context.Context, db krabdb.DB, tpl *tpls.Templates) error {
+	ui := a.Ui
 	versions := NewSchemaMigrationTable(tpl.Render(a.Set.Schema))
 
 	migration := a.Set.FindMigrationByVersion(a.DownMigration.Version)
@@ -154,9 +153,11 @@ func (a *ActionMigrateDown) Do(ctx context.Context, db krabdb.DB, tpl *tpls.Temp
 	if migrationExists {
 		err = a.migrateDown(ctx, tx, migration, versions)
 		if err != nil {
+			uiMigrationStatus(ui, false, migration)
 			tx.Rollback()
 			return err
 		}
+		uiMigrationStatus(ui, true, migration)
 	} else {
 		tx.Rollback()
 		return errors.New("Migration has not been run yet, nothing to rollback")

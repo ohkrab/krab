@@ -10,6 +10,7 @@ import (
 	"github.com/ohkrab/krab/krabtpl"
 	"github.com/ohkrab/krab/tpls"
 	"github.com/pkg/errors"
+	"github.com/wzshiming/ctc"
 )
 
 // ActionMigrateUp keeps data needed to perform this action.
@@ -73,8 +74,6 @@ func (a *ActionMigrateUp) Run(args []string) int {
 		return 1
 	}
 
-	ui.Info("Done")
-
 	return 0
 }
 
@@ -112,26 +111,34 @@ func (a *ActionMigrateUp) Do(ctx context.Context, db krabdb.DB, tpl *tpls.Templa
 	pendingMigrations := versions.FilterPending(a.Set.Migrations, migrationRefsInDb)
 
 	for _, pending := range pendingMigrations {
-		ui.Output(fmt.Sprint(pending.RefName, " ", pending.Version))
 		tx, err := db.NewTx(ctx, pending.ShouldRunInTransaction())
 		if err != nil {
+			uiMigrationStatus(ui, false, pending)
 			return errors.Wrap(err, "Failed to start transaction")
 		}
 		err = hooksRunner.SetSearchPath(ctx, tx, tpl.Render(a.Set.Schema))
 		if err != nil {
+			uiMigrationStatus(ui, false, pending)
 			return errors.Wrap(err, "Failed to run SetSearchPath hook")
 		}
 
 		err = a.migrateUp(ctx, tx, pending, versions)
 		if err != nil {
+			uiMigrationStatus(ui, false, pending)
 			tx.Rollback()
 			return err
 		}
 
 		err = tx.Commit()
 		if err != nil {
+			uiMigrationStatus(ui, false, pending)
 			return err
 		}
+		uiMigrationStatus(ui, true, pending)
+	}
+
+	if len(pendingMigrations) == 0 {
+		ui.Info("No pending migrations")
 	}
 
 	return nil
@@ -153,4 +160,22 @@ func (a *ActionMigrateUp) migrateUp(ctx context.Context, tx krabdb.TransactionEx
 	}
 
 	return nil
+}
+
+func uiMigrationStatus(ui cli.UI, ok bool, migration *Migration) {
+	color := ctc.ForegroundGreen
+	text := "OK  "
+	if !ok {
+		color = ctc.ForegroundRed
+		text = "ERR "
+	}
+
+	ui.Output(fmt.Sprint(
+		color,
+		text,
+		ctc.Reset,
+		migration.Version,
+		" ",
+		migration.RefName,
+	))
 }
