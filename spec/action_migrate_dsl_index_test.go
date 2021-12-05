@@ -57,12 +57,7 @@ migration_set "animals" {
 	defer c.Teardown()
 	if c.AssertSuccessfulRun(t, []string{"migrate", "up", "animals"}) {
 		c.AssertSchemaMigrationTable(t, "public", "v1")
-		c.AssertOutputContains(t,
-			`
-create_animals v1
-Done
-`,
-		)
+		c.AssertOutputContains(t, "\x1b[0;32mOK  \x1b[0mv1 create_animals")
 		c.AssertSQLContains(t, `
 CREATE TABLE "animals"(
   "id" bigint,
@@ -80,11 +75,7 @@ CREATE INDEX CONCURRENTLY "idx_heavy_animals" ON "animals" ("weight_kg") WHERE (
 
 		if c.AssertSuccessfulRun(t, []string{"migrate", "down", "animals", "-version", "v1"}) {
 			c.AssertSchemaMigrationTable(t, "public")
-			c.AssertOutputContains(t,
-				`
-Done
-`,
-			)
+			c.AssertOutputContains(t, "\x1b[0;32mOK  \x1b[0mv1 create_animals")
 			c.AssertSQLContains(t, `DROP INDEX "public"."idx_uniq_name" CASCADE`)
 			c.AssertSQLContains(t, `DROP INDEX CONCURRENTLY "idx_heavy_animals"`)
 			c.AssertSQLContains(t, `DROP TABLE "animals"`)

@@ -30,13 +30,8 @@ migration_set "public" {
 `))
 	defer c.Teardown()
 	c.AssertSuccessfulRun(t, []string{"migrate", "up", "public"})
-	c.AssertOutputContains(t,
-		`
-create_animals v1
-add_column v2
-Done
-`,
-	)
+	c.AssertOutputContains(t, "\x1b[0;32mOK  \x1b[0mv1 create_animals")
+	c.AssertOutputContains(t, "\x1b[0;32mOK  \x1b[0mv2 add_column")
 	c.AssertSchemaMigrationTable(t, "public", "v1", "v2")
 	c.Insert(t, "animals", "name, emoji", "('Elephant', '🐘')")
 	cols, rows := c.Query(t, "SELECT * from animals")
@@ -48,7 +43,7 @@ Done
 	}
 
 	c.AssertSuccessfulRun(t, []string{"migrate", "down", "public", "-version", "v2"})
-	c.AssertOutputContains(t, `Done`)
+	c.AssertOutputContains(t, "\x1b[0;32mOK  \x1b[0mv2 add_column")
 	c.AssertSchemaMigrationTable(t, "public", "v1")
 
 	cols, rows = c.Query(t, "SELECT * from animals")
@@ -84,13 +79,8 @@ migration_set "public" {
 `))
 	defer c.Teardown()
 	c.AssertSuccessfulRun(t, []string{"migrate", "up", "public"})
-	c.AssertOutputContains(t,
-		`
-create_animals v1
-add_column v2
-Done
-`,
-	)
+	c.AssertOutputContains(t, "\x1b[0;32mOK  \x1b[0mv1 create_animals")
+	c.AssertOutputContains(t, "\x1b[0;32mOK  \x1b[0mv2 add_column")
 	c.AssertSchemaMigrationTable(t, "public", "v1", "v2")
 	c.Insert(t, "animals", "name, emoji", "('Elephant', '🐘')")
 	cols, rows := c.Query(t, "SELECT * from animals")

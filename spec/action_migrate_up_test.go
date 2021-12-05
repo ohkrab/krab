@@ -19,12 +19,7 @@ migration_set "public" {
 `))
 	defer c.Teardown()
 	c.AssertSuccessfulRun(t, []string{"migrate", "up", "public"})
-	c.AssertOutputContains(t,
-		`
-do_nothing v1
-Done
-`,
-	)
+	c.AssertOutputContains(t, "\x1b[0;32mOK  \x1b[0mv1 do_nothing")
 	c.AssertSchemaMigrationTable(t, "public", "v1")
 }
 
@@ -47,6 +42,7 @@ migration_set "public" {
 `))
 
 	c.AssertFailedRun(t, []string{"migrate", "up", "public"})
+	c.AssertOutputContains(t, "\x1b[0;31mERR \x1b[0mv1 do_nothing")
 	c.AssertUiErrorOutputContains(t,
 		`column "invalid" does not exist`,
 	)

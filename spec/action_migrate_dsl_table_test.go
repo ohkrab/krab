@@ -95,13 +95,8 @@ migration_set "animals" {
 	defer c.Teardown()
 	if c.AssertSuccessfulRun(t, []string{"migrate", "up", "animals"}) {
 		c.AssertSchemaMigrationTable(t, "public", "v1", "v2")
-		c.AssertOutputContains(t,
-			`
-create_categories v1
-create_animals v2
-Done
-`,
-		)
+		c.AssertOutputContains(t, "\x1b[0;32mOK  \x1b[0mv1 create_categories")
+		c.AssertOutputContains(t, "\x1b[0;32mOK  \x1b[0mv2 create_animals")
 		c.AssertSQLContains(t, `
 CREATE TABLE "categories"(
   "id" bigint,
@@ -126,11 +121,7 @@ CREATE UNLOGGED TABLE "animals"(
 
 		if c.AssertSuccessfulRun(t, []string{"migrate", "down", "animals", "-version", "v2"}) {
 			c.AssertSchemaMigrationTable(t, "public", "v1")
-			c.AssertOutputContains(t,
-				`
-Done
-`,
-			)
+			c.AssertOutputContains(t, "\x1b[0;32mOK  \x1b[0mv2 create_animals")
 			c.AssertSQLContains(t, `
 DROP TABLE "animals"
 	`)

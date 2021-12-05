@@ -4,6 +4,7 @@ go 1.16
 
 require (
 	github.com/agext/levenshtein v1.2.3 // indirect
+	github.com/emirpasic/gods v1.12.0 // indirect
 	github.com/hashicorp/hcl/v2 v2.6.0
 	github.com/hashicorp/hcl2 v0.0.0-20191002203319-fb75b3253c80
 	github.com/jackc/pgx/v4 v4.11.0
