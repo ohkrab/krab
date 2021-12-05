@@ -19,14 +19,14 @@ migration "create_animals_view" {
   version = "v2"
 
   up   { sql = "CREATE MATERIALIZED VIEW anims AS SELECT name FROM animals" }
-  down { sql = "DROP VIEW anims" }
+  down { sql = "DROP MATERIALIZED VIEW anims" }
 }
 
 migration "seed_animals" {
   version = "v3"
 
   up   { sql = "INSERT INTO animals(name) VALUES('Elephant'),('Turtle'),('Cat')" }
-  down { sql = "TRUNACTE animals" }
+  down { sql = "TRUNCATE animals" }
 }
 
 migration_set "animals" {
