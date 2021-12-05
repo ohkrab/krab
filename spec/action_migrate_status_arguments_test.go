@@ -30,5 +30,5 @@ migration_set "animals" {
 
 	c.AssertSuccessfulRun(t, []string{"migrate", "up", "animals", "-schema", "custom"})
 	c.AssertSuccessfulRun(t, []string{"migrate", "status", "animals", "-schema", "custom"})
-	c.AssertOutputContains(t, fmt.Sprint(emojis.CheckMark(), "v1 create_animals"))
+	c.AssertOutputContains(t, fmt.Sprint(emojis.CheckMark(), " v1 create_animals"))
 }

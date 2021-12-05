@@ -98,9 +98,9 @@ func (a *ActionMigrateStatus) Do(ctx context.Context, db krabdb.DB, tpl *tpls.Te
 		pending := !appliedMigrations.Contains(migration.Version)
 
 		if pending {
-			ui.Error(fmt.Sprint("- ", migration.Version, " ", migration.RefName))
+			ui.Output(cli.Red(fmt.Sprint("- ", migration.Version, " ", migration.RefName)))
 		} else {
-			ui.Output(fmt.Sprint(emojis.CheckMark(), migration.Version, " ", migration.RefName))
+			ui.Output(fmt.Sprint(emojis.CheckMark(), " ", migration.Version, " ", migration.RefName))
 		}
 
 	}
