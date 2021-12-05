@@ -1,7 +1,10 @@
 package spec
 
 import (
+	"fmt"
 	"testing"
+
+	"github.com/ohkrab/krab/emojis"
 )
 
 func TestActionMigrateStatusArguments(t *testing.T) {
@@ -27,5 +30,5 @@ migration_set "animals" {
 
 	c.AssertSuccessfulRun(t, []string{"migrate", "up", "animals", "-schema", "custom"})
 	c.AssertSuccessfulRun(t, []string{"migrate", "status", "animals", "-schema", "custom"})
-	c.AssertOutputContains(t, "\x1b[0;32m+ \x1b[0mv1 create_animals")
+	c.AssertOutputContains(t, fmt.Sprint(emojis.CheckMark(), "v1 create_animals"))
 }

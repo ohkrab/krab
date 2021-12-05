@@ -7,11 +7,11 @@ import (
 	"github.com/emirpasic/gods/sets/hashset"
 	"github.com/ohkrab/krab/cli"
 	"github.com/ohkrab/krab/cliargs"
+	"github.com/ohkrab/krab/emojis"
 	"github.com/ohkrab/krab/krabdb"
 	"github.com/ohkrab/krab/krabtpl"
 	"github.com/ohkrab/krab/tpls"
 	"github.com/pkg/errors"
-	"github.com/wzshiming/ctc"
 )
 
 // ActionMigrateStatus keeps data needed to perform this action.
@@ -100,7 +100,7 @@ func (a *ActionMigrateStatus) Do(ctx context.Context, db krabdb.DB, tpl *tpls.Te
 		if pending {
 			ui.Error(fmt.Sprint("- ", migration.Version, " ", migration.RefName))
 		} else {
-			ui.Output(fmt.Sprint(ctc.ForegroundGreen, "+ ", ctc.Reset, migration.Version, " ", migration.RefName))
+			ui.Output(fmt.Sprint(emojis.CheckMark(), migration.Version, " ", migration.RefName))
 		}
 
 	}
