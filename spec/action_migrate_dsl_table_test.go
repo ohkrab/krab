@@ -128,3 +128,43 @@ DROP TABLE "animals"
 		}
 	}
 }
+
+func TestActionMigrateDslTableDefaults(t *testing.T) {
+	c := mockCli(mockConfig(`
+migration "create_animals" {
+  version = "v2"
+
+  up {
+	create_table "animals" {
+	  column "id"      "bigint"           { default = 1 }
+	  column "x"       "real"             { default = 1.2 }
+	  column "y"       "double precision" { default = 1.3 }
+	  column "name"    "varchar"          { default = "hello" }
+	  column "extinct" "boolean"          { default = true }
+	  column "map"     "jsonb"            { default = {} }
+	  column "list"    "jsonb"            { default = [] }
+	}
+  }
+
+  down {
+    drop_table "animals" {}
+  }
+}
+
+migration_set "animals" {
+  migrations = [
+    migration.create_animals
+  ]
+}
+`))
+	defer c.Teardown()
+	if c.AssertSuccessfulRun(t, []string{"migrate", "up", "animals"}) {
+		c.AssertSQLContains(t, "DEFAULT 1")
+		c.AssertSQLContains(t, "DEFAULT 1.2")
+		c.AssertSQLContains(t, "DEFAULT 1.3")
+		c.AssertSQLContains(t, "DEFAULT 'hello'")
+		c.AssertSQLContains(t, "DEFAULT true")
+		c.AssertSQLContains(t, "DEFAULT '{}'")
+		c.AssertSQLContains(t, "DEFAULT '[]'")
+	}
+}

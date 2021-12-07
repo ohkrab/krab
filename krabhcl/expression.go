@@ -20,6 +20,33 @@ func (e Expression) AsBool() bool {
 	return false
 }
 
+func (e Expression) AsInt64() int64 {
+	val, _ := e.Expr.Value(e.EvalContext)
+	var number int64
+	if err := gocty.FromCtyValue(val, &number); err == nil {
+		return number
+	}
+	return 0
+}
+
+func (e Expression) AsFloat64() float64 {
+	val, _ := e.Expr.Value(e.EvalContext)
+	var number float64
+	if err := gocty.FromCtyValue(val, &number); err == nil {
+		return number
+	}
+	return 0
+}
+
+func (e Expression) AsString() string {
+	val, _ := e.Expr.Value(e.EvalContext)
+	var str string
+	if err := gocty.FromCtyValue(val, &str); err == nil {
+		return str
+	}
+	return ""
+}
+
 func (e Expression) Ok() bool {
 	val, _ := e.Expr.Value(e.EvalContext)
 	return val.IsWhollyKnown() && !val.IsNull()

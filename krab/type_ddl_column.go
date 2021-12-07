@@ -3,7 +3,7 @@ package krab
 import (
 	"fmt"
 	"io"
-	"strconv"
+	"strings"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/ohkrab/krab/krabdb"
@@ -53,14 +53,43 @@ func (d *DDLColumn) ToSQL(w io.StringWriter) {
 
 		switch defaultExpr.Type() {
 		case cty.Bool:
-			w.WriteString(strconv.FormatBool(defaultExpr.AsBool()))
+			w.WriteString(krabdb.Quote(defaultExpr.AsBool()))
+
+		case cty.Number:
+			switch strings.ToLower(d.Type) {
+			case "smallint", "integer", "int", "bigint", "smallserial", "serial", "bigserial":
+				w.WriteString(krabdb.Quote(defaultExpr.AsInt64()))
+			case "real", "double precision":
+				w.WriteString(krabdb.Quote(defaultExpr.AsFloat64()))
+			default:
+				//TODO: implement big numbers (numeric, decimal)
+				panic(fmt.Sprintf(
+					"%sCannot map default type of %s to SQL, if you see this error please report the issue with example so I can fix this%s",
+					ctc.BackgroundRed|ctc.ForegroundYellow,
+					d.Type,
+					ctc.Reset,
+				))
+			}
+
+		case cty.String:
+			w.WriteString(krabdb.Quote(defaultExpr.AsString()))
 
 		default:
-			panic(fmt.Sprint(
-				ctc.BackgroundRed|ctc.ForegroundYellow,
-				"Cannot map default type to SQL, if you see this error please report the issue with example",
-				ctc.Reset,
-			))
+			switch {
+			case defaultExpr.Type().IsObjectType():
+				w.WriteString("'{}'")
+
+			case defaultExpr.Type().IsTupleType():
+				w.WriteString("'[]'")
+
+			default:
+				panic(fmt.Sprintf(
+					"%sCannot map default type %s to SQL, if you see this error please report the issue with example so I can fix this%s",
+					ctc.BackgroundRed|ctc.ForegroundYellow,
+					d.Type,
+					ctc.Reset,
+				))
+			}
 		}
 	}
 }
