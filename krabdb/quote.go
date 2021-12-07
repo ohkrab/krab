@@ -1,7 +1,11 @@
 package krabdb
 
 import (
+	"encoding/hex"
+	"fmt"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/jackc/pgx/v4"
 )
@@ -37,5 +41,24 @@ func QuoteIdentStrings(in []string) []string {
 
 // Quote escapes values in PG.
 func Quote(o interface{}) string {
-	panic("Quote not implemented")
+	switch o := o.(type) {
+	case nil:
+		return "null"
+	case int64:
+		return strconv.FormatInt(o, 10)
+	case uint64:
+		return strconv.FormatUint(o, 10)
+	case float64:
+		return strconv.FormatFloat(o, 'f', -1, 64)
+	case bool:
+		return strconv.FormatBool(o)
+	case []byte:
+		return `'\x` + hex.EncodeToString(o) + "'"
+	case string:
+		return "'" + strings.ReplaceAll(o, "'", "''") + "'"
+	case time.Time:
+		return o.Truncate(time.Microsecond).Format("'2006-01-02 15:04:05.999999999Z07:00:00'")
+	default:
+		panic(fmt.Sprintf("Quote not implemented for type %T", o))
+	}
 }
