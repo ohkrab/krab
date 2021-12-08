@@ -6,10 +6,7 @@
 
 ## Useful links
 
-[Documentation](https://ohkrab.dev)
-[Examples repository](https://github.com/ohkrab/examples)
-[Docker hub](https://hub.docker.com/orgs/ohkrab/repositories)
-
-## Public analytics
-
-https://plausible.io/ohkrab.dev
+- [Examples repository](https://github.com/ohkrab/examples)
+- [Docker hub](https://hub.docker.com/orgs/ohkrab/repositories)
+- [Documentation](https://ohkrab.dev)
+- [Documentation analytics](https://plausible.io/ohkrab.dev)
