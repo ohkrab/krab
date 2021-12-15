@@ -9,6 +9,7 @@ import (
 	"github.com/ohkrab/krab/cli"
 	"github.com/ohkrab/krab/krab"
 	"github.com/ohkrab/krab/krabcli"
+	"github.com/ohkrab/krab/krabcmd"
 	"github.com/ohkrab/krab/krabdb"
 	"github.com/ohkrab/krab/krabenv"
 )
@@ -28,6 +29,12 @@ func main() {
 		ui.Error(fmt.Errorf("Parsing error: %w", err).Error())
 		os.Exit(1)
 	}
+
+	registry := krabcmd.Registry{}
+	registry.Register(&krabcmd.CmdVersion{})
+
+	// agent := krabapi.Agent{Registry: registry}
+	// agent.Run()
 
 	c := krabcli.New(ui, os.Args[1:], config, &krabdb.DefaultConnection{})
 

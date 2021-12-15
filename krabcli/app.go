@@ -56,7 +56,11 @@ func (a *App) RegisterAll() {
 		localSet := set
 
 		a.RegisterCmd(fmt.Sprintln("migrate", "status", set.RefName), func() Command {
-			return &krab.ActionMigrateStatus{Ui: a.Ui, Set: localSet, Connection: a.connection}
+			return &krab.ActionMigrateStatus{
+				Ui:         a.Ui,
+				Set:        localSet,
+				Connection: a.connection,
+			}
 		})
 
 		a.RegisterCmd(fmt.Sprintln("migrate", "up", set.RefName), func() Command {

@@ -18,6 +18,10 @@ type MigrationSet struct {
 	Migrations     []*Migration   // populated from refs in expression
 }
 
+func (ms *MigrationSet) Addr() Addr {
+	return Addr{Keyword: "migration_set", Labels: []string{ms.RefName}}
+}
+
 func (ms *MigrationSet) InitDefaults() {
 	if ms.Schema == "" {
 		ms.Schema = "public"
