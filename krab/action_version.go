@@ -1,6 +1,9 @@
 package krab
 
 import (
+	"bytes"
+	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/ohkrab/krab/cli"
@@ -24,7 +27,16 @@ func (a *ActionVersion) Synopsis() string {
 
 // Run in CLI.
 func (a *ActionVersion) Run(args []string) int {
-	a.Ui.Output(fmt.Sprint(InfoName, " ", InfoVersion))
-	a.Ui.Output(fmt.Sprint("Build ", InfoCommit, " ", InfoBuildDate))
+	cmd := &CmdVersion{}
+
+	buf := &bytes.Buffer{}
+	cmd.Do(context.Background(), buf)
+
+	var response ResponseVersion
+	json.Unmarshal(buf.Bytes(), &response)
+
+	a.Ui.Output(response.Name)
+	a.Ui.Output(response.Build)
+
 	return 0
 }

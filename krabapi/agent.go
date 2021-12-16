@@ -3,32 +3,33 @@ package krabapi
 import (
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/ohkrab/krab/krabcmd"
+	"github.com/ohkrab/krab/krab"
 )
 
 // Agent exposes API from config.
 type Agent struct {
-	Registry krabcmd.Registry
+	Registry krab.CmdRegistry
 }
 
 func (a *Agent) Run() {
 	router := gin.Default()
 	api := router.Group("/api")
-	for _, action := range a.Registry {
-		method, path := action.HttpEndpoint()
-		switch method {
+	for _, cmd := range a.Registry {
+		path := fmt.Sprint("/", strings.Join(cmd.Name(), "/"))
+		switch cmd.HttpMethod() {
 		case http.MethodGet:
 			api.GET(path, func(c *gin.Context) {
-				err := action.Do(c.Request.Context(), c.Writer)
+				err := cmd.Do(c.Request.Context(), c.Writer)
 				if err != nil {
 					c.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error()})
 				}
 				c.Status(http.StatusOK)
 			})
 		default:
-			panic(fmt.Sprintf("HTTP %s Method not implemented", method))
+			panic(fmt.Sprintf("HTTP %s Method not implemented", cmd.HttpMethod()))
 		}
 	}
 	router.Run()
