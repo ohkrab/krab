@@ -22,7 +22,7 @@ func (a *Agent) Run() {
 		switch cmd.HttpMethod() {
 		case http.MethodGet:
 			api.GET(path, func(c *gin.Context) {
-				err := cmd.Do(c.Request.Context(), c.Writer)
+				err := cmd.Do(c.Request.Context(), krab.CmdOpts{Writer: c.Writer})
 				if err != nil {
 					c.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error()})
 				}

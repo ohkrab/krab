@@ -1,17 +1,15 @@
 package krab
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 
-	"github.com/emirpasic/gods/sets/hashset"
 	"github.com/ohkrab/krab/cli"
 	"github.com/ohkrab/krab/cliargs"
 	"github.com/ohkrab/krab/emojis"
 	"github.com/ohkrab/krab/krabdb"
-	"github.com/ohkrab/krab/krabtpl"
-	"github.com/ohkrab/krab/tpls"
-	"github.com/pkg/errors"
 )
 
 // ActionMigrateStatus keeps data needed to perform this action.
@@ -59,10 +57,15 @@ func (a *ActionMigrateStatus) Run(args []string) int {
 		return 1
 	}
 
-	templates := tpls.New(flags.Values(), krabtpl.Functions)
+	cmd := &CmdMigrateStatus{
+		Set:        a.Set,
+		Connection: a.Connection,
+		Inputs:     flags.Values(),
+	}
+	buf := &bytes.Buffer{}
 
 	err = a.Connection.Get(func(db krabdb.DB) error {
-		return a.Do(context.Background(), db, templates, ui)
+		return cmd.Do(context.Background(), CmdOpts{Writer: buf})
 	})
 
 	if err != nil {
@@ -70,39 +73,20 @@ func (a *ActionMigrateStatus) Run(args []string) int {
 		return 1
 	}
 
-	return 0
-}
-
-// Run performs the action.
-func (a *ActionMigrateStatus) Do(ctx context.Context, db krabdb.DB, tpl *tpls.Templates, ui cli.UI) error {
-	versions := NewSchemaMigrationTable(tpl.Render(a.Set.Schema))
-
-	hooksRunner := HookRunner{}
-	err := hooksRunner.SetSearchPath(ctx, db, tpl.Render(a.Set.Schema))
+	var resp []ResponseMigrateStatus
+	err = json.NewDecoder(buf).Decode(&resp)
 	if err != nil {
-		return errors.Wrap(err, "Failed to run SetSearchPath hook")
-	}
-	migrationRefsInDb, err := versions.SelectAll(ctx, db)
-	if err != nil {
-		return err
+		ui.Error(err.Error())
+		return 1
 	}
 
-	appliedMigrations := hashset.New()
-
-	for _, migration := range migrationRefsInDb {
-		appliedMigrations.Add(migration.Version)
-	}
-
-	for _, migration := range a.Set.Migrations {
-		pending := !appliedMigrations.Contains(migration.Version)
-
-		if pending {
-			ui.Output(cli.Red(fmt.Sprint("- ", migration.Version, " ", migration.RefName)))
+	for _, status := range resp {
+		if status.Pending {
+			ui.Output(cli.Red(fmt.Sprint("- ", status.Version, " ", status.Name)))
 		} else {
-			ui.Output(fmt.Sprint(emojis.CheckMark(), " ", migration.Version, " ", migration.RefName))
+			ui.Output(fmt.Sprint(emojis.CheckMark(), " ", status.Version, " ", status.Name))
 		}
-
 	}
 
-	return nil
+	return 0
 }

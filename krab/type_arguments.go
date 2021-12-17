@@ -18,7 +18,7 @@ type Arguments struct {
 	Args []*Argument `hcl:"arg,block"`
 }
 
-func (a *Arguments) Validate(values map[string]interface{}) error {
+func (a *Arguments) Validate(values Inputs) error {
 	for _, a := range a.Args {
 		value, ok := values[a.Name]
 		if ok {

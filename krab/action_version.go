@@ -30,7 +30,11 @@ func (a *ActionVersion) Run(args []string) int {
 	cmd := &CmdVersion{}
 
 	buf := &bytes.Buffer{}
-	cmd.Do(context.Background(), buf)
+	err := cmd.Do(context.Background(), CmdOpts{Writer: buf})
+	if err != nil {
+		a.Ui.Error(err.Error())
+		return 1
+	}
 
 	var response ResponseVersion
 	json.Unmarshal(buf.Bytes(), &response)

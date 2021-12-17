@@ -14,5 +14,10 @@ type Cmd interface {
 	HttpMethod() string
 
 	// Do executes the action.
-	Do(ctx context.Context, w io.Writer) error
+	Do(ctx context.Context, opts CmdOpts) error
+}
+
+// CmdOpts are options passed to command.
+type CmdOpts struct {
+	Writer io.Writer
 }

@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 )
 
@@ -21,8 +20,8 @@ func (c *CmdVersion) Name() []string { return []string{"version"} }
 
 func (c *CmdVersion) HttpMethod() string { return http.MethodGet }
 
-func (c *CmdVersion) Do(ctx context.Context, w io.Writer) error {
-	return json.NewEncoder(w).Encode(ResponseVersion{
+func (c *CmdVersion) Do(ctx context.Context, o CmdOpts) error {
+	return json.NewEncoder(o.Writer).Encode(ResponseVersion{
 		Name:  fmt.Sprint(InfoName, " ", InfoVersion),
 		Build: fmt.Sprint("Build ", InfoCommit, " ", InfoBuildDate),
 	})
