@@ -29,8 +29,19 @@ func main() {
 		os.Exit(1)
 	}
 
+	conn := &krabdb.DefaultConnection{}
+
 	registry := krab.CmdRegistry{}
 	registry.Register(&krab.CmdVersion{})
+
+	for _, set := range config.MigrationSets {
+		localSet := set
+
+		registry.Register(&krab.CmdMigrateStatus{
+			Set:        localSet,
+			Connection: conn,
+		})
+	}
 
 	// agent := krabapi.Agent{Registry: registry}
 	// agent.Run()
