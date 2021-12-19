@@ -1,15 +1,15 @@
 package krab
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/ohkrab/krab/cli"
 	"github.com/ohkrab/krab/cliargs"
 	"github.com/ohkrab/krab/krabdb"
-	"github.com/ohkrab/krab/krabtpl"
-	"github.com/ohkrab/krab/tpls"
-	"github.com/pkg/errors"
+	"github.com/wzshiming/ctc"
 )
 
 // ActionMigrateDown keeps data needed to perform this action.
@@ -60,48 +60,32 @@ func (a *ActionMigrateDown) Run(args []string) int {
 		ui.Error(err.Error())
 		return 1
 	}
-	err = a.Arguments.Validate(flags.Values())
-	if err != nil {
-		ui.Output(a.Help())
-		ui.Error(err.Error())
-		return 1
+
+	buf := &bytes.Buffer{}
+	cmd := &CmdMigrateDown{
+		Set:        a.Set,
+		Connection: a.Connection,
+		Inputs:     flags.Values(),
 	}
-	err = a.Set.Arguments.Validate(flags.Values())
-	if err != nil {
-		ui.Output(a.Help())
-		ui.Error(err.Error())
-		return 1
-	}
-
-	templates := tpls.New(flags.Values(), krabtpl.Functions)
-
-	a.DownMigration = SchemaMigration{
-		cliargs.Values(flags.Values()).Get("version"),
-	}
-
-	// err = krabdb.WithConnection(func(db *sqlx.DB) error {
-	// 	ui.Output("Latest migrations:")
-	// 	versions := NewSchemaMigrationTable(a.Set.Schema)
-	// 	migrations, err := versions.SelectLastN(context.TODO(), db, 5)
-	// 	for _, m := range migrations {
-	// 		ui.Info(fmt.Sprint("* ", m.Version))
-	// 	}
-	// 	ui.Output("")
-
-	// 	return err
-	// })
-	// if err != nil {
-	// 	ui.Error(err.Error())
-	// 	return 1
-	// }
-
-	// ui.Output(a.Help())
-	// ui.Error("Invalid number of arguments")
-	// return 1
-
 	err = a.Connection.Get(func(db krabdb.DB) error {
-		return a.Do(context.Background(), db, templates)
+		return cmd.Do(context.Background(), CmdOpts{Writer: buf})
 	})
+
+	if err != nil {
+		ui.Error(err.Error())
+		return 1
+	}
+
+	var resp []ResponseMigrateDown
+	err = json.NewDecoder(buf).Decode(&resp)
+	if err != nil {
+		ui.Error(err.Error())
+		return 1
+	}
+
+	for _, status := range resp {
+		uiMigrationStatusFromResponse(ui, status)
+	}
 
 	if err != nil {
 		ui.Error(err.Error())
@@ -111,75 +95,20 @@ func (a *ActionMigrateDown) Run(args []string) int {
 	return 0
 }
 
-// Do performs the action.
-// Schema migration must exist before running it.
-func (a *ActionMigrateDown) Do(ctx context.Context, db krabdb.DB, tpl *tpls.Templates) error {
-	ui := a.Ui
-	versions := NewSchemaMigrationTable(tpl.Render(a.Set.Schema))
-
-	migration := a.Set.FindMigrationByVersion(a.DownMigration.Version)
-	if migration == nil {
-		return fmt.Errorf("Migration `%s` not found in `%s` set",
-			a.DownMigration.Version,
-			a.Set.RefName)
+func uiMigrationStatusFromResponse(ui cli.UI, resp ResponseMigrateDown) {
+	color := ctc.ForegroundGreen
+	text := "OK  "
+	if !resp.Success {
+		color = ctc.ForegroundRed
+		text = "ERR "
 	}
 
-	lockID := int64(1)
-
-	_, err := krabdb.TryAdvisoryLock(ctx, db, lockID)
-	if err != nil {
-		return errors.Wrap(err, "Possibly another migration in progress")
-	}
-	defer krabdb.AdvisoryUnlock(ctx, db, lockID)
-
-	hooksRunner := HookRunner{}
-	err = hooksRunner.SetSearchPath(ctx, db, tpl.Render(a.Set.Schema))
-	if err != nil {
-		return errors.Wrap(err, "Failed to run SetSearchPath hook")
-	}
-
-	// schema migration
-	tx, err := db.NewTx(ctx, migration.ShouldRunInTransaction())
-	if err != nil {
-		return errors.Wrap(err, "Failed to start transaction")
-	}
-	err = hooksRunner.SetSearchPath(ctx, tx, tpl.Render(a.Set.Schema))
-	if err != nil {
-		return errors.Wrap(err, "Failed to run SetSearchPath hook")
-	}
-
-	migrationExists, _ := versions.Exists(ctx, db, SchemaMigration{migration.Version})
-	if migrationExists {
-		err = a.migrateDown(ctx, tx, migration, versions)
-		if err != nil {
-			uiMigrationStatus(ui, false, migration)
-			tx.Rollback()
-			return err
-		}
-		uiMigrationStatus(ui, true, migration)
-	} else {
-		tx.Rollback()
-		return errors.New("Migration has not been run yet, nothing to rollback")
-	}
-
-	err = tx.Commit()
-	return err
-}
-
-func (a *ActionMigrateDown) migrateDown(ctx context.Context, tx krabdb.TransactionExecerContext, migration *Migration, versions SchemaMigrationTable) error {
-	sqls := migration.Down.ToSQLStatements()
-	for _, sql := range sqls {
-		// fmt.Println(ctc.ForegroundYellow, string(sql), ctc.Reset)
-		_, err := tx.ExecContext(ctx, string(sql))
-		if err != nil {
-			return errors.Wrap(err, "Failed to execute migration")
-		}
-	}
-
-	err := versions.Delete(ctx, tx, migration.Version)
-	if err != nil {
-		return errors.Wrap(err, "Failed to delete migration")
-	}
-
-	return nil
+	ui.Output(fmt.Sprint(
+		color,
+		text,
+		ctc.Reset,
+		resp.Version,
+		" ",
+		resp.Name,
+	))
 }

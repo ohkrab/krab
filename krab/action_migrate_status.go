@@ -50,13 +50,6 @@ func (a *ActionMigrateStatus) Run(args []string) int {
 		return 1
 	}
 
-	err = a.Set.Arguments.Validate(flags.Values())
-	if err != nil {
-		ui.Output(a.Help())
-		ui.Error(err.Error())
-		return 1
-	}
-
 	cmd := &CmdMigrateStatus{
 		Set:        a.Set,
 		Connection: a.Connection,
