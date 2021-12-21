@@ -2,7 +2,6 @@ package krab
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -31,27 +30,26 @@ func (c *CmdMigrateStatus) Name() []string { return []string{"migrate", "status"
 
 func (c *CmdMigrateStatus) HttpMethod() string { return http.MethodGet }
 
-func (c *CmdMigrateStatus) Do(ctx context.Context, o CmdOpts) error {
+func (c *CmdMigrateStatus) Do(ctx context.Context, o CmdOpts) (interface{}, error) {
 	for _, arg := range c.Set.Arguments.Args {
 		_, ok := c.Inputs[arg.Name]
 		if !ok {
-			return fmt.Errorf("Command is missing an input for argument `%s`", arg.Name)
+			return nil, fmt.Errorf("Command is missing an input for argument `%s`", arg.Name)
 		}
 	}
 	err := c.Set.Arguments.Validate(c.Inputs)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
+	var result []ResponseMigrateStatus
 	err = c.Connection.Get(func(db krabdb.DB) error {
 		resp, err := c.run(ctx, db)
-		if err == nil {
-			return json.NewEncoder(o.Writer).Encode(resp)
-		}
+		result = resp
 		return err
 	})
 
-	return err
+	return result, err
 }
 
 func (c *CmdMigrateStatus) run(ctx context.Context, db krabdb.DB) ([]ResponseMigrateStatus, error) {

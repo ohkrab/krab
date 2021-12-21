@@ -1,9 +1,7 @@
 package krab
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 
 	"github.com/ohkrab/krab/cli"
@@ -55,25 +53,14 @@ func (a *ActionMigrateStatus) Run(args []string) int {
 		Connection: a.Connection,
 		Inputs:     flags.Values(),
 	}
-	buf := &bytes.Buffer{}
-
-	err = a.Connection.Get(func(db krabdb.DB) error {
-		return cmd.Do(context.Background(), CmdOpts{Writer: buf})
-	})
+	resp, err := cmd.Do(context.Background(), CmdOpts{})
 
 	if err != nil {
 		ui.Error(err.Error())
 		return 1
 	}
 
-	var resp []ResponseMigrateStatus
-	err = json.NewDecoder(buf).Decode(&resp)
-	if err != nil {
-		ui.Error(err.Error())
-		return 1
-	}
-
-	for _, status := range resp {
+	for _, status := range resp.([]ResponseMigrateStatus) {
 		if status.Pending {
 			ui.Output(cli.Red(fmt.Sprint("- ", status.Version, " ", status.Name)))
 		} else {

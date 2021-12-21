@@ -1,9 +1,7 @@
 package krab
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 
 	"github.com/ohkrab/krab/cli"
@@ -61,41 +59,27 @@ func (a *ActionMigrateDown) Run(args []string) int {
 		return 1
 	}
 
-	buf := &bytes.Buffer{}
 	cmd := &CmdMigrateDown{
 		Set:        a.Set,
 		Connection: a.Connection,
 		Inputs:     flags.Values(),
 	}
-	err = a.Connection.Get(func(db krabdb.DB) error {
-		return cmd.Do(context.Background(), CmdOpts{Writer: buf})
-	})
+	resp, err := cmd.Do(context.Background(), CmdOpts{})
+	result := resp.([]ResponseMigrateDown)
 
 	if err != nil {
 		ui.Error(err.Error())
 		return 1
 	}
 
-	var resp []ResponseMigrateDown
-	err = json.NewDecoder(buf).Decode(&resp)
-	if err != nil {
-		ui.Error(err.Error())
-		return 1
-	}
-
-	for _, status := range resp {
-		uiMigrationStatusFromResponse(ui, status)
-	}
-
-	if err != nil {
-		ui.Error(err.Error())
-		return 1
+	for _, status := range result {
+		uiMigrationStatusFromResponseDown(ui, status)
 	}
 
 	return 0
 }
 
-func uiMigrationStatusFromResponse(ui cli.UI, resp ResponseMigrateDown) {
+func uiMigrationStatusFromResponseDown(ui cli.UI, resp ResponseMigrateDown) {
 	color := ctc.ForegroundGreen
 	text := "OK  "
 	if !resp.Success {

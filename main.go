@@ -45,6 +45,10 @@ func main() {
 			Set:        localSet,
 			Connection: conn,
 		})
+		registry.Register(&krab.CmdMigrateUp{
+			Set:        localSet,
+			Connection: conn,
+		})
 	}
 
 	// agent := krabapi.Agent{Registry: registry}

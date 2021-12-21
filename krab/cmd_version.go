@@ -2,7 +2,6 @@ package krab
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 )
@@ -20,9 +19,9 @@ func (c *CmdVersion) Name() []string { return []string{"version"} }
 
 func (c *CmdVersion) HttpMethod() string { return http.MethodGet }
 
-func (c *CmdVersion) Do(ctx context.Context, o CmdOpts) error {
-	return json.NewEncoder(o.Writer).Encode(ResponseVersion{
+func (c *CmdVersion) Do(ctx context.Context, o CmdOpts) (interface{}, error) {
+	return ResponseVersion{
 		Name:  fmt.Sprint(InfoName, " ", InfoVersion),
 		Build: fmt.Sprint("Build ", InfoCommit, " ", InfoBuildDate),
-	})
+	}, nil
 }

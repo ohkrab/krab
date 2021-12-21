@@ -7,9 +7,6 @@ import (
 	"github.com/ohkrab/krab/cli"
 	"github.com/ohkrab/krab/cliargs"
 	"github.com/ohkrab/krab/krabdb"
-	"github.com/ohkrab/krab/krabtpl"
-	"github.com/ohkrab/krab/tpls"
-	"github.com/pkg/errors"
 	"github.com/wzshiming/ctc"
 )
 
@@ -55,116 +52,36 @@ func (a *ActionMigrateUp) Run(args []string) int {
 		return 1
 	}
 
-	err = a.Set.Arguments.Validate(flags.Values())
+	cmd := &CmdMigrateUp{
+		Set:        a.Set,
+		Connection: a.Connection,
+		Inputs:     flags.Values(),
+	}
+	resp, err := cmd.Do(context.Background(), CmdOpts{})
+	result := resp.([]ResponseMigrateUp)
+
+	if len(result) > 0 {
+		for _, status := range result {
+			uiMigrationStatusFromResponseUp(ui, status)
+		}
+	}
+
 	if err != nil {
-		ui.Output(a.Help())
 		ui.Error(err.Error())
 		return 1
 	}
 
-	templates := tpls.New(flags.Values(), krabtpl.Functions)
-
-	err = a.Connection.Get(func(db krabdb.DB) error {
-		return a.Do(context.Background(), db, templates, ui)
-	})
-
-	if err != nil {
-		ui.Error(err.Error())
-		return 1
+	if len(result) == 0 {
+		ui.Info("No pending migrations")
 	}
 
 	return 0
 }
 
-// Run performs the action. All pending migrations will be executed.
-// Migration schema is created if does not exist.
-func (a *ActionMigrateUp) Do(ctx context.Context, db krabdb.DB, tpl *tpls.Templates, ui cli.UI) error {
-	versions := NewSchemaMigrationTable(tpl.Render(a.Set.Schema))
-
-	// locking
-	lockID := int64(1)
-
-	_, err := krabdb.TryAdvisoryLock(ctx, db, lockID)
-	if err != nil {
-		return errors.Wrap(err, "Possibly another migration in progress")
-	}
-	defer krabdb.AdvisoryUnlock(ctx, db, lockID)
-
-	hooksRunner := HookRunner{}
-	err = hooksRunner.SetSearchPath(ctx, db, tpl.Render(a.Set.Schema))
-	if err != nil {
-		return errors.Wrap(err, "Failed to run SetSearchPath hook")
-	}
-
-	// schema migration
-	err = versions.Init(ctx, db)
-	if err != nil {
-		return errors.Wrap(err, "Failed to create default table for migrations")
-	}
-
-	migrationRefsInDb, err := versions.SelectAll(ctx, db)
-	if err != nil {
-		return err
-	}
-
-	pendingMigrations := versions.FilterPending(a.Set.Migrations, migrationRefsInDb)
-
-	for _, pending := range pendingMigrations {
-		tx, err := db.NewTx(ctx, pending.ShouldRunInTransaction())
-		if err != nil {
-			uiMigrationStatus(ui, false, pending)
-			return errors.Wrap(err, "Failed to start transaction")
-		}
-		err = hooksRunner.SetSearchPath(ctx, tx, tpl.Render(a.Set.Schema))
-		if err != nil {
-			uiMigrationStatus(ui, false, pending)
-			return errors.Wrap(err, "Failed to run SetSearchPath hook")
-		}
-
-		err = a.migrateUp(ctx, tx, pending, versions)
-		if err != nil {
-			uiMigrationStatus(ui, false, pending)
-			tx.Rollback()
-			return err
-		}
-
-		err = tx.Commit()
-		if err != nil {
-			uiMigrationStatus(ui, false, pending)
-			return err
-		}
-		uiMigrationStatus(ui, true, pending)
-	}
-
-	if len(pendingMigrations) == 0 {
-		ui.Info("No pending migrations")
-	}
-
-	return nil
-}
-
-func (a *ActionMigrateUp) migrateUp(ctx context.Context, tx krabdb.TransactionExecerContext, migration *Migration, versions SchemaMigrationTable) error {
-	sqls := migration.Up.ToSQLStatements()
-	for _, sql := range sqls {
-		// fmt.Println(ctc.ForegroundYellow, string(sql), ctc.Reset)
-		_, err := tx.ExecContext(ctx, string(sql))
-		if err != nil {
-			return errors.Wrap(err, "Failed to execute migration")
-		}
-	}
-
-	err := versions.Insert(ctx, tx, migration.Version)
-	if err != nil {
-		return errors.Wrap(err, "Failed to insert migration")
-	}
-
-	return nil
-}
-
-func uiMigrationStatus(ui cli.UI, ok bool, migration *Migration) {
+func uiMigrationStatusFromResponseUp(ui cli.UI, resp ResponseMigrateUp) {
 	color := ctc.ForegroundGreen
 	text := "OK  "
-	if !ok {
+	if !resp.Success {
 		color = ctc.ForegroundRed
 		text = "ERR "
 	}
@@ -173,8 +90,8 @@ func uiMigrationStatus(ui cli.UI, ok bool, migration *Migration) {
 		color,
 		text,
 		ctc.Reset,
-		migration.Version,
+		resp.Version,
 		" ",
-		migration.RefName,
+		resp.Name,
 	))
 }

@@ -1,9 +1,7 @@
 package krab
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 
 	"github.com/ohkrab/krab/cli"
@@ -29,15 +27,13 @@ func (a *ActionVersion) Synopsis() string {
 func (a *ActionVersion) Run(args []string) int {
 	cmd := &CmdVersion{}
 
-	buf := &bytes.Buffer{}
-	err := cmd.Do(context.Background(), CmdOpts{Writer: buf})
+	resp, err := cmd.Do(context.Background(), CmdOpts{})
 	if err != nil {
 		a.Ui.Error(err.Error())
 		return 1
 	}
 
-	var response ResponseVersion
-	json.Unmarshal(buf.Bytes(), &response)
+	response := resp.(ResponseVersion)
 
 	a.Ui.Output(response.Name)
 	a.Ui.Output(response.Build)

@@ -2,7 +2,6 @@ package krab
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -42,39 +41,38 @@ func (c *CmdMigrateDown) Name() []string { return []string{"migrate", "down", c.
 
 func (c *CmdMigrateDown) HttpMethod() string { return http.MethodPost }
 
-func (c *CmdMigrateDown) Do(ctx context.Context, o CmdOpts) error {
+func (c *CmdMigrateDown) Do(ctx context.Context, o CmdOpts) (interface{}, error) {
 	for _, arg := range c.Set.Arguments.Args {
 		_, ok := c.Inputs[arg.Name]
 		if !ok {
-			return fmt.Errorf("Command is missing an input for argument `%s`", arg.Name)
+			return nil, fmt.Errorf("Command is missing an input for argument `%s`", arg.Name)
 		}
 	}
 	// default arguments always take precedence over custom ones
 	for _, arg := range c.Arguments().Args {
 		_, ok := c.Inputs[arg.Name]
 		if !ok {
-			return fmt.Errorf("Command is missing an input for argument `%s`", arg.Name)
+			return nil, fmt.Errorf("Command is missing an input for argument `%s`", arg.Name)
 		}
 	}
 
 	err := c.Set.Arguments.Validate(c.Inputs)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	err = c.Arguments().Validate(c.Inputs)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
+	var result []ResponseMigrateDown
 	err = c.Connection.Get(func(db krabdb.DB) error {
 		resp, err := c.run(ctx, db)
-		if err == nil {
-			return json.NewEncoder(o.Writer).Encode(resp)
-		}
+		result = resp
 		return err
 	})
 
-	return err
+	return result, err
 }
 
 func (c *CmdMigrateDown) run(ctx context.Context, db krabdb.DB) ([]ResponseMigrateDown, error) {

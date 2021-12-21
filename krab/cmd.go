@@ -2,7 +2,6 @@ package krab
 
 import (
 	"context"
-	"io"
 )
 
 // Cmd is a command that app can execute.
@@ -14,10 +13,8 @@ type Cmd interface {
 	HttpMethod() string
 
 	// Do executes the action.
-	Do(ctx context.Context, opts CmdOpts) error
+	Do(ctx context.Context, opts CmdOpts) (interface{}, error)
 }
 
 // CmdOpts are options passed to command.
-type CmdOpts struct {
-	Writer io.Writer
-}
+type CmdOpts struct{}
