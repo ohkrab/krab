@@ -6,22 +6,20 @@ import (
 
 	"github.com/ohkrab/krab/cli"
 	"github.com/ohkrab/krab/cliargs"
-	"github.com/ohkrab/krab/krabdb"
 	"github.com/wzshiming/ctc"
 )
 
 // ActionMigrateUp keeps data needed to perform this action.
 type ActionMigrateUp struct {
-	Ui         cli.UI
-	Set        *MigrationSet
-	Connection krabdb.Connection
+	Ui  cli.UI
+	Cmd *CmdMigrateUp
 }
 
 func (a *ActionMigrateUp) Help() string {
 	return fmt.Sprint(
 		`Usage: krab migrate up [set]`,
 		"\n\n",
-		a.Set.Arguments.Help(),
+		a.Cmd.Set.Arguments.Help(),
 		`
 Migrate all pending migrations in given [set].
 
@@ -33,7 +31,7 @@ Example:
 }
 
 func (a *ActionMigrateUp) Synopsis() string {
-	return fmt.Sprintf("Migrate `%s` up", a.Set.RefName)
+	return fmt.Sprintf("Migrate `%s` up", a.Cmd.Set.RefName)
 }
 
 // Run in CLI.
@@ -41,7 +39,7 @@ func (a *ActionMigrateUp) Run(args []string) int {
 	ui := a.Ui
 	flags := cliargs.New(args)
 
-	for _, arg := range a.Set.Arguments.Args {
+	for _, arg := range a.Cmd.Set.Arguments.Args {
 		flags.Add(arg.Name)
 	}
 
@@ -52,11 +50,7 @@ func (a *ActionMigrateUp) Run(args []string) int {
 		return 1
 	}
 
-	cmd := &CmdMigrateUp{
-		Set:        a.Set,
-		Connection: a.Connection,
-	}
-	resp, err := cmd.Do(context.Background(), CmdOpts{Inputs: flags.Values()})
+	resp, err := a.Cmd.Do(context.Background(), CmdOpts{Inputs: flags.Values()})
 	result := resp.([]ResponseMigrateUp)
 
 	if len(result) > 0 {

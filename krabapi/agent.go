@@ -18,7 +18,7 @@ type Agent struct {
 func (a *Agent) Run() {
 	router := gin.Default()
 	api := router.Group("/api")
-	for _, cmd := range a.Registry {
+	for _, cmd := range a.Registry.Commands {
 		path := fmt.Sprint("/", strings.Join(cmd.Name(), "/"))
 		switch cmd.HttpMethod() {
 		case http.MethodGet:

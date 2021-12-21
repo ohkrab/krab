@@ -1,7 +1,6 @@
 package krabcli
 
 import (
-	"fmt"
 	"strings"
 
 	mcli "github.com/mitchellh/cli"
@@ -16,6 +15,7 @@ type App struct {
 	Ui         cli.UI
 	CLI        *mcli.CLI
 	Config     *krab.Config
+	Registry   *krab.CmdRegistry
 	connection krabdb.Connection
 }
 
@@ -23,6 +23,7 @@ func New(
 	ui cli.UI,
 	args []string,
 	config *krab.Config,
+	registry *krab.CmdRegistry,
 	connection krabdb.Connection,
 ) *App {
 	c := mcli.NewCLI(krab.InfoName, krab.InfoVersion)
@@ -33,6 +34,7 @@ func New(
 		Ui:         ui,
 		CLI:        c,
 		Config:     config,
+		Registry:   registry,
 		connection: connection,
 	}
 	app.RegisterAll()
@@ -41,46 +43,36 @@ func New(
 }
 
 func (a *App) RegisterAll() {
-	a.RegisterCmd("version", func() Command {
-		return &krab.ActionVersion{Ui: a.Ui}
-	})
+	for _, cmd := range a.Registry.Commands {
+		name := strings.Join(cmd.Name(), " ")
+
+		switch c := cmd.(type) {
+		case *krab.CmdVersion:
+			a.RegisterCmd(name, func() Command {
+				return &krab.ActionVersion{Ui: a.Ui, Cmd: c}
+			})
+
+		case *krab.CmdMigrateDown:
+			a.RegisterCmd(name, func() Command {
+				return &krab.ActionMigrateDown{Ui: a.Ui, Cmd: c}
+			})
+
+		case *krab.CmdMigrateUp:
+			a.RegisterCmd(name, func() Command {
+				return &krab.ActionMigrateUp{Ui: a.Ui, Cmd: c}
+			})
+
+		case *krab.CmdMigrateStatus:
+			a.RegisterCmd(name, func() Command {
+				return &krab.ActionMigrateStatus{Ui: a.Ui, Cmd: c}
+			})
+		}
+	}
 
 	for _, action := range a.Config.Actions {
 		localAction := action
 		a.RegisterCmd(strings.Join(action.Addr().Absolute(), " "), func() Command {
 			return &krab.ActionCustom{Ui: a.Ui, Action: localAction, Connection: a.connection}
-		})
-	}
-
-	for _, set := range a.Config.MigrationSets {
-		localSet := set
-
-		a.RegisterCmd(fmt.Sprintln("migrate", "status", set.RefName), func() Command {
-			return &krab.ActionMigrateStatus{
-				Ui:         a.Ui,
-				Set:        localSet,
-				Connection: a.connection,
-			}
-		})
-
-		a.RegisterCmd(fmt.Sprintln("migrate", "up", set.RefName), func() Command {
-			return &krab.ActionMigrateUp{Ui: a.Ui, Set: localSet, Connection: a.connection}
-		})
-
-		a.RegisterCmd(fmt.Sprintln("migrate", "down", set.RefName), func() Command {
-			return &krab.ActionMigrateDown{
-				Ui:         a.Ui,
-				Set:        localSet,
-				Connection: a.connection,
-				Arguments: krab.Arguments{
-					Args: []*krab.Argument{
-						{
-							Name:        "version",
-							Type:        "string",
-							Description: "Migration version to rollback",
-						},
-					},
-				}}
 		})
 	}
 }

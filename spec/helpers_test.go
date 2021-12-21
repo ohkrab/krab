@@ -39,10 +39,15 @@ func (m *cliMock) setup(args []string) {
 	m.helpWriter = bytes.Buffer{}
 	m.uiErrorWriter = bytes.Buffer{}
 	m.uiWriter = bytes.Buffer{}
+
+	registry := &krab.CmdRegistry{Commands: []krab.Cmd{}}
+	registry.RegisterAll(m.config, m.connection)
+
 	m.app = krabcli.New(
 		cli.New(&m.uiErrorWriter, &m.uiWriter),
 		args,
 		m.config,
+		registry,
 		m.connection,
 	)
 	m.app.CLI.ErrorWriter = &m.errorWriter

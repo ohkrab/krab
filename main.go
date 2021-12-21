@@ -16,7 +16,7 @@ import (
 func main() {
 	ui := cli.DefaultUI()
 
-	dir, err := krabenv.ConfigDif()
+	dir, err := krabenv.ConfigDir()
 	if err != nil {
 		ui.Error(fmt.Errorf("Can't read config dir: %w", err).Error())
 		os.Exit(1)
@@ -31,30 +31,12 @@ func main() {
 
 	conn := &krabdb.DefaultConnection{}
 
-	registry := krab.CmdRegistry{}
-	registry.Register(&krab.CmdVersion{})
-
-	for _, set := range config.MigrationSets {
-		localSet := set
-
-		registry.Register(&krab.CmdMigrateStatus{
-			Set:        localSet,
-			Connection: conn,
-		})
-		registry.Register(&krab.CmdMigrateDown{
-			Set:        localSet,
-			Connection: conn,
-		})
-		registry.Register(&krab.CmdMigrateUp{
-			Set:        localSet,
-			Connection: conn,
-		})
-	}
-
+	registry := &krab.CmdRegistry{Commands: []krab.Cmd{}}
+	registry.RegisterAll(config, conn)
 	// agent := krabapi.Agent{Registry: registry}
 	// agent.Run()
 
-	c := krabcli.New(ui, os.Args[1:], config, &krabdb.DefaultConnection{})
+	c := krabcli.New(ui, os.Args[1:], config, registry, conn)
 
 	exitStatus, err := c.Run()
 	if err != nil {

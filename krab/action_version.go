@@ -9,7 +9,8 @@ import (
 
 // ActionVersion prints full version.
 type ActionVersion struct {
-	Ui cli.UI
+	Ui  cli.UI
+	Cmd *CmdVersion
 }
 
 func (a *ActionVersion) Help() string {
@@ -25,9 +26,7 @@ func (a *ActionVersion) Synopsis() string {
 
 // Run in CLI.
 func (a *ActionVersion) Run(args []string) int {
-	cmd := &CmdVersion{}
-
-	resp, err := cmd.Do(context.Background(), CmdOpts{})
+	resp, err := a.Cmd.Do(context.Background(), CmdOpts{})
 	if err != nil {
 		a.Ui.Error(err.Error())
 		return 1

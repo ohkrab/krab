@@ -7,21 +7,19 @@ import (
 	"github.com/ohkrab/krab/cli"
 	"github.com/ohkrab/krab/cliargs"
 	"github.com/ohkrab/krab/emojis"
-	"github.com/ohkrab/krab/krabdb"
 )
 
 // ActionMigrateStatus keeps data needed to perform this action.
 type ActionMigrateStatus struct {
-	Ui         cli.UI
-	Set        *MigrationSet
-	Connection krabdb.Connection
+	Ui  cli.UI
+	Cmd *CmdMigrateStatus
 }
 
 func (a *ActionMigrateStatus) Help() string {
 	return fmt.Sprint(
 		`Usage: krab migrate status [set]`,
 		"\n\n",
-		a.Set.Arguments.Help(),
+		a.Cmd.Set.Arguments.Help(),
 		`
 View migration status for given set.
 `,
@@ -29,7 +27,7 @@ View migration status for given set.
 }
 
 func (a *ActionMigrateStatus) Synopsis() string {
-	return fmt.Sprintf("Migration status for `%s`", a.Set.RefName)
+	return fmt.Sprintf("Migration status for `%s`", a.Cmd.Set.RefName)
 }
 
 // Run in CLI.
@@ -37,7 +35,7 @@ func (a *ActionMigrateStatus) Run(args []string) int {
 	ui := a.Ui
 	flags := cliargs.New(args)
 
-	for _, arg := range a.Set.Arguments.Args {
+	for _, arg := range a.Cmd.Set.Arguments.Args {
 		flags.Add(arg.Name)
 	}
 
@@ -48,11 +46,7 @@ func (a *ActionMigrateStatus) Run(args []string) int {
 		return 1
 	}
 
-	cmd := &CmdMigrateStatus{
-		Set:        a.Set,
-		Connection: a.Connection,
-	}
-	resp, err := cmd.Do(context.Background(), CmdOpts{Inputs: flags.Values()})
+	resp, err := a.Cmd.Do(context.Background(), CmdOpts{Inputs: flags.Values()})
 
 	if err != nil {
 		ui.Error(err.Error())
