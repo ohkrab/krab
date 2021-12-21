@@ -51,9 +51,8 @@ func (a *ActionMigrateStatus) Run(args []string) int {
 	cmd := &CmdMigrateStatus{
 		Set:        a.Set,
 		Connection: a.Connection,
-		Inputs:     flags.Values(),
 	}
-	resp, err := cmd.Do(context.Background(), CmdOpts{})
+	resp, err := cmd.Do(context.Background(), CmdOpts{Inputs: flags.Values()})
 
 	if err != nil {
 		ui.Error(err.Error())

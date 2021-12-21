@@ -17,4 +17,6 @@ type Cmd interface {
 }
 
 // CmdOpts are options passed to command.
-type CmdOpts struct{}
+type CmdOpts struct {
+	Inputs
+}

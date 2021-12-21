@@ -15,7 +15,6 @@ import (
 type CmdMigrateDown struct {
 	Set        *MigrationSet
 	Connection krabdb.Connection
-	Inputs
 }
 
 // ResponseMigrateDown json
@@ -43,31 +42,31 @@ func (c *CmdMigrateDown) HttpMethod() string { return http.MethodPost }
 
 func (c *CmdMigrateDown) Do(ctx context.Context, o CmdOpts) (interface{}, error) {
 	for _, arg := range c.Set.Arguments.Args {
-		_, ok := c.Inputs[arg.Name]
+		_, ok := o.Inputs[arg.Name]
 		if !ok {
 			return nil, fmt.Errorf("Command is missing an input for argument `%s`", arg.Name)
 		}
 	}
 	// default arguments always take precedence over custom ones
 	for _, arg := range c.Arguments().Args {
-		_, ok := c.Inputs[arg.Name]
+		_, ok := o.Inputs[arg.Name]
 		if !ok {
 			return nil, fmt.Errorf("Command is missing an input for argument `%s`", arg.Name)
 		}
 	}
 
-	err := c.Set.Arguments.Validate(c.Inputs)
+	err := c.Set.Arguments.Validate(o.Inputs)
 	if err != nil {
 		return nil, err
 	}
-	err = c.Arguments().Validate(c.Inputs)
+	err = c.Arguments().Validate(o.Inputs)
 	if err != nil {
 		return nil, err
 	}
 
 	var result []ResponseMigrateDown
 	err = c.Connection.Get(func(db krabdb.DB) error {
-		resp, err := c.run(ctx, db)
+		resp, err := c.run(ctx, db, o.Inputs)
 		result = resp
 		return err
 	})
@@ -75,16 +74,16 @@ func (c *CmdMigrateDown) Do(ctx context.Context, o CmdOpts) (interface{}, error)
 	return result, err
 }
 
-func (c *CmdMigrateDown) run(ctx context.Context, db krabdb.DB) ([]ResponseMigrateDown, error) {
+func (c *CmdMigrateDown) run(ctx context.Context, db krabdb.DB, inputs Inputs) ([]ResponseMigrateDown, error) {
 	result := []ResponseMigrateDown{}
 
-	tpl := tpls.New(c.Inputs, krabtpl.Functions)
+	tpl := tpls.New(inputs, krabtpl.Functions)
 	versions := NewSchemaMigrationTable(tpl.Render(c.Set.Schema))
 
-	migration := c.Set.FindMigrationByVersion(c.Inputs["version"].(string))
+	migration := c.Set.FindMigrationByVersion(inputs["version"].(string))
 	if migration == nil {
 		return nil, fmt.Errorf("Migration `%s` not found in `%s` set",
-			c.Inputs["version"].(string),
+			inputs["version"].(string),
 			c.Set.RefName)
 	}
 	lockID := int64(1)

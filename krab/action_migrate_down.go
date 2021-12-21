@@ -62,9 +62,8 @@ func (a *ActionMigrateDown) Run(args []string) int {
 	cmd := &CmdMigrateDown{
 		Set:        a.Set,
 		Connection: a.Connection,
-		Inputs:     flags.Values(),
 	}
-	resp, err := cmd.Do(context.Background(), CmdOpts{})
+	resp, err := cmd.Do(context.Background(), CmdOpts{Inputs: flags.Values()})
 	result := resp.([]ResponseMigrateDown)
 
 	if err != nil {
