@@ -2,7 +2,6 @@ package krab
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"strings"
 
@@ -25,13 +24,6 @@ func (c *CmdAction) Name() []string { return []string{"action", c.Action.Namespa
 func (c *CmdAction) HttpMethod() string { return http.MethodPost }
 
 func (c *CmdAction) Do(ctx context.Context, o CmdOpts) (interface{}, error) {
-	for _, arg := range c.Action.Arguments.Args {
-		_, ok := o.Inputs[arg.Name]
-		if !ok {
-			return nil, fmt.Errorf("Command is missing an input for argument `%s`", arg.Name)
-		}
-	}
-
 	err := c.Action.Arguments.Validate(o.Inputs)
 	if err != nil {
 		return nil, err

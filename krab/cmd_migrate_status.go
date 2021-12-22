@@ -2,7 +2,6 @@ package krab
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 
 	"github.com/emirpasic/gods/sets/hashset"
@@ -30,12 +29,6 @@ func (c *CmdMigrateStatus) Name() []string { return []string{"migrate", "status"
 func (c *CmdMigrateStatus) HttpMethod() string { return http.MethodGet }
 
 func (c *CmdMigrateStatus) Do(ctx context.Context, o CmdOpts) (interface{}, error) {
-	for _, arg := range c.Set.Arguments.Args {
-		_, ok := o.Inputs[arg.Name]
-		if !ok {
-			return nil, fmt.Errorf("Command is missing an input for argument `%s`", arg.Name)
-		}
-	}
 	err := c.Set.Arguments.Validate(o.Inputs)
 	if err != nil {
 		return nil, err

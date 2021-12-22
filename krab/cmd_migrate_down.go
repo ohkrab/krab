@@ -41,20 +41,6 @@ func (c *CmdMigrateDown) Name() []string { return []string{"migrate", "down", c.
 func (c *CmdMigrateDown) HttpMethod() string { return http.MethodPost }
 
 func (c *CmdMigrateDown) Do(ctx context.Context, o CmdOpts) (interface{}, error) {
-	for _, arg := range c.Set.Arguments.Args {
-		_, ok := o.Inputs[arg.Name]
-		if !ok {
-			return nil, fmt.Errorf("Command is missing an input for argument `%s`", arg.Name)
-		}
-	}
-	// default arguments always take precedence over custom ones
-	for _, arg := range c.Arguments().Args {
-		_, ok := o.Inputs[arg.Name]
-		if !ok {
-			return nil, fmt.Errorf("Command is missing an input for argument `%s`", arg.Name)
-		}
-	}
-
 	err := c.Set.Arguments.Validate(o.Inputs)
 	if err != nil {
 		return nil, err

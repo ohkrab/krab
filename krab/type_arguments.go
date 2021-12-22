@@ -26,7 +26,7 @@ func (a *Arguments) Validate(values Inputs) error {
 				return err
 			}
 		} else {
-			return errors.New("Argument value is missing")
+			return fmt.Errorf("Argument value for `%s` is missing", a.Name)
 		}
 	}
 

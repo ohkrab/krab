@@ -19,17 +19,34 @@ func (a *Agent) Run() error {
 	router := gin.Default()
 	api := router.Group("/api")
 	for _, cmd := range a.Registry.Commands {
+		cmd := cmd
 		path := fmt.Sprint("/", strings.Join(cmd.Name(), "/"))
 		switch cmd.HttpMethod() {
+		case http.MethodPost:
+			api.POST(path, func(c *gin.Context) {
+				resp, err := cmd.Do(c.Request.Context(), krab.CmdOpts{})
+				if err != nil {
+					c.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error()})
+					return
+				}
+				err = json.NewEncoder(c.Writer).Encode(resp)
+				if err != nil {
+					c.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error()})
+					return
+				}
+				c.Status(http.StatusOK)
+			})
 		case http.MethodGet:
 			api.GET(path, func(c *gin.Context) {
 				resp, err := cmd.Do(c.Request.Context(), krab.CmdOpts{})
 				if err != nil {
 					c.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error()})
+					return
 				}
 				err = json.NewEncoder(c.Writer).Encode(resp)
 				if err != nil {
 					c.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error()})
+					return
 				}
 				c.Status(http.StatusOK)
 			})
