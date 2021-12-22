@@ -66,15 +66,20 @@ func (a *App) RegisterAll() {
 			a.RegisterCmd(name, func() Command {
 				return &krab.ActionMigrateStatus{Ui: a.Ui, Cmd: c}
 			})
+
+		case *krab.CmdAction:
+			a.RegisterCmd(name, func() Command {
+				return &krab.ActionCustom{Ui: a.Ui, Cmd: c}
+			})
+
+		default:
+			panic("Not implemented: failed to register CLI action")
 		}
 	}
 
-	for _, action := range a.Config.Actions {
-		localAction := action
-		a.RegisterCmd(strings.Join(action.Addr().Absolute(), " "), func() Command {
-			return &krab.ActionCustom{Ui: a.Ui, Action: localAction, Connection: a.connection}
-		})
-	}
+	a.RegisterCmd("agent", func() Command {
+		return &CmdAgent{Registry: a.Registry}
+	})
 }
 
 func (a *App) Run() (int, error) {

@@ -18,21 +18,29 @@ func (r *CmdRegistry) Register(c Cmd) {
 func (r *CmdRegistry) RegisterAll(config *Config, conn krabdb.Connection) {
 	r.Register(&CmdVersion{})
 
-	for _, set := range config.MigrationSets {
-		localSet := set
+	for _, action := range config.Actions {
+		action := action
 
-		r.Register(&CmdMigrateStatus{
-			Set:        localSet,
-			Connection: conn,
-		})
-		r.Register(&CmdMigrateDown{
-			Set:        localSet,
-			Connection: conn,
-		})
-		r.Register(&CmdMigrateUp{
-			Set:        localSet,
+		r.Register(&CmdAction{
+			Action:     action,
 			Connection: conn,
 		})
 	}
 
+	for _, set := range config.MigrationSets {
+		set := set
+
+		r.Register(&CmdMigrateStatus{
+			Set:        set,
+			Connection: conn,
+		})
+		r.Register(&CmdMigrateDown{
+			Set:        set,
+			Connection: conn,
+		})
+		r.Register(&CmdMigrateUp{
+			Set:        set,
+			Connection: conn,
+		})
+	}
 }

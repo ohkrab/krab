@@ -12,10 +12,10 @@ import (
 
 // Agent exposes API from config.
 type Agent struct {
-	Registry krab.CmdRegistry
+	Registry *krab.CmdRegistry
 }
 
-func (a *Agent) Run() {
+func (a *Agent) Run() error {
 	router := gin.Default()
 	api := router.Group("/api")
 	for _, cmd := range a.Registry.Commands {
@@ -38,4 +38,5 @@ func (a *Agent) Run() {
 		}
 	}
 	router.Run()
+	return nil
 }
