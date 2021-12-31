@@ -24,7 +24,14 @@ func (a *Agent) Run() error {
 		switch cmd.HttpMethod() {
 		case http.MethodPost:
 			api.POST(path, func(c *gin.Context) {
-				resp, err := cmd.Do(c.Request.Context(), krab.CmdOpts{})
+
+				inputs, err := bindInputs(c)
+				if err != nil {
+					c.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error()})
+					return
+				}
+
+				resp, err := cmd.Do(c.Request.Context(), krab.CmdOpts{Inputs: inputs})
 				if err != nil {
 					c.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error()})
 					return
@@ -38,7 +45,15 @@ func (a *Agent) Run() error {
 			})
 		case http.MethodGet:
 			api.GET(path, func(c *gin.Context) {
-				resp, err := cmd.Do(c.Request.Context(), krab.CmdOpts{})
+				c.Header("Cache-Control", "no-store")
+
+				inputs, err := bindInputs(c)
+				if err != nil {
+					c.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error()})
+					return
+				}
+
+				resp, err := cmd.Do(c.Request.Context(), krab.CmdOpts{Inputs: inputs})
 				if err != nil {
 					c.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error()})
 					return
