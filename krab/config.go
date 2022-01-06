@@ -12,6 +12,7 @@ type Config struct {
 	MigrationSets map[string]*MigrationSet
 	Migrations    map[string]*Migration
 	Actions       map[string]*Action
+	Wasms         map[string]*WebAssembly
 }
 
 // NewConfig returns new configuration that was read from Parser.
@@ -21,6 +22,7 @@ func NewConfig(files []*File) (*Config, error) {
 		MigrationSets: map[string]*MigrationSet{},
 		Migrations:    map[string]*Migration{},
 		Actions:       map[string]*Action{},
+		Wasms:         map[string]*WebAssembly{},
 	}
 
 	// append files
@@ -36,7 +38,7 @@ func NewConfig(files []*File) (*Config, error) {
 
 		traversals := set.MigrationsExpr.Variables()
 		for _, t := range traversals {
-			addr, err := parseTraversalToAddr(t)
+			addr, err := krabhcl.ParseTraversalToAddr(t)
 			if err != nil {
 				return nil, fmt.Errorf("Parsing migrations for set '%s' failed. %w", set.RefName, err)
 			}

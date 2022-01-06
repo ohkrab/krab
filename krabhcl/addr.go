@@ -1,4 +1,4 @@
-package krab
+package krabhcl
 
 import (
 	"fmt"
@@ -28,7 +28,7 @@ func (a Addr) OnlyRefNames() string {
 	return strings.Join(a.Labels, ".")
 }
 
-func parseTraversalToAddr(t hcl.Traversal) (Addr, error) {
+func ParseTraversalToAddr(t hcl.Traversal) (Addr, error) {
 	addr := Addr{
 		Keyword: t.RootName(),
 		Labels:  make([]string, 0),

@@ -2,6 +2,8 @@ package krab
 
 import (
 	"io"
+
+	"github.com/ohkrab/krab/krabhcl"
 )
 
 // Action represents custom action to execute.
@@ -15,8 +17,8 @@ type Action struct {
 	SQL string `hcl:"sql"`
 }
 
-func (a *Action) Addr() Addr {
-	return Addr{Keyword: "action", Labels: []string{a.Namespace, a.RefName}}
+func (a *Action) Addr() krabhcl.Addr {
+	return krabhcl.Addr{Keyword: "action", Labels: []string{a.Namespace, a.RefName}}
 }
 
 func (a *Action) InitDefaults() {

@@ -1,12 +1,15 @@
 package krab
 
-import "github.com/hashicorp/hcl/v2"
+import (
+	"github.com/hashicorp/hcl/v2"
+)
 
 // File represents all resource definitions within a single file.
 type File struct {
 	Migrations    []*Migration    `hcl:"migration,block"`
 	MigrationSets []*MigrationSet `hcl:"migration_set,block"`
 	Actions       []*Action       `hcl:"action,block"`
+	Wasms         []*WebAssembly  `hcl:"wasm,block"`
 
 	Raw *RawFile
 }

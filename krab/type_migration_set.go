@@ -2,6 +2,7 @@ package krab
 
 import (
 	"github.com/hashicorp/hcl/v2"
+	"github.com/ohkrab/krab/krabhcl"
 )
 
 // MigrationSet represents collection of migrations.
@@ -18,8 +19,8 @@ type MigrationSet struct {
 	Migrations     []*Migration   // populated from refs in expression
 }
 
-func (ms *MigrationSet) Addr() Addr {
-	return Addr{Keyword: "migration_set", Labels: []string{ms.RefName}}
+func (ms *MigrationSet) Addr() krabhcl.Addr {
+	return krabhcl.Addr{Keyword: "migration_set", Labels: []string{ms.RefName}}
 }
 
 func (ms *MigrationSet) InitDefaults() {
