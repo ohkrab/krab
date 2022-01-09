@@ -51,9 +51,10 @@ func (a *ActionMigrateUp) Run(args []string) int {
 	}
 
 	resp, err := a.Cmd.Do(context.Background(), CmdOpts{Inputs: flags.Values()})
-	result := resp.([]ResponseMigrateUp)
 
-	if len(result) > 0 {
+	result, ok := resp.([]ResponseMigrateUp)
+
+	if ok && len(result) > 0 {
 		for _, status := range result {
 			uiMigrationStatusFromResponseUp(ui, status)
 		}
@@ -64,7 +65,7 @@ func (a *ActionMigrateUp) Run(args []string) int {
 		return 1
 	}
 
-	if len(result) == 0 {
+	if ok && len(result) == 0 {
 		ui.Info("No pending migrations")
 	}
 

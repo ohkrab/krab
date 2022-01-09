@@ -9,6 +9,8 @@ type File struct {
 	Migrations    []*Migration    `hcl:"migration,block"`
 	MigrationSets []*MigrationSet `hcl:"migration_set,block"`
 	Actions       []*Action       `hcl:"action,block"`
+	TestSuites    []*TestSuite    `hcl:"test_suite,block"`
+	TestExamples  []*TestExample  `hcl:"test,block"`
 	Wasms         []*WebAssembly  `hcl:"wasm,block"`
 
 	Raw *RawFile

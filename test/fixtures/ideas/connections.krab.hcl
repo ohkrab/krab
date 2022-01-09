@@ -1,13 +1,24 @@
-connection "main" {
-  uri = "postgres://localhost:5432/krab_test"
+globals {
+  uri = "global_var"
 }
 
+connection "default" {
+  uri = "postgres://krab:secret@localhost:5432/postgres"
+}
 
-# TODO: later
-# connection_pool "main" {
-#   connections = [
-#     connection.main,
-#   ]
+connection "interpolated" {
+  uri = "postgres://${env("USER")}:${env("PASSWORD")}@localhost:5432/postgres"
+}
 
-#   pool = 5
-# }
+connection "referenced" {
+  uri = global.uri
+}
+
+connection "duplicated" {
+  uri = connection.default.uri
+}
+
+connection "from_env" {
+  uri = env("PG_URI")
+}
+

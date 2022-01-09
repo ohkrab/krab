@@ -13,6 +13,8 @@ type Config struct {
 	Migrations    map[string]*Migration
 	Actions       map[string]*Action
 	Wasms         map[string]*WebAssembly
+	TestSuites    map[string]*TestSuite
+	TestExamples  map[string]*TestExample
 }
 
 // NewConfig returns new configuration that was read from Parser.
@@ -23,6 +25,8 @@ func NewConfig(files []*File) (*Config, error) {
 		Migrations:    map[string]*Migration{},
 		Actions:       map[string]*Action{},
 		Wasms:         map[string]*WebAssembly{},
+		TestSuites:    map[string]*TestSuite{},
+		TestExamples:  map[string]*TestExample{},
 	}
 
 	// append files
@@ -66,6 +70,30 @@ func NewConfig(files []*File) (*Config, error) {
 	}
 
 	for _, validatable := range c.Migrations {
+		if err := validatable.Validate(); err != nil {
+			return nil, err
+		}
+	}
+
+	for _, validatable := range c.Actions {
+		if err := validatable.Validate(); err != nil {
+			return nil, err
+		}
+	}
+
+	for _, validatable := range c.TestSuites {
+		if err := validatable.Validate(); err != nil {
+			return nil, err
+		}
+	}
+
+	for _, validatable := range c.TestExamples {
+		if err := validatable.Validate(); err != nil {
+			return nil, err
+		}
+	}
+
+	for _, validatable := range c.Wasms {
 		if err := validatable.Validate(); err != nil {
 			return nil, err
 		}

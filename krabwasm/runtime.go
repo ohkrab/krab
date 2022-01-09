@@ -18,7 +18,7 @@ func New() *Runtime {
 	store := wasmer.NewStore(engine)
 
 	return &Runtime{
-		instances: map[string]*wasm{},
+		instances: map[string]*webAssembly{},
 		store:     store,
 	}
 }

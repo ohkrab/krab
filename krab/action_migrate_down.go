@@ -55,15 +55,17 @@ func (a *ActionMigrateDown) Run(args []string) int {
 	}
 
 	resp, err := a.Cmd.Do(context.Background(), CmdOpts{Inputs: flags.Values()})
-	result := resp.([]ResponseMigrateDown)
+	result, ok := resp.([]ResponseMigrateDown)
 
 	if err != nil {
 		a.Ui.Error(err.Error())
 		return 1
 	}
 
-	for _, status := range result {
-		uiMigrationStatusFromResponseDown(a.Ui, status)
+	if ok {
+		for _, status := range result {
+			uiMigrationStatusFromResponseDown(a.Ui, status)
+		}
 	}
 
 	return 0
