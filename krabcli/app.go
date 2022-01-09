@@ -1,6 +1,7 @@
 package krabcli
 
 import (
+	"fmt"
 	"strings"
 
 	mcli "github.com/mitchellh/cli"
@@ -72,8 +73,13 @@ func (a *App) RegisterAll() {
 				return &krab.ActionCustom{Ui: a.Ui, Cmd: c}
 			})
 
+		case *krab.CmdTestRun:
+			a.RegisterCmd(name, func() Command {
+				return &krab.ActionTestRun{Ui: a.Ui, Cmd: c}
+			})
+
 		default:
-			panic("Not implemented: failed to register CLI action")
+			panic(fmt.Sprintf("Not implemented: failed to register CLI action for command %T", c))
 		}
 	}
 

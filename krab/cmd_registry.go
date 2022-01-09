@@ -2,6 +2,7 @@ package krab
 
 import (
 	"github.com/ohkrab/krab/krabdb"
+	"github.com/ohkrab/krab/krabenv"
 )
 
 // CmdRegistry is a list of registred commands.
@@ -42,5 +43,16 @@ func (r *CmdRegistry) RegisterAll(config *Config, conn krabdb.Connection) {
 			Set:        set,
 			Connection: conn,
 		})
+	}
+
+	if krabenv.Test() {
+		for _, suite := range config.TestSuites {
+			suite := suite
+
+			r.Register(&CmdTestRun{
+				Suite:      suite,
+				Connection: conn,
+			})
+		}
 	}
 }

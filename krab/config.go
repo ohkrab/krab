@@ -131,6 +131,32 @@ func (c *Config) appendFile(file *File) error {
 		c.Actions[a.Addr().OnlyRefNames()] = a
 	}
 
+	for _, t := range file.TestSuites {
+		if _, found := c.TestSuites[t.Addr().OnlyRefNames()]; found {
+			return fmt.Errorf("TestSuite with the name '%s' already exists", t.Addr().OnlyRefNames())
+		}
+
+		c.TestSuites[t.Addr().OnlyRefNames()] = t
+	}
+
+	for _, t := range file.TestExamples {
+		if _, found := c.TestExamples[t.Addr().OnlyRefNames()]; found {
+			return fmt.Errorf("Test with the name '%s' already exists", t.Addr().OnlyRefNames())
+		}
+
+		c.TestExamples[t.Addr().OnlyRefNames()] = t
+		suite, ok := c.TestSuites[t.Addr().Labels[0]] // first label is a test suite reference
+		if ok {
+			if suite.Tests == nil {
+				suite.Tests = []*TestExample{}
+			}
+
+			suite.Tests = append(suite.Tests, t)
+		} else {
+			return fmt.Errorf("Test suite '%s' is missing", suite.RefName)
+		}
+	}
+
 	return nil
 }
 

@@ -2,7 +2,7 @@
 
 build:
 	mkdir -p bin/
-	go build -o bin/krab main.go
+	go build -gcflags='-G=3' -o bin/krab main.go
 
 install:
 	cp bin/krab /usr/local/bin

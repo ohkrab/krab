@@ -7,8 +7,10 @@ import (
 // TestSuite represents test runner configuration.
 //
 type TestSuite struct {
-	RefName string             `hcl:"ref_name,label"`
-	Before  []*TestSuiteBefore `hcl:"before,block"`
+	RefName string          `hcl:"ref_name,label"`
+	Before  TestSuiteBefore `hcl:"before,block"`
+
+	Tests []*TestExample
 }
 
 func (t *TestSuite) Addr() krabhcl.Addr {

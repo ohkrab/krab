@@ -13,3 +13,11 @@ func ConfigDir() (string, error) {
 func DatabaseURL() string {
 	return os.Getenv("DATABASE_URL")
 }
+
+func Env() string {
+	return os.Getenv("KRAB_ENV")
+}
+
+func Test() bool {
+	return Env() == "test"
+}
