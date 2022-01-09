@@ -13,6 +13,35 @@ type Addr struct {
 	Labels  []string
 }
 
+func AddrFromStrings(s []string) Addr {
+	a := Addr{}
+	for i := 0; i < len(s); i++ {
+		a.Keyword = s[i]
+		break
+	}
+	a.Labels = s[1:]
+	return a
+}
+
+// Equal compares if other Addr is the same.
+func (a Addr) Equal(o Addr) bool {
+	if a.Keyword != o.Keyword {
+		return false
+	}
+
+	if len(a.Labels) != len(o.Labels) {
+		return false
+	}
+
+	for i := range a.Labels {
+		if a.Labels[i] != o.Labels[i] {
+			return false
+		}
+	}
+
+	return true
+}
+
 // String returns full reference name including the keyword.
 func (a Addr) String() string {
 	return fmt.Sprintf("%s.%s", a.Keyword, a.OnlyRefNames())
