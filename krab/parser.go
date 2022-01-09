@@ -91,6 +91,12 @@ func (p *Parser) dirFiles(dir string) ([]string, error) {
 
 	for _, info := range infos {
 		if info.IsDir() {
+			fullPath := filepath.Join(dir, info.Name())
+			nestedPaths, err := p.dirFiles(fullPath)
+			if err != nil {
+				return nil, err
+			}
+			paths = append(paths, nestedPaths...)
 			continue
 		}
 
