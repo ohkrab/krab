@@ -7,7 +7,17 @@ import (
 
 // Do subtype for other types.
 type Do struct {
-	Action hcl.Expression       `hcl:"action,optional"`
-	Inputs map[string]cty.Value `hcl:"inputs,optional"`
-	SQL    string               `hcl:"sql,optional"`
+	MigrationSet hcl.Expression       `hcl:"migration_set,optional"`
+	CtyInputs    map[string]cty.Value `hcl:"inputs,optional"`
+	SQL          string               `hcl:"sql,optional"`
+}
+
+func (d *Do) Inputs() Inputs {
+	inputs := Inputs{}
+	for k, v := range d.CtyInputs {
+		str := v.AsString()
+		inputs[k] = str
+	}
+
+	return inputs
 }

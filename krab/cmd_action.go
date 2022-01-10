@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/ohkrab/krab/krabdb"
+	"github.com/ohkrab/krab/krabhcl"
 	"github.com/ohkrab/krab/krabtpl"
 	"github.com/ohkrab/krab/tpls"
 )
@@ -19,7 +20,9 @@ type CmdAction struct {
 // ResponseAction json
 type ResponseAction struct{}
 
-func (c *CmdAction) Name() []string { return []string{"action", c.Action.Namespace, c.Action.RefName} }
+func (c *CmdAction) Addr() krabhcl.Addr { return c.Action.Addr() }
+
+func (c *CmdAction) Name() []string { return append([]string{"action"}, c.Action.Addr().Labels...) }
 
 func (c *CmdAction) HttpMethod() string { return http.MethodPost }
 

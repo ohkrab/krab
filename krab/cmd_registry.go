@@ -50,6 +50,7 @@ func (r *CmdRegistry) RegisterAll(config *Config, conn krabdb.Connection) {
 			suite := suite
 
 			r.Register(&CmdTestRun{
+				Registry:   r,
 				Suite:      suite,
 				Connection: conn,
 			})

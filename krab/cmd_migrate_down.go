@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/ohkrab/krab/krabdb"
+	"github.com/ohkrab/krab/krabhcl"
 	"github.com/ohkrab/krab/krabtpl"
 	"github.com/ohkrab/krab/tpls"
 	"github.com/pkg/errors"
@@ -36,7 +37,11 @@ func (c *CmdMigrateDown) Arguments() *Arguments {
 	}
 }
 
-func (c *CmdMigrateDown) Name() []string { return []string{"migrate", "down", c.Set.RefName} }
+func (c *CmdMigrateDown) Addr() krabhcl.Addr { return c.Set.Addr() }
+
+func (c *CmdMigrateDown) Name() []string {
+	return append([]string{"migrate", "down"}, c.Set.Addr().Labels...)
+}
 
 func (c *CmdMigrateDown) HttpMethod() string { return http.MethodPost }
 

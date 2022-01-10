@@ -74,3 +74,17 @@ func ParseTraversalToAddr(t hcl.Traversal) (Addr, error) {
 
 	return addr, nil
 }
+
+func ExpressionToAddr(expr hcl.Expression) (Addr, error) {
+	traversals := expr.Variables()
+	if len(traversals) != 1 {
+		return Addr{}, fmt.Errorf("Failed to extract single addr from HCL expression")
+	}
+
+	t := traversals[0]
+	parsedAddr, err := ParseTraversalToAddr(t)
+	if err != nil {
+		return Addr{}, err
+	}
+	return parsedAddr, nil
+}

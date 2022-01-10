@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/ohkrab/krab/krabdb"
+	"github.com/ohkrab/krab/krabhcl"
 	"github.com/ohkrab/krab/krabtpl"
 	"github.com/ohkrab/krab/tpls"
 	"github.com/pkg/errors"
@@ -23,7 +24,11 @@ type ResponseMigrateUp struct {
 	Success bool   `json:"success"`
 }
 
-func (c *CmdMigrateUp) Name() []string { return []string{"migrate", "up", c.Set.RefName} }
+func (c *CmdMigrateUp) Addr() krabhcl.Addr { return c.Set.Addr() }
+
+func (c *CmdMigrateUp) Name() []string {
+	return append([]string{"migrate", "up"}, c.Set.Addr().Labels...)
+}
 
 func (c *CmdMigrateUp) HttpMethod() string { return http.MethodPost }
 

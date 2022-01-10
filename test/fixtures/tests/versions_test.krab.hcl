@@ -1,7 +1,7 @@
 test_suite "versions" {
   before {
     do {
-      action = migration_set.versions
+      migration_set = migration_set.versions
       inputs = {
         schema = "aaa"
       }

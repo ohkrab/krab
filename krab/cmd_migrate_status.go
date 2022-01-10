@@ -6,6 +6,7 @@ import (
 
 	"github.com/emirpasic/gods/sets/hashset"
 	"github.com/ohkrab/krab/krabdb"
+	"github.com/ohkrab/krab/krabhcl"
 	"github.com/ohkrab/krab/krabtpl"
 	"github.com/ohkrab/krab/tpls"
 	"github.com/pkg/errors"
@@ -24,7 +25,11 @@ type ResponseMigrateStatus struct {
 	Pending bool   `json:"pending"`
 }
 
-func (c *CmdMigrateStatus) Name() []string { return []string{"migrate", "status", c.Set.RefName} }
+func (c *CmdMigrateStatus) Addr() krabhcl.Addr { return c.Set.Addr() }
+
+func (c *CmdMigrateStatus) Name() []string {
+	return append([]string{"migrate", "status"}, c.Set.Addr().Labels...)
+}
 
 func (c *CmdMigrateStatus) HttpMethod() string { return http.MethodGet }
 

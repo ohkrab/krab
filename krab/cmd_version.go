@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+
+	"github.com/ohkrab/krab/krabhcl"
 )
 
 // CmdVersion returns version information.
@@ -14,6 +16,8 @@ type ResponseVersion struct {
 	Name  string `json:"name"`
 	Build string `json:"build"`
 }
+
+func (c *CmdVersion) Addr() krabhcl.Addr { return krabhcl.Addr{Keyword: "version", Labels: []string{}} }
 
 func (c *CmdVersion) Name() []string { return []string{"version"} }
 
