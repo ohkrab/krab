@@ -11,7 +11,7 @@ migration "create_version_type" {
     SQL
   }
 
-  down { sql = "DROP TYPE sem_version " }
+  down { sql = "DROP TYPE sem_version" }
 }
 
 migration "create_version_function" {
@@ -23,7 +23,7 @@ migration "create_version_function" {
       AS
       $$
       DECLARE
-        _v version;
+        _v sem_version;
       BEGIN
         _v := _ver;
 
