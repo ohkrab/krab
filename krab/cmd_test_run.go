@@ -31,21 +31,34 @@ func (c *CmdTestRun) Do(ctx context.Context, o CmdOpts) (interface{}, error) {
 	var result ResponseTestRun
 
 	for _, do := range c.Suite.Before.Dos {
-		addr, err := krabhcl.ExpressionToAddr(do.MigrationSet)
-		if err != nil {
-			return nil, fmt.Errorf("Failed to parse MigrationSet reference: %w", err)
-		}
+		for _, migrate := range do.Migrate {
+			addr, err := krabhcl.Expression{Expr: migrate.SetExpr}.Addr()
+			if err != nil {
+				return nil, fmt.Errorf("Failed to parse MigrationSet reference: %w", err)
+			}
 
-		for _, cmd := range c.Registry.Commands {
-			if addr.Equal(cmd.Addr()) {
-				if cmd.Name()[1] == "up" {
-					result, err := cmd.Do(ctx, CmdOpts{Inputs: do.Inputs()})
-					if err != nil {
-						return nil, fmt.Errorf("Failed to execute before hook: %w", err)
-					}
-					resp := result.([]ResponseMigrateUp)
-					for _, migration := range resp {
-						fmt.Println(ctc.ForegroundYellow, migration.Success, migration.Version, migration.Name, ctc.Reset)
+			for _, cmd := range c.Registry.Commands {
+				if addr.Equal(cmd.Addr()) {
+					if cmd.Name()[1] == migrate.Type {
+						inputs := InputsFromCtyInputs(do.CtyInputs)
+						migrateInputs := InputsFromCtyInputs(migrate.CtyInputs)
+						inputs.Merge(migrateInputs)
+						result, err := cmd.Do(ctx, CmdOpts{Inputs: inputs})
+						if err != nil {
+							return nil, fmt.Errorf("Failed to execute before hook: %w", err)
+						}
+						respUp, ok := result.([]ResponseMigrateUp)
+						if ok {
+							for _, migration := range respUp {
+								fmt.Println(ctc.ForegroundYellow, "UP  ", migration.Success, migration.Version, migration.Name, ctc.Reset)
+							}
+						}
+						respDown, ok := result.([]ResponseMigrateDown)
+						if ok {
+							for _, migration := range respDown {
+								fmt.Println(ctc.ForegroundYellow, "DOWN", migration.Success, migration.Version, migration.Name, ctc.Reset)
+							}
+						}
 					}
 				}
 			}

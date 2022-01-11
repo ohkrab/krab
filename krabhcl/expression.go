@@ -1,6 +1,8 @@
 package krabhcl
 
 import (
+	"fmt"
+
 	"github.com/hashicorp/hcl/v2"
 	"github.com/zclconf/go-cty/cty"
 	"github.com/zclconf/go-cty/cty/gocty"
@@ -9,6 +11,20 @@ import (
 type Expression struct {
 	Expr        hcl.Expression
 	EvalContext *hcl.EvalContext
+}
+
+func (e Expression) Addr() (Addr, error) {
+	traversals := e.Expr.Variables()
+	if len(traversals) != 1 {
+		return Addr{}, fmt.Errorf("Failed to extract single addr from HCL expression")
+	}
+
+	t := traversals[0]
+	parsedAddr, err := ParseTraversalToAddr(t)
+	if err != nil {
+		return Addr{}, err
+	}
+	return parsedAddr, nil
 }
 
 func (e Expression) AsBool() bool {

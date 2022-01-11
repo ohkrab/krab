@@ -1,10 +1,16 @@
 test_suite "versions" {
   before {
     do {
-      migration_set = migration_set.versions
       inputs = {
         schema = "aaa"
       }
+
+      migrate "up" { migration_set = migration_set.versions }
+      migrate "down" {
+        migration_set = migration_set.versions
+        inputs        = { version = "v2" }
+      }
+      migrate "up" { migration_set = migration_set.versions }
     }
   }
 }

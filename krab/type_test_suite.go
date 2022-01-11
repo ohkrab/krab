@@ -20,9 +20,19 @@ func (t *TestSuite) Addr() krabhcl.Addr {
 func (t *TestSuite) Validate() error {
 	return ErrorCoalesce(
 		ValidateRefName(t.RefName),
+		t.Before.Validate(),
 	)
 }
 
 type TestSuiteBefore struct {
 	Dos []*Do `hcl:"do,block"`
+}
+
+func (t *TestSuiteBefore) Validate() error {
+	for _, do := range t.Dos {
+		if err := do.Validate(); err != nil {
+			return err
+		}
+	}
+	return nil
 }

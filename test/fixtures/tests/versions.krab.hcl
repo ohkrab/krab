@@ -3,7 +3,7 @@ migration "create_version_type" {
 
   up {
     sql = <<SQL
-      CREATE TYPE version AS (
+      CREATE TYPE sem_version AS (
         major SMALLINT,
         minor SMALLINT,
         patch SMALLINT
@@ -11,7 +11,7 @@ migration "create_version_type" {
     SQL
   }
 
-  down { sql = "DROP TYPE version" }
+  down { sql = "DROP TYPE sem_version " }
 }
 
 migration "create_version_function" {
@@ -19,7 +19,7 @@ migration "create_version_function" {
 
   up {
     sql = <<SQL
-      CREATE FUNCTION version_inc(_ver version, _type varchar = 'major') RETURNS version
+      CREATE FUNCTION version_inc(_ver sem_version, _type varchar = 'major') RETURNS sem_version
       AS
       $$
       DECLARE
@@ -44,7 +44,7 @@ migration "create_version_function" {
   }
 
   down {
-    sql = "DROP FUNCTION version_inc(version, varchar)"
+    sql = "DROP FUNCTION version_inc(sem_version, varchar)"
   }
 }
 
