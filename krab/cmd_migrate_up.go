@@ -83,7 +83,7 @@ func (c *CmdMigrateUp) run(ctx context.Context, db krabdb.DB, inputs Inputs) ([]
 	pendingMigrations := versions.FilterPending(c.Set.Migrations, migrationRefsInDb)
 
 	for _, pending := range pendingMigrations {
-		tx, err := db.NewTx(ctx, pending.ShouldRunInTransaction())
+		tx, err := db.NewTx(ctx, pending.Transaction)
 		if err != nil {
 			result = append(result, ResponseMigrateUp{
 				Name:    pending.RefName,

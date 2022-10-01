@@ -92,7 +92,7 @@ func (c *CmdMigrateDown) run(ctx context.Context, db krabdb.DB, inputs Inputs) (
 	}
 
 	// schema migration
-	tx, err := db.NewTx(ctx, migration.ShouldRunInTransaction())
+	tx, err := db.NewTx(ctx, migration.Transaction)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to start transaction")
 	}

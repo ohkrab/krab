@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/hashicorp/hcl/v2"
-	"github.com/hashicorp/hcl/v2/hclsimple"
+	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/hashicorp/hcl2/hclparse"
 	"github.com/ohkrab/krab/krabfn"
 	"github.com/spf13/afero"
@@ -67,18 +67,16 @@ func (p *Parser) loadConfigFile(path string, evalContext *hcl.EvalContext) (*Fil
 		return nil, fmt.Errorf("[%w] Failed to load file %s", err, path)
 	}
 
-	var file File
-	if err := hclsimple.Decode(path, src, evalContext, &file); err != nil {
+	hclFile, diags := hclsyntax.ParseConfig(src, path, hcl.Pos{Line: 1, Column: 1, Byte: 0})
+	if diags.HasErrors() {
+		return nil, fmt.Errorf("[%s] Failed to decode file %s", err.Error(), path)
+	}
+	file := &File{File: hclFile}
+	if err := file.Decode(evalContext); err != nil {
 		return nil, fmt.Errorf("[%w] Failed to decode file %s", err, path)
 	}
 
-	var rawFile RawFile
-	if err := hclsimple.Decode(path, src, evalContext, &rawFile); err != nil {
-		return nil, fmt.Errorf("[%w] Failed to decode raw file %s", err, path)
-	}
-	file.Raw = &rawFile
-
-	return &file, nil
+	return file, nil
 }
 
 func (p *Parser) dirFiles(dir string) ([]string, error) {

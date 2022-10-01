@@ -1,14 +1,18 @@
 package krab
 
 import (
+	"fmt"
 	"io"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/ohkrab/krab/krabdb"
+	"github.com/ohkrab/krab/krabhcl"
 )
 
 // DDLCreateTable contains DSL for creating tables.
 type DDLCreateTable struct {
+	krabhcl.Source
+
 	Name        string           `hcl:"name,label"`
 	Unlogged    bool             `hcl:"unlogged,optional"`
 	Columns     []*DDLColumn     `hcl:"column,block"`
@@ -16,17 +20,47 @@ type DDLCreateTable struct {
 	ForeignKeys []*DDLForeignKey `hcl:"foreign_key,block"`
 	Uniques     []*DDLUnique     `hcl:"unique,block"`
 	Checks      []*DDLCheck      `hcl:"check,block"`
-
-	DefRange hcl.Range
 }
 
-var DDLCreateTableSchema = hcl.BodySchema{
+var DDLCreateTableSchema = &hcl.BodySchema{
 	Blocks: []hcl.BlockHeaderSchema{
 		{
 			Type:       "create_table",
 			LabelNames: []string{"name"},
 		},
 	},
+}
+
+// DecodeHCL parses HCL into struct.
+func (d *DDLCreateTable) DecodeHCL(ctx *hcl.EvalContext, block *hcl.Block) error {
+	d.Source.Extract(block)
+
+	d.Columns = []*DDLColumn{}
+	d.PrimaryKeys = []*DDLPrimaryKey{}
+	d.ForeignKeys = []*DDLForeignKey{}
+	d.Uniques = []*DDLUnique{}
+	d.Checks = []*DDLCheck{}
+
+	content, diags := block.Body.Content(DDLCreateTableSchema)
+	if diags.HasErrors() {
+		return fmt.Errorf("failed to decode `table` block: %s", diags.Error())
+	}
+
+	attrs, diags := block.Body.JustAttributes()
+	if diags.HasErrors() {
+		return fmt.Errorf("failed to decode `table` attributes: %s", diags.Error())
+	}
+
+	for k, v := range attrs {
+		fmt.Println(k, v)
+	}
+
+	for _, b := range content.Blocks {
+		switch b.Type {
+		}
+	}
+
+	return nil
 }
 
 // ToSQL converts migration definition to SQL.
