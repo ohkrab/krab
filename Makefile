@@ -10,13 +10,13 @@ default:
 
 build:
 	mkdir -p bin/
-	go build -gcflags='-G=3' -o bin/krab main.go
+	go build -o bin/krab main.go
 
 install:
 	cp bin/krab /usr/local/bin
 
 test:
-	DATABASE_URL="postgres://krab:secret@localhost:5432/krab?sslmode=disable&prefer_simple_protocol=true" go test -gcflags=-G=3 -v ./... && echo "☑️ "
+	DATABASE_URL="postgres://krab:secret@localhost:5432/krab?sslmode=disable&prefer_simple_protocol=true" go test -v ./... && echo "☑️ "
 
 docker_test:
 	docker run --rm -e DATABASE_URL="postgres://krab:secret@localhost:5432/krab?sslmode=disable" \

@@ -18,14 +18,14 @@ func main() {
 
 	dir, err := krabenv.ConfigDir()
 	if err != nil {
-		ui.Error(fmt.Errorf("Can't read config dir: %w", err).Error())
+		ui.Error(fmt.Errorf("can't read config dir: %w", err).Error())
 		os.Exit(1)
 	}
 
 	parser := krab.NewParser()
 	config, err := parser.LoadConfigDir(dir)
 	if err != nil {
-		ui.Error(fmt.Errorf("Parsing error: %w", err).Error())
+		ui.Error(fmt.Errorf("parsing error: %w", err).Error())
 		os.Exit(1)
 	}
 

@@ -7,7 +7,7 @@ migration "create_version_type" {
         major SMALLINT,
         minor SMALLINT,
         patch SMALLINT
-      )
+      );
     SQL
   }
 
@@ -32,10 +32,19 @@ migration "create_version_function" {
             _v.major = _v.major + 1;
             _v.minor = 0;
             _v.patch = 0;
-            RETURN _v;
+
+          WHEN _type = 'minor' THEN
+            _v.minor = _v.minor + 1;
+            _v.patch = 0;
+
+          WHEN _type = 'patch' THEN
+            _v.patch = _v.patch + 1;
+
+          ELSE
+            RAISE EXCEPTION 'Failed to increase version using type = % for version %.%.%', _type, _ver.major, _ver.minor, _ver.patch;
         END CASE;
 
-        RAISE EXCEPTION 'Failed to increase version using type = %s for version %L.%L.%L', _type, _ver.major, _ver.minor, _ver.patch;
+        RETURN _v;
       END;
       $$
       RETURNS NULL ON NULL INPUT
