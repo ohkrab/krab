@@ -5,16 +5,17 @@ import (
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/ohkrab/krab/krabdb"
+	"github.com/ohkrab/krab/krabhcl"
 )
 
 // DDLDropIndex contains DSL for dropping indicies.
 type DDLDropIndex struct {
+	krabhcl.Source
+
 	Name string `hcl:"name,label"`
 
 	Cascade      bool `hcl:"cascade,optional"`
 	Concurrently bool `hcl:"concurrently,optional"`
-
-	DefRange hcl.Range
 }
 
 var DDLDropIndexSchema = hcl.BodySchema{
@@ -24,6 +25,14 @@ var DDLDropIndexSchema = hcl.BodySchema{
 			LabelNames: []string{"name"},
 		},
 	},
+}
+
+// DecodeHCL parses HCL into struct.
+func (d *DDLDropIndex) DecodeHCL(ctx *hcl.EvalContext, block *hcl.Block) error {
+	panic("Not implemented drop index")
+	d.Source.Extract(block)
+
+	return nil
 }
 
 // ToSQL converts migration definition to SQL.

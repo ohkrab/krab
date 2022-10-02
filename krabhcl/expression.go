@@ -63,6 +63,16 @@ func (e Expression) AsString() string {
 	return ""
 }
 
+func (e Expression) AsSliceAddr() []*Addr {
+	addrs := []*Addr{}
+	traversals := e.Expr.Variables()
+	for _, t := range traversals {
+		addr, _ := ParseTraversalToAddr(t)
+		addrs = append(addrs, &addr)
+	}
+	return addrs
+}
+
 func (e Expression) Ok() bool {
 	val, _ := e.Expr.Value(e.EvalContext)
 	return val.IsWhollyKnown() && !val.IsNull()

@@ -5,10 +5,13 @@ import (
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/ohkrab/krab/krabdb"
+	"github.com/ohkrab/krab/krabhcl"
 )
 
 // DDLCreateIndex contains DSL for creating indicies.
 type DDLCreateIndex struct {
+	krabhcl.Source
+
 	Table string `hcl:"table,label"`
 	Name  string `hcl:"name,label"`
 
@@ -18,8 +21,6 @@ type DDLCreateIndex struct {
 	Include      []string `hcl:"include,optional"`
 	Using        string   `hcl:"using,optional"`
 	Where        string   `hcl:"where,optional"`
-
-	DefRange hcl.Range
 }
 
 var DDLCreateIndexSchema = hcl.BodySchema{
@@ -29,6 +30,17 @@ var DDLCreateIndexSchema = hcl.BodySchema{
 			LabelNames: []string{"table", "name"},
 		},
 	},
+}
+
+// DecodeHCL parses HCL into struct.
+func (d *DDLCreateIndex) DecodeHCL(ctx *hcl.EvalContext, block *hcl.Block) error {
+	panic("Not implemented create index")
+	d.Source.Extract(block)
+
+	d.Columns = []string{}
+	d.Include = []string{}
+
+	return nil
 }
 
 // ToSQL converts migration definition to SQL.

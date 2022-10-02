@@ -4,18 +4,71 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+
+	"github.com/hashicorp/hcl/v2"
+	"github.com/ohkrab/krab/krabhcl"
 )
 
 type Argument struct {
-	Name        string `hcl:"name,label"`
-	Type        string `hcl:"type,optional"`
-	Description string `hcl:"description,optional"`
+	Name        string
+	Type        string
+	Description string
+}
+
+var schemaArgument = hcl.BodySchema{
+	Blocks: []hcl.BlockHeaderSchema{},
+	Attributes: []hcl.AttributeSchema{
+		{
+			Name:     "type",
+			Required: false,
+		},
+		{
+			Name:     "description",
+			Required: false,
+		},
+	},
 }
 
 // Arguments represents command line arguments or params that you can pass to action.
 //
 type Arguments struct {
-	Args []*Argument `hcl:"arg,block"`
+	Args []*Argument
+}
+
+var schemaArguments = hcl.BodySchema{
+	Blocks: []hcl.BlockHeaderSchema{
+		{
+			Type:       "arg",
+			LabelNames: []string{"name"},
+		},
+	},
+}
+
+// DecodeHCL parses HCL into struct.
+func (a *Arguments) DecodeHCL(ctx *hcl.EvalContext, block *hcl.Block) error {
+	a.Args = []*Argument{}
+
+	content, diags := block.Body.Content(&schemaArguments)
+	if diags.HasErrors() {
+		return fmt.Errorf("failed to decode `%s` block: %s", block.Type, diags.Error())
+	}
+
+	for _, b := range content.Blocks {
+		switch b.Type {
+		case "arg":
+			arg := new(Argument)
+			err := arg.DecodeHCL(ctx, b)
+			if err != nil {
+				return err
+			}
+			a.Args = append(a.Args, arg)
+
+		default:
+			return fmt.Errorf("Unknown block `%s` for `%s` block", b.Type, block.Type)
+		}
+	}
+
+	return nil
 }
 
 func (a *Arguments) Validate(values Inputs) error {
@@ -31,12 +84,6 @@ func (a *Arguments) Validate(values Inputs) error {
 	}
 
 	return nil
-}
-
-func (a *Arguments) InitDefaults() {
-	for _, a := range a.Args {
-		a.InitDefaults()
-	}
 }
 
 func (a *Arguments) Help() string {
@@ -57,6 +104,37 @@ func (a *Arguments) Help() string {
 	return sb.String()
 }
 
+// DecodeHCL parses HCL into struct.
+func (a *Argument) DecodeHCL(ctx *hcl.EvalContext, block *hcl.Block) error {
+	a.Name = block.Labels[0]
+	a.Type = "string"
+	a.Description = ""
+
+	content, diags := block.Body.Content(&schemaArgument)
+	if diags.HasErrors() {
+		return fmt.Errorf("failed to decode `%s` block: %s", block.Type, diags.Error())
+	}
+
+	// no blocks to decode
+
+	for k, v := range content.Attributes {
+		switch k {
+		case "type":
+			expr := krabhcl.Expression{Expr: v.Expr, EvalContext: ctx}
+			a.Type = expr.AsString()
+
+		case "description":
+			expr := krabhcl.Expression{Expr: v.Expr, EvalContext: ctx}
+			a.Description = expr.AsString()
+
+		default:
+			return fmt.Errorf("Unknown attribute `%s` for `migration` block", k)
+		}
+	}
+
+	return nil
+}
+
 func (a *Argument) Validate(value interface{}) error {
 	switch value.(type) {
 	case string:
@@ -67,10 +145,4 @@ func (a *Argument) Validate(value interface{}) error {
 		return errors.New("Argument type not implemented")
 	}
 	return nil
-}
-
-func (a *Argument) InitDefaults() {
-	if a.Type == "" {
-		a.Type = "string"
-	}
 }

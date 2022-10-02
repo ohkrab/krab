@@ -47,11 +47,11 @@ var schemaMigration = &hcl.BodySchema{
 type MigrationUpOrDown struct {
 	krabhcl.Source
 
-	SQL           string            `hcl:"sql,optional"`
-	CreateTables  []*DDLCreateTable `hcl:"create_table,block"`
-	CreateIndices []*DDLCreateIndex `hcl:"create_index,block"`
-	DropTables    []*DDLDropTable   `hcl:"drop_table,block"`
-	DropIndices   []*DDLDropIndex   `hcl:"drop_index,block"`
+	SQL           string
+	CreateTables  []*DDLCreateTable
+	CreateIndices []*DDLCreateIndex
+	DropTables    []*DDLDropTable
+	DropIndices   []*DDLDropIndex
 
 	AttrDefRanges map[string]hcl.Range
 }
@@ -143,6 +143,11 @@ func (m *MigrationUpOrDown) DecodeHCL(ctx *hcl.EvalContext, block *hcl.Block) er
 	m.Source.Extract(block)
 	m.AttrDefRanges = map[string]hcl.Range{}
 
+	m.CreateTables = []*DDLCreateTable{}
+	m.CreateIndices = []*DDLCreateIndex{}
+	m.DropTables = []*DDLDropTable{}
+	m.DropIndices = []*DDLDropIndex{}
+
 	content, diags := block.Body.Content(schemaMigrationUpOrDown)
 	if diags.HasErrors() {
 		return fmt.Errorf("failed to decode `%s` block: %s", block.Type, diags.Error())
@@ -151,9 +156,39 @@ func (m *MigrationUpOrDown) DecodeHCL(ctx *hcl.EvalContext, block *hcl.Block) er
 	for _, b := range content.Blocks {
 		switch b.Type {
 		case "create_table":
+			table := new(DDLCreateTable)
+			err := table.DecodeHCL(ctx, b)
+			if err != nil {
+				return err
+			}
+			m.CreateTables = append(m.CreateTables, table)
+
 		case "create_index":
+			index := new(DDLCreateIndex)
+			err := index.DecodeHCL(ctx, b)
+			if err != nil {
+				return err
+			}
+			m.CreateIndices = append(m.CreateIndices, index)
+
 		case "drop_table":
+			table := new(DDLDropTable)
+			err := table.DecodeHCL(ctx, b)
+			if err != nil {
+				return err
+			}
+			m.DropTables = append(m.DropTables, table)
+
 		case "drop_index":
+			index := new(DDLDropIndex)
+			err := index.DecodeHCL(ctx, b)
+			if err != nil {
+				return err
+			}
+			m.DropIndices = append(m.DropIndices, index)
+
+		default:
+			return fmt.Errorf("Unknown block `%s` for `%s` block", b.Type, block.Type)
 		}
 	}
 

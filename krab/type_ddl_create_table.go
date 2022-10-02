@@ -22,7 +22,7 @@ type DDLCreateTable struct {
 	Checks      []*DDLCheck      `hcl:"check,block"`
 }
 
-var DDLCreateTableSchema = &hcl.BodySchema{
+var schemaCreateTable = &hcl.BodySchema{
 	Blocks: []hcl.BlockHeaderSchema{
 		{
 			Type:       "create_table",
@@ -41,22 +41,26 @@ func (d *DDLCreateTable) DecodeHCL(ctx *hcl.EvalContext, block *hcl.Block) error
 	d.Uniques = []*DDLUnique{}
 	d.Checks = []*DDLCheck{}
 
-	content, diags := block.Body.Content(DDLCreateTableSchema)
-	if diags.HasErrors() {
-		return fmt.Errorf("failed to decode `table` block: %s", diags.Error())
-	}
+	panic("Not implemented create table")
 
-	attrs, diags := block.Body.JustAttributes()
+	content, diags := block.Body.Content(schemaCreateTable)
 	if diags.HasErrors() {
-		return fmt.Errorf("failed to decode `table` attributes: %s", diags.Error())
-	}
-
-	for k, v := range attrs {
-		fmt.Println(k, v)
+		return fmt.Errorf("failed to decode `%s` block: %s", block.Type, diags.Error())
 	}
 
 	for _, b := range content.Blocks {
 		switch b.Type {
+
+		default:
+			return fmt.Errorf("Unknown block `%s` for `%s` block", b.Type, block.Type)
+		}
+	}
+
+	for k, _ := range content.Attributes {
+		switch k {
+
+		default:
+			return fmt.Errorf("Unknown attribute `%s` for `migration_set` block", k)
 		}
 	}
 

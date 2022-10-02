@@ -59,8 +59,26 @@ func (f *File) Decode(ctx *hcl.EvalContext) error {
 				return err
 			}
 			f.Migrations = append(f.Migrations, migration)
+
+		case "migration_set":
+			migrationSet := new(MigrationSet)
+			err := migrationSet.DecodeHCL(ctx, b)
+			if err != nil {
+				return err
+			}
+			f.MigrationSets = append(f.MigrationSets, migrationSet)
+
+		case "action":
+			action := new(Action)
+			err := action.DecodeHCL(ctx, b)
+			if err != nil {
+				return err
+			}
+			f.Actions = append(f.Actions, action)
+
+		default:
+			return fmt.Errorf("Unknown block `%s`", b.Type)
 		}
-		fmt.Println(b.Type)
 	}
 
 	return nil

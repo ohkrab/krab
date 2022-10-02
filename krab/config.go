@@ -2,8 +2,6 @@ package krab
 
 import (
 	"fmt"
-
-	"github.com/ohkrab/krab/krabhcl"
 )
 
 // Config represents all configuration loaded from directory.
@@ -36,30 +34,15 @@ func NewConfig(files []*File) (*Config, error) {
 		}
 	}
 
-	// parse refs
+	// connect by refs
 	for _, set := range c.MigrationSets {
-		set.Migrations = []*Migration{}
-
-		traversals := set.MigrationsExpr.Variables()
-		for _, t := range traversals {
-			addr, err := krabhcl.ParseTraversalToAddr(t)
-			if err != nil {
-				return nil, fmt.Errorf("Parsing migrations for set '%s' failed. %w", set.RefName, err)
-			}
+		for _, addr := range set.MigrationAddrs {
 			migration, found := c.Migrations[addr.OnlyRefNames()]
 			if !found {
 				return nil, fmt.Errorf("Migration Set references '%s' migration that does not exist", addr.OnlyRefNames())
 			}
 			set.Migrations = append(set.Migrations, migration)
 		}
-	}
-
-	// defaults
-	for _, defaultable := range c.MigrationSets {
-		defaultable.InitDefaults()
-	}
-	for _, defaultable := range c.Actions {
-		defaultable.InitDefaults()
 	}
 
 	// validate
