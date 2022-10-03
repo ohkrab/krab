@@ -1,6 +1,7 @@
 package krab
 
 import (
+	"fmt"
 	"io"
 
 	"github.com/hashicorp/hcl/v2"
@@ -12,22 +13,37 @@ import (
 type DDLDropTable struct {
 	krabhcl.Source
 
-	Name string `hcl:"name,label"`
+	Name string
 }
 
-var DDLDropTableSchema = hcl.BodySchema{
-	Blocks: []hcl.BlockHeaderSchema{
-		{
-			Type:       "drop_table",
-			LabelNames: []string{"name"},
-		},
-	},
-}
+var schemaDropTable = &hcl.BodySchema{}
 
 // DecodeHCL parses HCL into struct.
 func (d *DDLDropTable) DecodeHCL(ctx *hcl.EvalContext, block *hcl.Block) error {
-	panic("Not implemented Drop Table")
 	d.Source.Extract(block)
+
+	d.Name = block.Labels[0]
+
+	content, diags := block.Body.Content(schemaDropTable)
+	if diags.HasErrors() {
+		return fmt.Errorf("failed to decode `%s` block: %s", block.Type, diags.Error())
+	}
+
+	for _, b := range content.Blocks {
+		switch b.Type {
+
+		default:
+			return fmt.Errorf("Unknown block `%s` for `%s` block", b.Type, block.Type)
+		}
+	}
+
+	for k, _ := range content.Attributes {
+		switch k {
+
+		default:
+			return fmt.Errorf("Unknown attribute `%s` for `%s` block", k, block.Type)
+		}
+	}
 
 	return nil
 }

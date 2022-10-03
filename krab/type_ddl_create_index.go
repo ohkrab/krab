@@ -1,6 +1,7 @@
 package krab
 
 import (
+	"fmt"
 	"io"
 
 	"github.com/hashicorp/hcl/v2"
@@ -12,33 +13,89 @@ import (
 type DDLCreateIndex struct {
 	krabhcl.Source
 
-	Table string `hcl:"table,label"`
-	Name  string `hcl:"name,label"`
-
-	Unique       bool     `hcl:"unique,optional"`
-	Concurrently bool     `hcl:"concurrently,optional"`
-	Columns      []string `hcl:"columns"`
-	Include      []string `hcl:"include,optional"`
-	Using        string   `hcl:"using,optional"`
-	Where        string   `hcl:"where,optional"`
+	Table        string
+	Name         string
+	Unique       bool
+	Concurrently bool
+	Columns      []string
+	Include      []string
+	Using        string
+	Where        string
 }
 
-var DDLCreateIndexSchema = hcl.BodySchema{
+var schemaCreateIndex = &hcl.BodySchema{
 	Blocks: []hcl.BlockHeaderSchema{
 		{
-			Type:       "create_index",
-			LabelNames: []string{"table", "name"},
+			Type:       "column",
+			LabelNames: []string{"name", "type"},
 		},
+	},
+	Attributes: []hcl.AttributeSchema{
+		{Name: "columns", Required: true},
+		{Name: "include", Required: false},
+		{Name: "unique", Required: false},
+		{Name: "using", Required: false},
+		{Name: "where", Required: false},
+		{Name: "concurrently", Required: false},
 	},
 }
 
 // DecodeHCL parses HCL into struct.
 func (d *DDLCreateIndex) DecodeHCL(ctx *hcl.EvalContext, block *hcl.Block) error {
-	panic("Not implemented create index")
 	d.Source.Extract(block)
 
+	d.Unique = false
+	d.Concurrently = false
 	d.Columns = []string{}
 	d.Include = []string{}
+	d.Using = ""
+	d.Where = ""
+
+	content, diags := block.Body.Content(schemaCreateIndex)
+	if diags.HasErrors() {
+		return fmt.Errorf("failed to decode `%s` block: %s", block.Type, diags.Error())
+	}
+
+	for _, b := range content.Blocks {
+		switch b.Type {
+
+		default:
+			return fmt.Errorf("Unknown block `%s` for `%s` block", b.Type, block.Type)
+		}
+	}
+
+	for k, v := range content.Attributes {
+		switch k {
+		case "columns":
+			expr := krabhcl.Expression{Expr: v.Expr, EvalContext: ctx}
+			columns := expr.AsSliceString()
+			d.Columns = append(d.Columns, columns...)
+
+		case "include":
+			expr := krabhcl.Expression{Expr: v.Expr, EvalContext: ctx}
+			columns := expr.AsSliceString()
+			d.Include = append(d.Include, columns...)
+
+		case "unique":
+			expr := krabhcl.Expression{Expr: v.Expr, EvalContext: ctx}
+			d.Unique = expr.AsBool()
+
+		case "using":
+			expr := krabhcl.Expression{Expr: v.Expr, EvalContext: ctx}
+			d.Using = expr.AsString()
+
+		case "where":
+			expr := krabhcl.Expression{Expr: v.Expr, EvalContext: ctx}
+			d.Where = expr.AsString()
+
+		case "concurrently":
+			expr := krabhcl.Expression{Expr: v.Expr, EvalContext: ctx}
+			d.Concurrently = expr.AsBool()
+
+		default:
+			return fmt.Errorf("Unknown attribute `%s` for `%s` block", k, block.Type)
+		}
+	}
 
 	return nil
 }

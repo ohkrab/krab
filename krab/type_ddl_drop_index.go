@@ -1,6 +1,7 @@
 package krab
 
 import (
+	"fmt"
 	"io"
 
 	"github.com/hashicorp/hcl/v2"
@@ -12,25 +13,46 @@ import (
 type DDLDropIndex struct {
 	krabhcl.Source
 
-	Name string `hcl:"name,label"`
-
-	Cascade      bool `hcl:"cascade,optional"`
-	Concurrently bool `hcl:"concurrently,optional"`
+	Name         string
+	Cascade      bool
+	Concurrently bool
 }
 
-var DDLDropIndexSchema = hcl.BodySchema{
-	Blocks: []hcl.BlockHeaderSchema{
-		{
-			Type:       "drop_index",
-			LabelNames: []string{"name"},
-		},
+var schemaDropIndex = &hcl.BodySchema{
+	Blocks: []hcl.BlockHeaderSchema{},
+	Attributes: []hcl.AttributeSchema{
+		{Name: "cascade", Required: false},
+		{Name: "concurrently", Required: false},
 	},
 }
 
 // DecodeHCL parses HCL into struct.
 func (d *DDLDropIndex) DecodeHCL(ctx *hcl.EvalContext, block *hcl.Block) error {
-	panic("Not implemented drop index")
 	d.Source.Extract(block)
+
+	d.Name = block.Labels[0]
+	d.Cascade = false
+	d.Concurrently = false
+
+	content, diags := block.Body.Content(schemaDropIndex)
+	if diags.HasErrors() {
+		return fmt.Errorf("failed to decode `%s` block: %s", block.Type, diags.Error())
+	}
+
+	for k, v := range content.Attributes {
+		switch k {
+		case "concurrently":
+			expr := krabhcl.Expression{Expr: v.Expr, EvalContext: ctx}
+			d.Concurrently = expr.AsBool()
+
+		case "cascade":
+			expr := krabhcl.Expression{Expr: v.Expr, EvalContext: ctx}
+			d.Concurrently = expr.AsBool()
+
+		default:
+			return fmt.Errorf("Unknown attribute `%s` for `%s` block", k, block.Type)
+		}
+	}
 
 	return nil
 }

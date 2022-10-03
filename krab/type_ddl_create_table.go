@@ -13,7 +13,7 @@ import (
 type DDLCreateTable struct {
 	krabhcl.Source
 
-	Name        string           `hcl:"name,label"`
+	Name        string
 	Unlogged    bool             `hcl:"unlogged,optional"`
 	Columns     []*DDLColumn     `hcl:"column,block"`
 	PrimaryKeys []*DDLPrimaryKey `hcl:"primary_key,block"`
@@ -25,9 +25,28 @@ type DDLCreateTable struct {
 var schemaCreateTable = &hcl.BodySchema{
 	Blocks: []hcl.BlockHeaderSchema{
 		{
-			Type:       "create_table",
+			Type:       "column",
+			LabelNames: []string{"name", "type"},
+		},
+		{
+			Type:       "primary_key",
+			LabelNames: []string{},
+		},
+		{
+			Type:       "foreign_key",
+			LabelNames: []string{},
+		},
+		{
+			Type:       "unique",
+			LabelNames: []string{},
+		},
+		{
+			Type:       "check",
 			LabelNames: []string{"name"},
 		},
+	},
+	Attributes: []hcl.AttributeSchema{
+		{Name: "unlogged", Required: false},
 	},
 }
 
@@ -35,13 +54,12 @@ var schemaCreateTable = &hcl.BodySchema{
 func (d *DDLCreateTable) DecodeHCL(ctx *hcl.EvalContext, block *hcl.Block) error {
 	d.Source.Extract(block)
 
+	d.Name = block.Labels[0]
 	d.Columns = []*DDLColumn{}
 	d.PrimaryKeys = []*DDLPrimaryKey{}
 	d.ForeignKeys = []*DDLForeignKey{}
 	d.Uniques = []*DDLUnique{}
 	d.Checks = []*DDLCheck{}
-
-	panic("Not implemented create table")
 
 	content, diags := block.Body.Content(schemaCreateTable)
 	if diags.HasErrors() {
@@ -50,17 +68,59 @@ func (d *DDLCreateTable) DecodeHCL(ctx *hcl.EvalContext, block *hcl.Block) error
 
 	for _, b := range content.Blocks {
 		switch b.Type {
+		case "column":
+			column := new(DDLColumn)
+			err := column.DecodeHCL(ctx, b)
+			if err != nil {
+				return err
+			}
+			d.Columns = append(d.Columns, column)
+
+		case "primary_key":
+			pk := new(DDLPrimaryKey)
+			err := pk.DecodeHCL(ctx, b)
+			if err != nil {
+				return err
+			}
+			d.PrimaryKeys = append(d.PrimaryKeys, pk)
+
+		case "foreign_key":
+			fk := new(DDLForeignKey)
+			err := fk.DecodeHCL(ctx, b)
+			if err != nil {
+				return err
+			}
+			d.ForeignKeys = append(d.ForeignKeys, fk)
+
+		case "unique":
+			unique := new(DDLUnique)
+			err := unique.DecodeHCL(ctx, b)
+			if err != nil {
+				return err
+			}
+			d.Uniques = append(d.Uniques, unique)
+
+		case "check":
+			check := new(DDLCheck)
+			err := check.DecodeHCL(ctx, b)
+			if err != nil {
+				return err
+			}
+			d.Checks = append(d.Checks, check)
 
 		default:
 			return fmt.Errorf("Unknown block `%s` for `%s` block", b.Type, block.Type)
 		}
 	}
 
-	for k, _ := range content.Attributes {
+	for k, v := range content.Attributes {
 		switch k {
+		case "unlogged":
+			expr := krabhcl.Expression{Expr: v.Expr, EvalContext: ctx}
+			d.Unlogged = expr.AsBool()
 
 		default:
-			return fmt.Errorf("Unknown attribute `%s` for `migration_set` block", k)
+			return fmt.Errorf("Unknown attribute `%s` for `%s` block", k, block.Type)
 		}
 	}
 

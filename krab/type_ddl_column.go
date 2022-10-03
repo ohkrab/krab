@@ -3,23 +3,93 @@ package krab
 import (
 	"fmt"
 	"io"
-	"strings"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/ohkrab/krab/krabdb"
 	"github.com/ohkrab/krab/krabhcl"
-	"github.com/wzshiming/ctc"
-	"github.com/zclconf/go-cty/cty"
 )
 
 // DDLColumn DSL for table DDL.
 type DDLColumn struct {
-	Name      string              `hcl:"name,label"`
-	Type      string              `hcl:"type,label"`
-	Null      *bool               `hcl:"null,optional"`
-	Identity  *DDLIdentity        `hcl:"identity,block"`
-	Default   hcl.Expression      `hcl:"default,optional"`
-	Generated *DDLGeneratedColumn `hcl:"generated,block"`
+	krabhcl.Source
+
+	Name      string
+	Type      string
+	Null      bool
+	Default   string
+	Identity  *DDLIdentity
+	Generated *DDLGeneratedColumn
+}
+
+var schemaColumn = &hcl.BodySchema{
+	Blocks: []hcl.BlockHeaderSchema{
+		{
+			Type:       "generated",
+			LabelNames: []string{},
+		},
+		{
+			Type:       "identity",
+			LabelNames: []string{},
+		},
+	},
+	Attributes: []hcl.AttributeSchema{
+		{Name: "null", Required: false},
+		{Name: "default", Required: false},
+	},
+}
+
+// DecodeHCL parses HCL into struct.
+func (d *DDLColumn) DecodeHCL(ctx *hcl.EvalContext, block *hcl.Block) error {
+	d.Source.Extract(block)
+
+	d.Name = block.Labels[0]
+	d.Type = block.Labels[1]
+	d.Null = true
+	d.Identity = nil
+	d.Generated = nil
+
+	content, diags := block.Body.Content(schemaColumn)
+	if diags.HasErrors() {
+		return fmt.Errorf("failed to decode `%s` block: %s", block.Type, diags.Error())
+	}
+
+	for _, b := range content.Blocks {
+		switch b.Type {
+		case "identity":
+			d.Identity = &DDLIdentity{}
+			err := d.Identity.DecodeHCL(ctx, b)
+			if err != nil {
+				return err
+			}
+
+		case "generated":
+			d.Generated = &DDLGeneratedColumn{}
+			err := d.Generated.DecodeHCL(ctx, b)
+			if err != nil {
+				return err
+			}
+
+		default:
+			return fmt.Errorf("Unknown block `%s` for `%s` block", b.Type, block.Type)
+		}
+	}
+
+	for k, v := range content.Attributes {
+		switch k {
+		case "null":
+			expr := krabhcl.Expression{Expr: v.Expr, EvalContext: ctx}
+			d.Null = expr.AsBool()
+
+		case "default":
+			expr := krabhcl.Expression{Expr: v.Expr, EvalContext: ctx}
+			d.Default = expr.AsString()
+
+		default:
+			return fmt.Errorf("Unknown attribute `%s` for `%s` block", k, block.Type)
+		}
+	}
+
+	return nil
 }
 
 // ToSQL converts migration definition to SQL.
@@ -28,13 +98,8 @@ func (d *DDLColumn) ToSQL(w io.StringWriter) {
 	w.WriteString(" ")
 	w.WriteString(d.Type)
 
-	if d.Null != nil {
-		w.WriteString(" ")
-		if *d.Null {
-			w.WriteString("NULL")
-		} else {
-			w.WriteString("NOT NULL")
-		}
+	if !d.Null {
+		w.WriteString(" NOT NULL")
 	}
 
 	if d.Identity != nil {
@@ -47,49 +112,8 @@ func (d *DDLColumn) ToSQL(w io.StringWriter) {
 		d.Generated.ToSQL(w)
 	}
 
-	defaultExpr := krabhcl.Expression{Expr: d.Default}
-	if defaultExpr.Ok() {
+	if d.Default != "" {
 		w.WriteString(" DEFAULT ")
-
-		switch defaultExpr.Type() {
-		case cty.Bool:
-			w.WriteString(krabdb.Quote(defaultExpr.AsBool()))
-
-		case cty.Number:
-			switch strings.ToLower(d.Type) {
-			case "smallint", "integer", "int", "bigint", "smallserial", "serial", "bigserial":
-				w.WriteString(krabdb.Quote(defaultExpr.AsInt64()))
-			case "real", "double precision":
-				w.WriteString(krabdb.Quote(defaultExpr.AsFloat64()))
-			default:
-				//TODO: implement big numbers (numeric, decimal)
-				panic(fmt.Sprintf(
-					"%sCannot map default type of %s to SQL, if you see this error please report the issue with example so I can fix this%s",
-					ctc.BackgroundRed|ctc.ForegroundYellow,
-					d.Type,
-					ctc.Reset,
-				))
-			}
-
-		case cty.String:
-			w.WriteString(krabdb.Quote(defaultExpr.AsString()))
-
-		default:
-			switch {
-			case defaultExpr.Type().IsObjectType():
-				w.WriteString("'{}'")
-
-			case defaultExpr.Type().IsTupleType():
-				w.WriteString("'[]'")
-
-			default:
-				panic(fmt.Sprintf(
-					"%sCannot map default type %s to SQL, if you see this error please report the issue with example so I can fix this%s",
-					ctc.BackgroundRed|ctc.ForegroundYellow,
-					d.Type,
-					ctc.Reset,
-				))
-			}
-		}
+		w.WriteString(d.Default)
 	}
 }

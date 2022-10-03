@@ -73,6 +73,24 @@ func (e Expression) AsSliceAddr() []*Addr {
 	return addrs
 }
 
+func (e Expression) AsSliceString() []string {
+	val, _ := e.Expr.Value(e.EvalContext)
+	if val.Type().IsTupleType() && val.IsWhollyKnown() {
+		vals := val.AsValueSlice()
+		ss := []string{}
+		for _, v := range vals {
+			var str string
+			if err := gocty.FromCtyValue(v, &str); err == nil {
+				ss = append(ss, str)
+			} else {
+				return nil
+			}
+		}
+		return ss
+	}
+	return nil
+}
+
 func (e Expression) Ok() bool {
 	val, _ := e.Expr.Value(e.EvalContext)
 	return val.IsWhollyKnown() && !val.IsNull()
