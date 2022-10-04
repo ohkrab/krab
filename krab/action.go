@@ -70,7 +70,11 @@ func (a *Action) DecodeHCL(ctx *hcl.EvalContext, block *hcl.Block) error {
 		switch k {
 		case "sql":
 			expr := krabhcl.Expression{Expr: v.Expr, EvalContext: ctx}
-			a.SQL = expr.AsString()
+			val, err := expr.String()
+			if err != nil {
+				return err
+			}
+			a.SQL = val
 
 		default:
 			return fmt.Errorf("Unknown attribute `%s` for `%s` block", k, block.Type)

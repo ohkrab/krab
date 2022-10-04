@@ -78,12 +78,19 @@ func (ms *MigrationSet) DecodeHCL(ctx *hcl.EvalContext, block *hcl.Block) error 
 		switch k {
 		case "migrations":
 			expr := krabhcl.Expression{Expr: v.Expr, EvalContext: ctx}
-			addrs := expr.AsSliceAddr()
-			ms.MigrationAddrs = append(ms.MigrationAddrs, addrs...)
+			val, err := expr.SliceAddr()
+			if err != nil {
+				return err
+			}
+			ms.MigrationAddrs = append(ms.MigrationAddrs, val...)
 
 		case "schema":
 			expr := krabhcl.Expression{Expr: v.Expr, EvalContext: ctx}
-			ms.Schema = expr.AsString()
+			val, err := expr.String()
+			if err != nil {
+				return err
+			}
+			ms.Schema = val
 
 		default:
 			return fmt.Errorf("Unknown attribute `%s` for `migration_set` block", k)

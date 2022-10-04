@@ -121,11 +121,19 @@ func (a *Argument) DecodeHCL(ctx *hcl.EvalContext, block *hcl.Block) error {
 		switch k {
 		case "type":
 			expr := krabhcl.Expression{Expr: v.Expr, EvalContext: ctx}
-			a.Type = expr.AsString()
+			val, err := expr.String()
+			if err != nil {
+				return err
+			}
+			a.Type = val
 
 		case "description":
 			expr := krabhcl.Expression{Expr: v.Expr, EvalContext: ctx}
-			a.Description = expr.AsString()
+			val, err := expr.String()
+			if err != nil {
+				return err
+			}
+			a.Description = val
 
 		default:
 			return fmt.Errorf("Unknown attribute `%s` for `migration` block", k)

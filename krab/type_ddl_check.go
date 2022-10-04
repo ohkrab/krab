@@ -47,7 +47,11 @@ func (d *DDLCheck) DecodeHCL(ctx *hcl.EvalContext, block *hcl.Block) error {
 		switch k {
 		case "expression":
 			expr := krabhcl.Expression{Expr: v.Expr, EvalContext: ctx}
-			d.Expression = expr.AsString()
+			val, err := expr.String()
+			if err != nil {
+				return err
+			}
+			d.Expression = val
 
 		default:
 			return fmt.Errorf("Unknown attribute `%s` for `%s` block", k, block.Type)

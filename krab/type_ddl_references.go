@@ -49,16 +49,27 @@ func (d *DDLReferences) DecodeHCL(ctx *hcl.EvalContext, block *hcl.Block) error 
 		switch k {
 		case "columns":
 			expr := krabhcl.Expression{Expr: v.Expr, EvalContext: ctx}
-			columns := expr.AsSliceString()
-			d.Columns = append(d.Columns, columns...)
+			val, err := expr.SliceString()
+			if err != nil {
+				return err
+			}
+			d.Columns = append(d.Columns, val...)
 
 		case "on_delete":
 			expr := krabhcl.Expression{Expr: v.Expr, EvalContext: ctx}
-			d.OnDelete = expr.AsString()
+			val, err := expr.String()
+			if err != nil {
+				return err
+			}
+			d.OnDelete = val
 
 		case "on_update":
 			expr := krabhcl.Expression{Expr: v.Expr, EvalContext: ctx}
-			d.OnUpdate = expr.AsString()
+			val, err := expr.String()
+			if err != nil {
+				return err
+			}
+			d.OnUpdate = val
 
 		default:
 			return fmt.Errorf("Unknown attribute `%s` for `%s` block", k, block.Type)

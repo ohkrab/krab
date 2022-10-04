@@ -39,7 +39,11 @@ func (d *DDLGeneratedColumn) DecodeHCL(ctx *hcl.EvalContext, block *hcl.Block) e
 		switch k {
 		case "as":
 			expr := krabhcl.Expression{Expr: v.Expr, EvalContext: ctx}
-			d.As = expr.AsString()
+			val, err := expr.String()
+			if err != nil {
+				return err
+			}
+			d.As = val
 
 		default:
 			return fmt.Errorf("Unknown attribute `%s` for `%s` block", k, block.Type)

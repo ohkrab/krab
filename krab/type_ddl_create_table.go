@@ -117,7 +117,11 @@ func (d *DDLCreateTable) DecodeHCL(ctx *hcl.EvalContext, block *hcl.Block) error
 		switch k {
 		case "unlogged":
 			expr := krabhcl.Expression{Expr: v.Expr, EvalContext: ctx}
-			d.Unlogged = expr.AsBool()
+			val, err := expr.Bool()
+			if err != nil {
+				return err
+			}
+			d.Unlogged = val
 
 		default:
 			return fmt.Errorf("Unknown attribute `%s` for `%s` block", k, block.Type)

@@ -70,29 +70,51 @@ func (d *DDLCreateIndex) DecodeHCL(ctx *hcl.EvalContext, block *hcl.Block) error
 		switch k {
 		case "columns":
 			expr := krabhcl.Expression{Expr: v.Expr, EvalContext: ctx}
-			columns := expr.AsSliceString()
-			d.Columns = append(d.Columns, columns...)
+			val, err := expr.SliceString()
+			if err != nil {
+				return err
+			}
+			d.Columns = append(d.Columns, val...)
 
 		case "include":
 			expr := krabhcl.Expression{Expr: v.Expr, EvalContext: ctx}
-			columns := expr.AsSliceString()
-			d.Include = append(d.Include, columns...)
+			val, err := expr.SliceString()
+			if err != nil {
+				return err
+			}
+			d.Include = append(d.Include, val...)
 
 		case "unique":
 			expr := krabhcl.Expression{Expr: v.Expr, EvalContext: ctx}
-			d.Unique = expr.AsBool()
+			val, err := expr.Bool()
+			if err != nil {
+				return err
+			}
+			d.Unique = val
 
 		case "using":
 			expr := krabhcl.Expression{Expr: v.Expr, EvalContext: ctx}
-			d.Using = expr.AsString()
+			val, err := expr.String()
+			if err != nil {
+				return err
+			}
+			d.Using = val
 
 		case "where":
 			expr := krabhcl.Expression{Expr: v.Expr, EvalContext: ctx}
-			d.Where = expr.AsString()
+			val, err := expr.String()
+			if err != nil {
+				return err
+			}
+			d.Where = val
 
 		case "concurrently":
 			expr := krabhcl.Expression{Expr: v.Expr, EvalContext: ctx}
-			d.Concurrently = expr.AsBool()
+			val, err := expr.Bool()
+			if err != nil {
+				return err
+			}
+			d.Concurrently = val
 
 		default:
 			return fmt.Errorf("Unknown attribute `%s` for `%s` block", k, block.Type)

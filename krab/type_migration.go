@@ -116,11 +116,19 @@ func (m *Migration) DecodeHCL(ctx *hcl.EvalContext, block *hcl.Block) error {
 		switch k {
 		case "version":
 			expr := krabhcl.Expression{Expr: v.Expr, EvalContext: ctx}
-			m.Version = expr.AsString()
+			val, err := expr.String()
+			if err != nil {
+				return err
+			}
+			m.Version = val
 
 		case "transaction":
 			expr := krabhcl.Expression{Expr: v.Expr, EvalContext: ctx}
-			m.Transaction = expr.AsBool()
+			val, err := expr.Bool()
+			if err != nil {
+				return err
+			}
+			m.Transaction = val
 
 		default:
 			return fmt.Errorf("Unknown attribute `%s` for `migration` block", k)
@@ -197,11 +205,11 @@ func (m *MigrationUpOrDown) DecodeHCL(ctx *hcl.EvalContext, block *hcl.Block) er
 		case "sql":
 			m.AttrDefRanges["sql"] = v.Range
 			expr := krabhcl.Expression{Expr: v.Expr, EvalContext: ctx}
-			sql, err := expr.TryString()
+			val, err := expr.String()
 			if err != nil {
 				return err
 			}
-			m.SQL = sql
+			m.SQL = val
 
 		default:
 			return fmt.Errorf("Unknown attribute `%s` for `%s` block", k, block.Type)

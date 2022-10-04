@@ -46,13 +46,19 @@ func (d *DDLUnique) DecodeHCL(ctx *hcl.EvalContext, block *hcl.Block) error {
 		switch k {
 		case "columns":
 			expr := krabhcl.Expression{Expr: v.Expr, EvalContext: ctx}
-			columns := expr.AsSliceString()
-			d.Columns = append(d.Columns, columns...)
+			val, err := expr.SliceString()
+			if err != nil {
+				return err
+			}
+			d.Columns = append(d.Columns, val...)
 
 		case "include":
 			expr := krabhcl.Expression{Expr: v.Expr, EvalContext: ctx}
-			includes := expr.AsSliceString()
-			d.Include = append(d.Include, includes...)
+			val, err := expr.SliceString()
+			if err != nil {
+				return err
+			}
+			d.Include = append(d.Include, val...)
 
 		default:
 			return fmt.Errorf("Unknown attribute `%s` for `%s` block", k, block.Type)
