@@ -197,7 +197,11 @@ func (m *MigrationUpOrDown) DecodeHCL(ctx *hcl.EvalContext, block *hcl.Block) er
 		case "sql":
 			m.AttrDefRanges["sql"] = v.Range
 			expr := krabhcl.Expression{Expr: v.Expr, EvalContext: ctx}
-			m.SQL = expr.AsString()
+			sql, err := expr.TryString()
+			if err != nil {
+				return err
+			}
+			m.SQL = sql
 
 		default:
 			return fmt.Errorf("Unknown attribute `%s` for `%s` block", k, block.Type)

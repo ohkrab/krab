@@ -38,7 +38,7 @@ migration "create_animals" {
 	  
 	  column "extinct" "boolean" {
 	    null    = false
-		default = true
+		default = "TRUE"
 	  }
 
 	  column "weight_kg" "int" { null = false }
@@ -107,8 +107,8 @@ CREATE TABLE "categories"(
 		c.AssertSQLContains(t, `
 CREATE UNLOGGED TABLE "animals"(
   "id" bigint GENERATED ALWAYS AS IDENTITY,
-  "name" varchar NULL,
-  "extinct" boolean NOT NULL DEFAULT true,
+  "name" varchar,
+  "extinct" boolean NOT NULL DEFAULT TRUE,
   "weight_kg" int NOT NULL,
   "weight_g" int GENERATED ALWAYS AS (weight_kg * 1000) STORED,
   "category_id" bigint NOT NULL
@@ -136,13 +136,13 @@ migration "create_animals" {
 
   up {
 	create_table "animals" {
-	  column "id"      "bigint"           { default = 1 }
-	  column "x"       "real"             { default = 1.2 }
-	  column "y"       "double precision" { default = 1.3 }
-	  column "name"    "varchar"          { default = "hello" }
-	  column "extinct" "boolean"          { default = true }
-	  column "map"     "jsonb"            { default = {} }
-	  column "list"    "jsonb"            { default = [] }
+	  column "id"      "bigint"           { default = "1" }
+	  column "x"       "real"             { default = "1.2" }
+	  column "y"       "double precision" { default = "1.3" }
+	  column "name"    "varchar"          { default = "'hello'" }
+	  column "extinct" "boolean"          { default = "TRUE" }
+	  column "map"     "jsonb"            { default = "'{}'" }
+	  column "list"    "jsonb"            { default = "'[]'" }
 	}
   }
 
@@ -163,7 +163,7 @@ migration_set "animals" {
 		c.AssertSQLContains(t, "DEFAULT 1.2")
 		c.AssertSQLContains(t, "DEFAULT 1.3")
 		c.AssertSQLContains(t, "DEFAULT 'hello'")
-		c.AssertSQLContains(t, "DEFAULT true")
+		c.AssertSQLContains(t, "DEFAULT TRUE")
 		c.AssertSQLContains(t, "DEFAULT '{}'")
 		c.AssertSQLContains(t, "DEFAULT '[]'")
 	}

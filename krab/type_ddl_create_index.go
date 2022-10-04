@@ -44,6 +44,8 @@ var schemaCreateIndex = &hcl.BodySchema{
 func (d *DDLCreateIndex) DecodeHCL(ctx *hcl.EvalContext, block *hcl.Block) error {
 	d.Source.Extract(block)
 
+	d.Table = block.Labels[0]
+	d.Name = block.Labels[1]
 	d.Unique = false
 	d.Concurrently = false
 	d.Columns = []string{}

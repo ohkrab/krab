@@ -54,6 +54,19 @@ func (e Expression) AsFloat64() float64 {
 	return 0
 }
 
+func (e Expression) TryString() (string, error) {
+	val, diags := e.Expr.Value(e.EvalContext)
+	if diags.HasErrors() {
+		return "", diags.Errs()[0]
+	}
+	var str string
+	err := gocty.FromCtyValue(val, &str)
+	if err != nil {
+		return "", err
+	}
+	return str, nil
+}
+
 func (e Expression) AsString() string {
 	val, _ := e.Expr.Value(e.EvalContext)
 	var str string

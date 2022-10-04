@@ -97,6 +97,13 @@ func (m *cliMock) AssertSuccessfulRun(t *testing.T, args []string) bool {
 		if assert.Equal(t, 0, m.exitCode, "Exit code should be eql to 0") {
 			return true
 		} else {
+			fmt.Println("statements debug:")
+			for _, sql := range m.connection.recorder {
+				fmt.Println("---")
+				fmt.Println(ctc.ForegroundBrightRed, sql, ctc.Reset)
+			}
+			fmt.Println("---")
+			fmt.Println(ctc.ForegroundRed, m.uiErrorWriter.String(), ctc.Reset)
 			fmt.Println(ctc.ForegroundRed, m.uiErrorWriter.String(), ctc.Reset)
 			return false
 		}

@@ -47,7 +47,7 @@ func (d *DDLDropIndex) DecodeHCL(ctx *hcl.EvalContext, block *hcl.Block) error {
 
 		case "cascade":
 			expr := krabhcl.Expression{Expr: v.Expr, EvalContext: ctx}
-			d.Concurrently = expr.AsBool()
+			d.Cascade = expr.AsBool()
 
 		default:
 			return fmt.Errorf("Unknown attribute `%s` for `%s` block", k, block.Type)
