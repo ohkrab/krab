@@ -12,6 +12,8 @@ import (
 
 // DDLUnique constraint DSL for table DDL.
 type DDLUnique struct {
+	krabhcl.Source
+
 	Columns []string
 	Include []string
 }
@@ -26,6 +28,8 @@ var schemaUnique = &hcl.BodySchema{
 
 // DecodeHCL parses HCL into struct.
 func (d *DDLUnique) DecodeHCL(ctx *hcl.EvalContext, block *hcl.Block) error {
+	d.Source.Extract(block)
+
 	d.Columns = []string{}
 	d.Include = []string{}
 

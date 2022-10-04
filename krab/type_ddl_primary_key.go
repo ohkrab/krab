@@ -12,6 +12,8 @@ import (
 
 // DDLPrimaryKey constraint DSL for table DDL.
 type DDLPrimaryKey struct {
+	krabhcl.Source
+
 	Columns []string
 	Include []string
 }
@@ -26,6 +28,8 @@ var schemaPrimaryKey = &hcl.BodySchema{
 
 // DecodeHCL parses HCL into struct.
 func (d *DDLPrimaryKey) DecodeHCL(ctx *hcl.EvalContext, block *hcl.Block) error {
+	d.Source.Extract(block)
+
 	d.Columns = []string{}
 	d.Include = []string{}
 

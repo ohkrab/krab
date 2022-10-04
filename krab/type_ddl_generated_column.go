@@ -10,6 +10,8 @@ import (
 
 // DDLGeneratedColumn DSL.
 type DDLGeneratedColumn struct {
+	krabhcl.Source
+
 	As string
 }
 
@@ -22,6 +24,8 @@ var schemaGeneratedColumn = &hcl.BodySchema{
 
 // DecodeHCL parses HCL into struct.
 func (d *DDLGeneratedColumn) DecodeHCL(ctx *hcl.EvalContext, block *hcl.Block) error {
+	d.Source.Extract(block)
+
 	content, diags := block.Body.Content(schemaGeneratedColumn)
 	if diags.HasErrors() {
 		return fmt.Errorf("failed to decode `%s` block: %s", block.Type, diags.Error())

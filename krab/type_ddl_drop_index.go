@@ -39,6 +39,14 @@ func (d *DDLDropIndex) DecodeHCL(ctx *hcl.EvalContext, block *hcl.Block) error {
 		return fmt.Errorf("failed to decode `%s` block: %s", block.Type, diags.Error())
 	}
 
+	for _, b := range content.Blocks {
+		switch b.Type {
+
+		default:
+			return fmt.Errorf("Unknown block `%s` for `%s` block", b.Type, block.Type)
+		}
+	}
+
 	for k, v := range content.Attributes {
 		switch k {
 		case "concurrently":

@@ -5,10 +5,12 @@ import (
 	"io"
 
 	"github.com/hashicorp/hcl/v2"
+	"github.com/ohkrab/krab/krabhcl"
 )
 
 // DDLIdentity DSL.
 type DDLIdentity struct {
+	krabhcl.Source
 }
 
 var schemaIdentity = &hcl.BodySchema{
@@ -18,6 +20,8 @@ var schemaIdentity = &hcl.BodySchema{
 
 // DecodeHCL parses HCL into struct.
 func (d *DDLIdentity) DecodeHCL(ctx *hcl.EvalContext, block *hcl.Block) error {
+	d.Source.Extract(block)
+
 	content, diags := block.Body.Content(schemaColumn)
 	if diags.HasErrors() {
 		return fmt.Errorf("failed to decode `%s` block: %s", block.Type, diags.Error())

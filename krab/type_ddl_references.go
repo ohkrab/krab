@@ -12,6 +12,8 @@ import (
 
 // DDLReferences DSL for ForeignKey.
 type DDLReferences struct {
+	krabhcl.Source
+
 	Table    string
 	Columns  []string
 	OnDelete string
@@ -29,6 +31,8 @@ var schemaForeignKeyReferences = &hcl.BodySchema{
 
 // DecodeHCL parses HCL into struct.
 func (d *DDLReferences) DecodeHCL(ctx *hcl.EvalContext, block *hcl.Block) error {
+	d.Source.Extract(block)
+
 	d.Columns = []string{}
 	d.Table = block.Labels[0]
 
