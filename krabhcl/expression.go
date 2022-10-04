@@ -29,11 +29,11 @@ func (e Expression) Addr() (Addr, error) {
 func (e Expression) Bool() (bool, error) {
 	val, diags := e.Expr.Value(e.EvalContext)
 	if diags.HasErrors() {
-		return false, diags.Errs()[0]
+		return false, fmt.Errorf("%v %w", e.Expr.Range(), diags.Errs()[0])
 	}
 	var boolean bool
 	if err := gocty.FromCtyValue(val, &boolean); err != nil {
-		return false, err
+		return false, fmt.Errorf("%v %w", e.Expr.Range(), err)
 	}
 	return boolean, nil
 }
@@ -41,11 +41,11 @@ func (e Expression) Bool() (bool, error) {
 func (e Expression) Int64() (int64, error) {
 	val, diags := e.Expr.Value(e.EvalContext)
 	if diags.HasErrors() {
-		return 0, diags.Errs()[0]
+		return 0, fmt.Errorf("%v %w", e.Expr.Range(), diags.Errs()[0])
 	}
 	var number int64
 	if err := gocty.FromCtyValue(val, &number); err != nil {
-		return 0, err
+		return 0, fmt.Errorf("%v %w", e.Expr.Range(), err)
 	}
 	return number, nil
 }
@@ -53,11 +53,11 @@ func (e Expression) Int64() (int64, error) {
 func (e Expression) AsFloat64() (float64, error) {
 	val, diags := e.Expr.Value(e.EvalContext)
 	if diags.HasErrors() {
-		return 0, diags.Errs()[0]
+		return 0, fmt.Errorf("%v %w", e.Expr.Range(), diags.Errs()[0])
 	}
 	var number float64
 	if err := gocty.FromCtyValue(val, &number); err != nil {
-		return 0, err
+		return 0, fmt.Errorf("%v %w", e.Expr.Range(), err)
 	}
 	return number, nil
 }
@@ -65,12 +65,12 @@ func (e Expression) AsFloat64() (float64, error) {
 func (e Expression) String() (string, error) {
 	val, diags := e.Expr.Value(e.EvalContext)
 	if diags.HasErrors() {
-		return "", diags.Errs()[0]
+		return "", fmt.Errorf("%v %w", e.Expr.Range(), diags.Errs()[0])
 	}
 	var str string
 	err := gocty.FromCtyValue(val, &str)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("%v %w", e.Expr.Range(), err)
 	}
 	return str, nil
 }
@@ -91,7 +91,7 @@ func (e Expression) SliceAddr() ([]*Addr, error) {
 func (e Expression) SliceString() ([]string, error) {
 	val, diags := e.Expr.Value(e.EvalContext)
 	if diags.HasErrors() {
-		return nil, diags.Errs()[0]
+		return nil, fmt.Errorf("%v %w", e.Expr.Range(), diags.Errs()[0])
 	}
 	if val.Type().IsTupleType() && val.IsWhollyKnown() {
 		vals := val.AsValueSlice()
@@ -101,10 +101,10 @@ func (e Expression) SliceString() ([]string, error) {
 			if err := gocty.FromCtyValue(v, &str); err == nil {
 				ss = append(ss, str)
 			} else {
-				return nil, err
+				return nil, fmt.Errorf("%v %w", e.Expr.Range(), err)
 			}
 		}
 		return ss, nil
 	}
-	return nil, fmt.Errorf("Inwalid types in a list, expected strings")
+	return nil, fmt.Errorf("%v, Inwalid types in a list, expected strings", e.Expr.Range())
 }
