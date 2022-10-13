@@ -78,14 +78,19 @@ func (a *App) RegisterAll() {
 				return &krab.ActionTestRun{Ui: a.Ui, Cmd: c}
 			})
 
+		case *krab.CmdGenMigration:
+			a.RegisterCmd(name, func() Command {
+				return &krab.ActionGenMigration{Ui: a.Ui, Cmd: c}
+			})
+
 		default:
 			panic(fmt.Sprintf("Not implemented: failed to register CLI action for command %T", c))
 		}
 	}
 
-	a.RegisterCmd("agent", func() Command {
-		return &CmdAgent{Registry: a.Registry}
-	})
+	// a.RegisterCmd("agent", func() Command {
+	// 	return &CmdAgent{Registry: a.Registry}
+	// })
 }
 
 func (a *App) Run() (int, error) {

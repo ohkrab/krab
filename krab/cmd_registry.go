@@ -3,6 +3,7 @@ package krab
 import (
 	"github.com/ohkrab/krab/krabdb"
 	"github.com/ohkrab/krab/krabenv"
+	"github.com/spf13/afero"
 )
 
 // CmdRegistry is a list of registred commands.
@@ -16,8 +17,10 @@ func (r *CmdRegistry) Register(c Cmd) {
 }
 
 // RegisterAll registers all commands in the registry.
-func (r *CmdRegistry) RegisterAll(config *Config, conn krabdb.Connection) {
+func (r *CmdRegistry) RegisterAll(config *Config, fs afero.Afero, conn krabdb.Connection) {
 	r.Register(&CmdVersion{})
+
+	r.Register(&CmdGenMigration{FS: fs})
 
 	for _, action := range config.Actions {
 		action := action

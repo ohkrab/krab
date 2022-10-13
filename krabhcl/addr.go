@@ -13,6 +13,8 @@ type Addr struct {
 	Labels  []string
 }
 
+var NullAddr Addr = Addr{Keyword: "", Labels: []string{}}
+
 func AddrFromStrings(s []string) Addr {
 	a := Addr{}
 	for i := 0; i < len(s); i++ {

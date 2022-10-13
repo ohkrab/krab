@@ -32,7 +32,7 @@ func main() {
 	conn := &krabdb.DefaultConnection{}
 
 	registry := &krab.CmdRegistry{Commands: []krab.Cmd{}}
-	registry.RegisterAll(config, conn)
+	registry.RegisterAll(config, parser.FS, conn)
 	// agent := krabapi.Agent{Registry: registry}
 	// agent.Run()
 

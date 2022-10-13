@@ -1,5 +1,7 @@
 FROM golang:1.16-alpine AS build
 
+LABEL org.opencontainers.image.source https://github.com/ohkrab/krab
+
 WORKDIR /src
 COPY go.* ./
 RUN go mod download
