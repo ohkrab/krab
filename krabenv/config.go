@@ -21,3 +21,7 @@ func Env() string {
 func Test() bool {
 	return Env() == "test"
 }
+
+func Ext() string {
+	return ".krab.hcl"
+}

@@ -8,6 +8,7 @@ import (
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/hashicorp/hcl2/hclparse"
+	"github.com/ohkrab/krab/krabenv"
 	"github.com/ohkrab/krab/krabfn"
 	"github.com/spf13/afero"
 )
@@ -112,15 +113,15 @@ func (p *Parser) dirFiles(dir string) ([]string, error) {
 }
 
 func fileExt(path string) string {
-	if strings.HasSuffix(path, ".krab.hcl") {
-		return ".krab.hcl"
+	if strings.HasSuffix(path, krabenv.Ext()) {
+		return krabenv.Ext()
 	}
 
-	return "" // unrecognized extension
+	return "" // unrecognized
 }
 
 func isIgnoredFile(name string) bool {
-	return strings.HasPrefix(name, ".") || // Unix-like hidden files
-		strings.HasSuffix(name, "~") || // vim
+	return strings.HasPrefix(name, ".") || // dotfiles
+		strings.HasSuffix(name, "~") || // vim/backups
 		strings.HasPrefix(name, "#") && strings.HasSuffix(name, "#") // emacs
 }

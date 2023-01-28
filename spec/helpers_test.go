@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io/fs"
 	"strings"
 	"testing"
 
@@ -40,9 +41,15 @@ func (m *cliMock) setup(args []string) {
 	m.helpWriter = bytes.Buffer{}
 	m.uiErrorWriter = bytes.Buffer{}
 	m.uiWriter = bytes.Buffer{}
+	memfs := afero.NewMemMapFs()
+	m.fs = afero.Afero{Fs: memfs}
 
-	registry := &krab.CmdRegistry{Commands: []krab.Cmd{}}
-	registry.RegisterAll(m.config, m.fs, m.connection)
+	registry := &krab.CmdRegistry{
+		Commands:         []krab.Cmd{},
+		FS:               m.fs,
+		VersionGenerator: &versionGeneratorMock{},
+	}
+	registry.RegisterAll(m.config, m.connection)
 
 	m.app = krabcli.New(
 		cli.New(&m.uiErrorWriter, &m.uiWriter),
@@ -201,6 +208,21 @@ func (m *cliMock) AssertSQLContains(t *testing.T, expected string) bool {
 	return assert.True(t, found != -1, fmt.Sprintf("SQL mismatch:\n%s\nwith:\n%s", expected, sql))
 }
 
+func (m *cliMock) FSFiles() map[string][]byte {
+	data := map[string][]byte{}
+	m.fs.Walk("/", func(path string, info fs.FileInfo, err error) error {
+		if !info.IsDir() {
+			b, err := m.fs.ReadFile(path)
+			if err != nil {
+				panic(err)
+			}
+			data[path] = b
+		}
+		return nil
+	})
+	return data
+}
+
 func (m *cliMock) ResetSQLRecorder() {
 	m.connection.assertedSQLIndex = 0
 	m.connection.recorder = []string{}
@@ -238,6 +260,12 @@ func (m *cliMock) Insert(t *testing.T, table string, cols string, vals string) b
 		return err
 	})
 	return assert.NoError(t, err, "Insertion must happen")
+}
+
+type versionGeneratorMock struct{}
+
+func (g *versionGeneratorMock) Next() string {
+	return "20230101"
 }
 
 func mockCli(config *krab.Config) *cliMock {

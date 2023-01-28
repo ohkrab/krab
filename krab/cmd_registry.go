@@ -9,6 +9,9 @@ import (
 // CmdRegistry is a list of registred commands.
 type CmdRegistry struct {
 	Commands []Cmd
+
+	FS afero.Afero
+	VersionGenerator
 }
 
 // Register appends new command to registry.
@@ -17,10 +20,10 @@ func (r *CmdRegistry) Register(c Cmd) {
 }
 
 // RegisterAll registers all commands in the registry.
-func (r *CmdRegistry) RegisterAll(config *Config, fs afero.Afero, conn krabdb.Connection) {
+func (r *CmdRegistry) RegisterAll(config *Config, conn krabdb.Connection) {
 	r.Register(&CmdVersion{})
 
-	r.Register(&CmdGenMigration{FS: fs})
+	r.Register(&CmdGenMigration{FS: r.FS, VersionGenerator: r.VersionGenerator})
 
 	for _, action := range config.Actions {
 		action := action

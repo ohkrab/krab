@@ -4,8 +4,9 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"time"
+	"path/filepath"
 
+	"github.com/ohkrab/krab/krabenv"
 	"github.com/ohkrab/krab/krabhcl"
 	"github.com/spf13/afero"
 )
@@ -13,12 +14,25 @@ import (
 // CmdGenMigration generates migation file.
 type CmdGenMigration struct {
 	FS afero.Afero
+	VersionGenerator
 }
 
 // ResponseGenMigration json
 type ResponseGenMigration struct {
 	Path string `json:"path"`
 	Ref  string `json:"ref"`
+}
+
+func (c *CmdGenMigration) Arguments() *Arguments {
+	return &Arguments{
+		Args: []*Argument{
+			{
+				Name:        "name",
+				Type:        "string",
+				Description: "Migration name",
+			},
+		},
+	}
 }
 
 func (c *CmdGenMigration) Addr() krabhcl.Addr { return krabhcl.NullAddr }
@@ -30,18 +44,32 @@ func (c *CmdGenMigration) Name() []string {
 func (c *CmdGenMigration) HttpMethod() string { return "" }
 
 func (c *CmdGenMigration) Do(ctx context.Context, o CmdOpts) (interface{}, error) {
-
-	return c.run(ctx)
+	err := c.Arguments().Validate(o.Inputs)
+	if err != nil {
+		return nil, err
+	}
+	return c.run(ctx, o.Inputs)
 }
 
-func (c *CmdGenMigration) run(ctx context.Context) (ResponseGenMigration, error) {
+func (c *CmdGenMigration) run(ctx context.Context, inputs Inputs) (ResponseGenMigration, error) {
 	result := ResponseGenMigration{}
-	buf := bytes.Buffer{}
 
-	ref := "create_animals"
+	dir, err := krabenv.ConfigDir()
+	if err != nil {
+		return result, err
+	}
+	dir = filepath.Join(dir, "db", "migrations")
+	err = c.FS.MkdirAll(dir, 0755)
+	if err != nil {
+		return result, err
+	}
+
+	version := c.VersionGenerator.Next()
+	ref := inputs["name"].(string)
 	result.Ref = fmt.Sprint("migration.", ref)
-	version := time.Now().UTC().Format("20060102_150405") // YYYYMMDD_HHMMSS
+	result.Path = filepath.Join(dir, fmt.Sprint(version, "_", ref, krabenv.Ext()))
 
+	buf := bytes.Buffer{}
 	buf.WriteString(`migration "`)
 	buf.WriteString(ref)
 	buf.WriteString(`" {`)
@@ -61,7 +89,7 @@ func (c *CmdGenMigration) run(ctx context.Context) (ResponseGenMigration, error)
 	buf.WriteString(`}`)
 	buf.WriteString("\n")
 
-	c.FS.WriteFile("/tmp/migrate.krab.hcl", buf.Bytes(), 0644)
+	c.FS.WriteFile(result.Path, buf.Bytes(), 0644)
 
 	return result, nil
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/ohkrab/krab/cli"
+	"github.com/ohkrab/krab/cliargs"
 )
 
 // ActionGenMigration generates migration file.
@@ -26,7 +27,21 @@ func (a *ActionGenMigration) Synopsis() string {
 
 // Run in CLI.
 func (a *ActionGenMigration) Run(args []string) int {
-	resp, err := a.Cmd.Do(context.Background(), CmdOpts{Inputs{"args": args}})
+	ui := a.Ui
+	flags := cliargs.New(args)
+
+	for _, arg := range a.Cmd.Arguments().Args {
+		flags.Add(arg.Name)
+	}
+
+	err := flags.Parse()
+	if err != nil {
+		ui.Output(a.Help())
+		ui.Error(err.Error())
+		return 1
+	}
+
+	resp, err := a.Cmd.Do(context.Background(), CmdOpts{Inputs: flags.Values()})
 	if err != nil {
 		a.Ui.Error(err.Error())
 		return 1
@@ -34,8 +49,18 @@ func (a *ActionGenMigration) Run(args []string) int {
 
 	response := resp.(ResponseGenMigration)
 
-	a.Ui.Output(response.Path)
-	a.Ui.Output(response.Ref)
+	a.Ui.Output("File generated:")
+	a.Ui.Info(response.Path)
+	a.Ui.Output("Don't forget to add your migration to migration_set:")
+	a.Ui.Output(`
+    migration_set "public" {
+      migrations = [
+        ...`)
+	a.Ui.Info(fmt.Sprint("        ", response.Ref, ","))
+	a.Ui.Output(`        ...
+      ]
+    }
+`)
 
 	return 0
 }

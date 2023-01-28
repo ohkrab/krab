@@ -31,8 +31,12 @@ func main() {
 
 	conn := &krabdb.DefaultConnection{}
 
-	registry := &krab.CmdRegistry{Commands: []krab.Cmd{}}
-	registry.RegisterAll(config, parser.FS, conn)
+	registry := &krab.CmdRegistry{
+		Commands: []krab.Cmd{},
+		FS: parser.FS,
+		VersionGenerator: &krab.TimestampVersionGenerator{},
+	}
+	registry.RegisterAll(config, conn)
 	// agent := krabapi.Agent{Registry: registry}
 	// agent.Run()
 
