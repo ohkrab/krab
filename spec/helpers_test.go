@@ -28,6 +28,7 @@ type cliMock struct {
 	uiErrorWriter bytes.Buffer
 	helpWriter    bytes.Buffer
 	errorWriter   bytes.Buffer
+	fs            afero.Afero
 }
 
 func (m *cliMock) setup(args []string) {
@@ -41,7 +42,7 @@ func (m *cliMock) setup(args []string) {
 	m.uiWriter = bytes.Buffer{}
 
 	registry := &krab.CmdRegistry{Commands: []krab.Cmd{}}
-	registry.RegisterAll(m.config, m.connection)
+	registry.RegisterAll(m.config, m.fs, m.connection)
 
 	m.app = krabcli.New(
 		cli.New(&m.uiErrorWriter, &m.uiWriter),
@@ -57,17 +58,17 @@ func (m *cliMock) setup(args []string) {
 func (m *cliMock) Teardown() {
 	err := m.connection.Get(func(db krabdb.DB) error {
 		_, err := db.ExecContext(context.TODO(), `
-DO 
-$$ 
-  DECLARE 
+DO
+$$
+  DECLARE
     r RECORD;
 BEGIN
-  FOR r IN 
+  FOR r IN
     (
-      SELECT table_schema, table_name 
-        FROM information_schema.tables 
+      SELECT table_schema, table_name
+        FROM information_schema.tables
        WHERE table_schema NOT IN ('pg_catalog', 'information_schema')
-    ) 
+    )
   LOOP
      EXECUTE 'DROP TABLE ' || quote_ident(r.table_schema) || '.' || quote_ident(r.table_name) || ' CASCADE';
   END LOOP;

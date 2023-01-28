@@ -35,7 +35,7 @@ migration "create_animals" {
 	  }
 
 	  column "name" "varchar" { null = true }
-	  
+
 	  column "extinct" "boolean" {
 	    null    = false
 		default = "TRUE"

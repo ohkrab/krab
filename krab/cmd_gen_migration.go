@@ -31,7 +31,7 @@ func (c *CmdGenMigration) HttpMethod() string { return "" }
 
 func (c *CmdGenMigration) Do(ctx context.Context, o CmdOpts) (interface{}, error) {
 
-	return c.run(ctx, args)
+	return c.run(ctx)
 }
 
 func (c *CmdGenMigration) run(ctx context.Context) (ResponseGenMigration, error) {

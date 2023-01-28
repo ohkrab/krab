@@ -57,5 +57,4 @@ action "view" "refresh" {
 		assert.Len(t, vals, 3, "There should be 3 animals after refresh")
 		c.AssertSQLContains(t, `REFRESH MATERIALIZED VIEW "anims"`)
 	}
-
 }

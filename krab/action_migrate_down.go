@@ -21,7 +21,7 @@ func (a *ActionMigrateDown) Help() string {
 		"\n\n",
 		a.Cmd.Arguments().Help(),
 		a.Cmd.Set.Arguments.Help(),
-		` 
+		`
 Rollback migration in given [set] identified by VERSION.
 
 Example:
