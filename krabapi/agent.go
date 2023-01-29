@@ -31,7 +31,7 @@ func (a *Agent) Run() error {
 					return
 				}
 
-				resp, err := cmd.Do(c.Request.Context(), krab.CmdOpts{Inputs: inputs})
+				resp, err := cmd.Do(c.Request.Context(), krab.CmdOpts{NamedInputs: inputs})
 				if err != nil {
 					c.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error()})
 					return
@@ -53,7 +53,7 @@ func (a *Agent) Run() error {
 					return
 				}
 
-				resp, err := cmd.Do(c.Request.Context(), krab.CmdOpts{Inputs: inputs})
+				resp, err := cmd.Do(c.Request.Context(), krab.CmdOpts{NamedInputs: inputs})
 				if err != nil {
 					c.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error()})
 					return

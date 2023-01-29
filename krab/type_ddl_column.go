@@ -125,3 +125,19 @@ func (d *DDLColumn) ToSQL(w io.StringWriter) {
 		w.WriteString(d.Default)
 	}
 }
+
+// ToKCL converts migration definition to KCL.
+func (d *DDLColumn) ToKCL(w io.StringWriter) {
+	w.WriteString("column ")
+	w.WriteString(krabdb.QuoteIdent(d.Name))
+	w.WriteString(" ")
+	w.WriteString(krabdb.QuoteIdent(d.Type))
+	w.WriteString(" {")
+	if d.Identity != nil {
+		w.WriteString("\n  identity {}\n")
+	}
+	if !d.Null {
+		w.WriteString("\n  null = false\n")
+	}
+	w.WriteString("}")
+}

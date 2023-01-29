@@ -7,23 +7,23 @@ import (
 	"github.com/ohkrab/krab/krab"
 )
 
-func bindInputs(c *gin.Context) (krab.Inputs, error) {
+func bindInputs(c *gin.Context) (krab.NamedInputs, error) {
 	params := map[string]interface{}{}
 	if c.Request.ContentLength == 0 {
-		return krab.Inputs{}, nil
+		return krab.NamedInputs{}, nil
 	}
 	err := c.BindJSON(&params)
 	if err != nil {
-		return krab.Inputs{}, fmt.Errorf("Can't bind inputs: %w", err)
+		return krab.NamedInputs{}, fmt.Errorf("Can't bind inputs: %w", err)
 	}
 	inputs, ok := params["inputs"]
 	if !ok {
-		return krab.Inputs{}, nil
+		return krab.NamedInputs{}, nil
 	}
 
 	if inputs, ok := inputs.(map[string]interface{}); ok {
-		return krab.Inputs(inputs), nil
+		return krab.NamedInputs(inputs), nil
 	}
 
-	return krab.Inputs{}, fmt.Errorf("Failed to fetch inputs")
+	return krab.NamedInputs{}, fmt.Errorf("Failed to fetch inputs")
 }

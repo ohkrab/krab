@@ -41,7 +41,7 @@ func (a *ActionGenMigration) Run(args []string) int {
 		return 1
 	}
 
-	resp, err := a.Cmd.Do(context.Background(), CmdOpts{Inputs: flags.Values()})
+	resp, err := a.Cmd.Do(context.Background(), CmdOpts{NamedInputs: flags.Values(), PositionalInputs: flags.Args()})
 	if err != nil {
 		a.Ui.Error(err.Error())
 		return 1

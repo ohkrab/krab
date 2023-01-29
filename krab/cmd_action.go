@@ -27,14 +27,14 @@ func (c *CmdAction) Name() []string { return append([]string{"action"}, c.Action
 func (c *CmdAction) HttpMethod() string { return http.MethodPost }
 
 func (c *CmdAction) Do(ctx context.Context, o CmdOpts) (interface{}, error) {
-	err := c.Action.Arguments.Validate(o.Inputs)
+	err := c.Action.Arguments.Validate(o.NamedInputs)
 	if err != nil {
 		return nil, err
 	}
 
 	var result ResponseAction
 	err = c.Connection.Get(func(db krabdb.DB) error {
-		resp, err := c.run(ctx, db, o.Inputs)
+		resp, err := c.run(ctx, db, o.NamedInputs)
 		result = resp
 		return err
 	})
@@ -42,7 +42,7 @@ func (c *CmdAction) Do(ctx context.Context, o CmdOpts) (interface{}, error) {
 	return result, err
 }
 
-func (c *CmdAction) run(ctx context.Context, db krabdb.DB, inputs Inputs) (ResponseAction, error) {
+func (c *CmdAction) run(ctx context.Context, db krabdb.DB, inputs NamedInputs) (ResponseAction, error) {
 	result := ResponseAction{}
 
 	tpl := tpls.New(inputs, krabtpl.Functions)

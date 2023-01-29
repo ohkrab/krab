@@ -19,7 +19,7 @@ func (a *ActionCustom) Help() string {
 		`Usage: krab action namespace name`,
 		"\n\n",
 		a.Cmd.Action.Arguments.Help(),
-		` 
+		`
 Performs custom action.
 `,
 	)
@@ -45,7 +45,7 @@ func (a *ActionCustom) Run(args []string) int {
 		return 1
 	}
 
-	_, err = a.Cmd.Do(context.Background(), CmdOpts{Inputs: flags.Values()})
+	_, err = a.Cmd.Do(context.Background(), CmdOpts{NamedInputs: flags.Values()})
 
 	if err != nil {
 		ui.Error(err.Error())

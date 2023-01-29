@@ -34,14 +34,14 @@ func (c *CmdMigrateStatus) Name() []string {
 func (c *CmdMigrateStatus) HttpMethod() string { return http.MethodGet }
 
 func (c *CmdMigrateStatus) Do(ctx context.Context, o CmdOpts) (interface{}, error) {
-	err := c.Set.Arguments.Validate(o.Inputs)
+	err := c.Set.Arguments.Validate(o.NamedInputs)
 	if err != nil {
 		return nil, err
 	}
 
 	var result []ResponseMigrateStatus
 	err = c.Connection.Get(func(db krabdb.DB) error {
-		resp, err := c.run(ctx, db, o.Inputs)
+		resp, err := c.run(ctx, db, o.NamedInputs)
 		result = resp
 		return err
 	})
@@ -49,7 +49,7 @@ func (c *CmdMigrateStatus) Do(ctx context.Context, o CmdOpts) (interface{}, erro
 	return result, err
 }
 
-func (c *CmdMigrateStatus) run(ctx context.Context, db krabdb.DB, inputs Inputs) ([]ResponseMigrateStatus, error) {
+func (c *CmdMigrateStatus) run(ctx context.Context, db krabdb.DB, inputs NamedInputs) ([]ResponseMigrateStatus, error) {
 	result := []ResponseMigrateStatus{}
 
 	tpl := tpls.New(inputs, krabtpl.Functions)

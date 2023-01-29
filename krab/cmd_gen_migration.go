@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"strings"
 
 	"github.com/ohkrab/krab/krabenv"
 	"github.com/ohkrab/krab/krabhcl"
@@ -15,6 +16,12 @@ import (
 type CmdGenMigration struct {
 	FS afero.Afero
 	VersionGenerator
+}
+
+type genMigrationColumn struct {
+	dbname string
+	dbtype string
+	null   bool
 }
 
 // ResponseGenMigration json
@@ -44,14 +51,35 @@ func (c *CmdGenMigration) Name() []string {
 func (c *CmdGenMigration) HttpMethod() string { return "" }
 
 func (c *CmdGenMigration) Do(ctx context.Context, o CmdOpts) (interface{}, error) {
-	err := c.Arguments().Validate(o.Inputs)
+	err := c.Arguments().Validate(o.NamedInputs)
 	if err != nil {
 		return nil, err
 	}
-	return c.run(ctx, o.Inputs)
+	kcls := []ToKCL{}
+	kclsAfter := []ToKCL{}
+	for _, v := range o.PositionalInputs {
+		splits := strings.Split(v, ":")
+		if len(splits) == 1 {
+			switch splits[0] {
+			case "id":
+				kcls = append(kcls, &DDLColumn{Name: "id", Type: "bigint", Null: true, Identity: &DDLIdentity{}})
+				kclsAfter = append(kclsAfter, &DDLPrimaryKey{Columns: []string{"id"}})
+			case "timestamps":
+				kcls = append(kcls, &DDLColumn{Name: "created_at", Type: "timestamptz", Null: false})
+				kcls = append(kcls, &DDLColumn{Name: "updated_at", Type: "timestamptz", Null: false})
+			default:
+				return nil, fmt.Errorf("Invalid column: %s", splits[0])
+			}
+		} else {
+			kcls = append(kcls, &DDLColumn{Name: splits[0], Type: splits[1], Null: true})
+		}
+	}
+
+	kcls = append(kcls, kclsAfter...)
+	return c.run(ctx, o.NamedInputs, kcls)
 }
 
-func (c *CmdGenMigration) run(ctx context.Context, inputs Inputs) (ResponseGenMigration, error) {
+func (c *CmdGenMigration) run(ctx context.Context, inputs NamedInputs, columns []ToKCL) (ResponseGenMigration, error) {
 	result := ResponseGenMigration{}
 
 	dir, err := krabenv.ConfigDir()
@@ -80,6 +108,16 @@ func (c *CmdGenMigration) run(ctx context.Context, inputs Inputs) (ResponseGenMi
 	buf.WriteString("\n\n")
 	buf.WriteString(`  up {`)
 	buf.WriteString("\n")
+	for _, col := range columns {
+		sb := strings.Builder{}
+		col.ToKCL(&sb)
+		lines := strings.Split(sb.String(), "\n")
+		for _, line := range lines {
+			buf.WriteString("    ")
+			buf.WriteString(line)
+			buf.WriteString("\n")
+		}
+	}
 	buf.WriteString(`  }`)
 	buf.WriteString("\n\n")
 	buf.WriteString(`  down {`)

@@ -46,18 +46,18 @@ func (c *CmdMigrateDown) Name() []string {
 func (c *CmdMigrateDown) HttpMethod() string { return http.MethodPost }
 
 func (c *CmdMigrateDown) Do(ctx context.Context, o CmdOpts) (interface{}, error) {
-	err := c.Set.Arguments.Validate(o.Inputs)
+	err := c.Set.Arguments.Validate(o.NamedInputs)
 	if err != nil {
 		return nil, err
 	}
-	err = c.Arguments().Validate(o.Inputs)
+	err = c.Arguments().Validate(o.NamedInputs)
 	if err != nil {
 		return nil, err
 	}
 
 	var result []ResponseMigrateDown
 	err = c.Connection.Get(func(db krabdb.DB) error {
-		resp, err := c.run(ctx, db, o.Inputs)
+		resp, err := c.run(ctx, db, o.NamedInputs)
 		result = resp
 		return err
 	})
@@ -65,7 +65,7 @@ func (c *CmdMigrateDown) Do(ctx context.Context, o CmdOpts) (interface{}, error)
 	return result, err
 }
 
-func (c *CmdMigrateDown) run(ctx context.Context, db krabdb.DB, inputs Inputs) ([]ResponseMigrateDown, error) {
+func (c *CmdMigrateDown) run(ctx context.Context, db krabdb.DB, inputs NamedInputs) ([]ResponseMigrateDown, error) {
 	result := []ResponseMigrateDown{}
 
 	tpl := tpls.New(inputs, krabtpl.Functions)

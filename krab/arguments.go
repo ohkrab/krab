@@ -71,7 +71,7 @@ func (a *Arguments) DecodeHCL(ctx *hcl.EvalContext, block *hcl.Block) error {
 	return nil
 }
 
-func (a *Arguments) Validate(values Inputs) error {
+func (a *Arguments) Validate(values NamedInputs) error {
 	for _, a := range a.Args {
 		value, ok := values[a.Name]
 		if ok {

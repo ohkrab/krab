@@ -44,7 +44,7 @@ func (c *CmdTestRun) Do(ctx context.Context, o CmdOpts) (interface{}, error) {
 						inputs := InputsFromCtyInputs(do.CtyInputs)
 						migrateInputs := InputsFromCtyInputs(migrate.CtyInputs)
 						inputs.Merge(migrateInputs)
-						result, err := cmd.Do(ctx, CmdOpts{Inputs: inputs})
+						result, err := cmd.Do(ctx, CmdOpts{NamedInputs: inputs})
 						if err != nil {
 							return nil, fmt.Errorf("Failed to execute before hook: %w", err)
 						}
@@ -67,7 +67,7 @@ func (c *CmdTestRun) Do(ctx context.Context, o CmdOpts) (interface{}, error) {
 	}
 
 	err := c.Connection.Get(func(db krabdb.DB) error {
-		resp, err := c.run(ctx, db, o.Inputs)
+		resp, err := c.run(ctx, db, o.NamedInputs)
 		result = resp
 		return err
 	})
@@ -75,7 +75,7 @@ func (c *CmdTestRun) Do(ctx context.Context, o CmdOpts) (interface{}, error) {
 	return result, err
 }
 
-func (c *CmdTestRun) run(ctx context.Context, db krabdb.DB, inputs Inputs) (ResponseTestRun, error) {
+func (c *CmdTestRun) run(ctx context.Context, db krabdb.DB, inputs NamedInputs) (ResponseTestRun, error) {
 	result := ResponseTestRun{}
 
 	for _, testCase := range c.Suite.Tests {

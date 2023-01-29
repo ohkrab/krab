@@ -2,11 +2,14 @@ package krab
 
 import "github.com/zclconf/go-cty/cty"
 
-// Inputs are params passed to command.
-type Inputs map[string]interface{}
+// NamedInputs are params passed to command.
+type NamedInputs map[string]interface{}
 
-func InputsFromCtyInputs(vals map[string]cty.Value) Inputs {
-	inputs := Inputs{}
+// Inputs are params passed to command.
+type PositionalInputs []string
+
+func InputsFromCtyInputs(vals map[string]cty.Value) NamedInputs {
+	inputs := NamedInputs{}
 	for k, v := range vals {
 		str := v.AsString()
 		inputs[k] = str
@@ -15,7 +18,7 @@ func InputsFromCtyInputs(vals map[string]cty.Value) Inputs {
 	return inputs
 }
 
-func (i Inputs) Merge(other Inputs) {
+func (i NamedInputs) Merge(other NamedInputs) {
 	for k, v := range other {
 		i[k] = v
 	}
