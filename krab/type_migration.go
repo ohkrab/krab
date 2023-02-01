@@ -5,11 +5,11 @@ import (
 	"io"
 
 	"github.com/hashicorp/hcl/v2"
+	"github.com/ohkrab/krab/krabdb"
 	"github.com/ohkrab/krab/krabhcl"
 )
 
 // Migration represents single up/down migration pair.
-//
 type Migration struct {
 	krabhcl.Source
 
@@ -138,12 +138,31 @@ func (m *Migration) DecodeHCL(ctx *hcl.EvalContext, block *hcl.Block) error {
 	return nil
 }
 
-func (ms *Migration) Validate() error {
+func (m *Migration) Validate() error {
 	return ErrorCoalesce(
-		ValidateRefName(ms.RefName),
-		ms.Up.Validate(),
-		ms.Down.Validate(),
+		ValidateRefName(m.RefName),
+		m.Up.Validate(),
+		m.Down.Validate(),
 	)
+}
+
+func (m *Migration) ToKCL(w io.StringWriter) {
+	w.WriteString("migration ")
+	w.WriteString(krabdb.QuoteIdent(m.RefName))
+	w.WriteString(" {\n")
+	w.WriteString("  version = ")
+	w.WriteString(krabdb.QuoteIdent(m.Version))
+	w.WriteString("\n\n")
+
+	w.WriteString("  up {\n")
+	m.Up.ToKCL(w)
+	w.WriteString("  }\n\n")
+
+	w.WriteString("  down {\n")
+	m.Down.ToKCL(w)
+	w.WriteString("  }\n")
+
+	w.WriteString("}")
 }
 
 // DecodeHCL parses HCL into struct.
@@ -225,6 +244,15 @@ func (m *MigrationUpOrDown) Validate() error {
 
 func (m *MigrationUpOrDown) ToSQL(w io.StringWriter) {
 	w.WriteString(m.SQL)
+}
+
+func (m *MigrationUpOrDown) ToKCL(w io.StringWriter) {
+	for _, t := range m.CreateTables {
+		t.ToKCL(w)
+	}
+	for _, t := range m.DropTables {
+		t.ToKCL(w)
+	}
 }
 
 // ToSQLStatements returns list of SQL statements to executre during the migration.

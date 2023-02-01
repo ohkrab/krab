@@ -53,3 +53,9 @@ func (d *DDLDropTable) ToSQL(w io.StringWriter) {
 	w.WriteString("DROP TABLE ")
 	w.WriteString(krabdb.QuoteIdent(d.Name))
 }
+
+func (d *DDLDropTable) ToKCL(w io.StringWriter) {
+	w.WriteString("    drop_table ")
+	w.WriteString(krabdb.QuoteIdent(d.Name))
+	w.WriteString(" {}\n")
+}

@@ -182,3 +182,20 @@ func (d *DDLCreateTable) ToSQL(w io.StringWriter) {
 
 	w.WriteString("\n)")
 }
+
+// ToKCL converts migration definition to KCL.
+func (d *DDLCreateTable) ToKCL(w io.StringWriter) {
+	w.WriteString("    create_table ")
+	w.WriteString(krabdb.QuoteIdent(d.Name))
+	w.WriteString(" {")
+	w.WriteString("\n")
+
+	for _, def := range d.Columns {
+		def.ToKCL(w)
+	}
+	for _, def := range d.PrimaryKeys {
+		def.ToKCL(w)
+	}
+	w.WriteString("    }")
+	w.WriteString("\n")
+}

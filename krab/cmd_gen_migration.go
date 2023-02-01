@@ -55,31 +55,10 @@ func (c *CmdGenMigration) Do(ctx context.Context, o CmdOpts) (interface{}, error
 	if err != nil {
 		return nil, err
 	}
-	kcls := []ToKCL{}
-	kclsAfter := []ToKCL{}
-	for _, v := range o.PositionalInputs {
-		splits := strings.Split(v, ":")
-		if len(splits) == 1 {
-			switch splits[0] {
-			case "id":
-				kcls = append(kcls, &DDLColumn{Name: "id", Type: "bigint", Null: true, Identity: &DDLIdentity{}})
-				kclsAfter = append(kclsAfter, &DDLPrimaryKey{Columns: []string{"id"}})
-			case "timestamps":
-				kcls = append(kcls, &DDLColumn{Name: "created_at", Type: "timestamptz", Null: false})
-				kcls = append(kcls, &DDLColumn{Name: "updated_at", Type: "timestamptz", Null: false})
-			default:
-				return nil, fmt.Errorf("Invalid column: %s", splits[0])
-			}
-		} else {
-			kcls = append(kcls, &DDLColumn{Name: splits[0], Type: splits[1], Null: true})
-		}
-	}
-
-	kcls = append(kcls, kclsAfter...)
-	return c.run(ctx, o.NamedInputs, kcls)
+	return c.run(ctx, o)
 }
 
-func (c *CmdGenMigration) run(ctx context.Context, inputs NamedInputs, columns []ToKCL) (ResponseGenMigration, error) {
+func (c *CmdGenMigration) run(ctx context.Context, o CmdOpts) (ResponseGenMigration, error) {
 	result := ResponseGenMigration{}
 
 	dir, err := krabenv.ConfigDir()
@@ -92,40 +71,60 @@ func (c *CmdGenMigration) run(ctx context.Context, inputs NamedInputs, columns [
 		return result, err
 	}
 
+	columns := []*DDLColumn{}
+	pks := []*DDLPrimaryKey{}
+	for _, v := range o.PositionalInputs {
+		splits := strings.Split(v, ":")
+		if len(splits) == 1 {
+			switch splits[0] {
+			case "id":
+				columns = append(columns, &DDLColumn{Name: "id", Type: "bigint", Null: true, Identity: &DDLIdentity{}})
+				pks = append(pks, &DDLPrimaryKey{Columns: []string{"id"}})
+			case "timestamps":
+				columns = append(columns, &DDLColumn{Name: "created_at", Type: "timestamptz", Null: false})
+				columns = append(columns, &DDLColumn{Name: "updated_at", Type: "timestamptz", Null: false})
+			default:
+				return result, fmt.Errorf("Invalid column: %s", splits[0])
+			}
+		} else {
+			columns = append(columns, &DDLColumn{Name: splits[0], Type: splits[1], Null: true})
+		}
+	}
+
+	ref := o.NamedInputs["name"].(string)
+	table := ref
+	words := strings.SplitN(ref, "_", 2)
+	if len(words) == 2 && words[0] == "create" {
+		table = words[1]
+	}
+
 	version := c.VersionGenerator.Next()
-	ref := inputs["name"].(string)
+	migration := &Migration{
+		RefName: ref,
+		Version: version,
+		Up: MigrationUpOrDown{
+			CreateTables: []*DDLCreateTable{
+				{
+					Name:        table,
+					Columns:     columns,
+					PrimaryKeys: pks,
+				},
+			},
+		},
+		Down: MigrationUpOrDown{
+			DropTables: []*DDLDropTable{
+				{
+					Name: table,
+				},
+			},
+		},
+	}
+
 	result.Ref = fmt.Sprint("migration.", ref)
 	result.Path = filepath.Join(dir, fmt.Sprint(version, "_", ref, krabenv.Ext()))
 
 	buf := bytes.Buffer{}
-	buf.WriteString(`migration "`)
-	buf.WriteString(ref)
-	buf.WriteString(`" {`)
-	buf.WriteString("\n")
-	buf.WriteString(`  version = "`)
-	buf.WriteString(version)
-	buf.WriteString(`"`)
-	buf.WriteString("\n\n")
-	buf.WriteString(`  up {`)
-	buf.WriteString("\n")
-	for _, col := range columns {
-		sb := strings.Builder{}
-		col.ToKCL(&sb)
-		lines := strings.Split(sb.String(), "\n")
-		for _, line := range lines {
-			buf.WriteString("    ")
-			buf.WriteString(line)
-			buf.WriteString("\n")
-		}
-	}
-	buf.WriteString(`  }`)
-	buf.WriteString("\n\n")
-	buf.WriteString(`  down {`)
-	buf.WriteString("\n")
-	buf.WriteString(`  }`)
-	buf.WriteString("\n")
-	buf.WriteString(`}`)
-	buf.WriteString("\n")
+	migration.ToKCL(&buf)
 
 	c.FS.WriteFile(result.Path, buf.Bytes(), 0644)
 

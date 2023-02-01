@@ -89,9 +89,9 @@ func (d *DDLPrimaryKey) ToSQL(w io.StringWriter) {
 
 // ToKCL converts migration definition to KCL.
 func (d *DDLPrimaryKey) ToKCL(w io.StringWriter) {
-	w.WriteString("primary_key {\n")
-	w.WriteString("  columns = [")
-	w.WriteString(strings.Join(krabdb.QuoteIdentStrings(d.Columns), ", "))
-	w.WriteString("]")
-	w.WriteString("\n}")
+	w.WriteString("      primary_key {\n")
+	w.WriteString("        columns = [")
+	w.WriteString(strings.Join(krabdb.QuoteIdentStrings(d.Columns), ""))
+	w.WriteString("]\n")
+	w.WriteString("      }\n")
 }

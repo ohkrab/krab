@@ -50,3 +50,8 @@ func (d *DDLIdentity) DecodeHCL(ctx *hcl.EvalContext, block *hcl.Block) error {
 func (d *DDLIdentity) ToSQL(w io.StringWriter) {
 	w.WriteString("GENERATED ALWAYS AS IDENTITY")
 }
+
+// ToKCL converts migration definition to KCL.
+func (d *DDLIdentity) ToKCL(w io.StringWriter) {
+	w.WriteString("        identity {}")
+}
