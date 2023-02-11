@@ -32,8 +32,8 @@ func main() {
 	conn := &krabdb.DefaultConnection{}
 
 	registry := &krab.CmdRegistry{
-		Commands: []krab.Cmd{},
-		FS: parser.FS,
+		Commands:         []krab.Cmd{},
+		FS:               parser.FS,
 		VersionGenerator: &krab.TimestampVersionGenerator{},
 	}
 	registry.RegisterAll(config, conn)
