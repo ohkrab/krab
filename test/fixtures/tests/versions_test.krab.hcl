@@ -41,7 +41,7 @@ test "versions" "version_inc()" {
   describe "increases `minor` component and resets `patch` leaving `major` untouched" {
     do { sql = "SELECT version_inc(row(1,1,1)::sem_version, 'minor') AS ver" }
 
-    # v1 - set scope 
+    # v1 - set scope
     row "0" {
       it "ver" { expect = "ver = row(2,0,0)::sem_version" }
       its { expect = "ver = row(2,0,0)::sem_version" }

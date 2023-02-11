@@ -68,7 +68,7 @@ func (c *CmdMigrateDown) Do(ctx context.Context, o CmdOpts) (interface{}, error)
 func (c *CmdMigrateDown) run(ctx context.Context, db krabdb.DB, inputs NamedInputs) ([]ResponseMigrateDown, error) {
 	result := []ResponseMigrateDown{}
 
-	tpl := tpls.New(inputs, krabtpl.Functions)
+	tpl := tpls.New(inputs, krabtpl.Functions())
 	versions := NewSchemaMigrationTable(tpl.Render(c.Set.Schema))
 
 	migration := c.Set.FindMigrationByVersion(inputs["version"].(string))

@@ -52,7 +52,7 @@ func (c *CmdMigrateStatus) Do(ctx context.Context, o CmdOpts) (interface{}, erro
 func (c *CmdMigrateStatus) run(ctx context.Context, db krabdb.DB, inputs NamedInputs) ([]ResponseMigrateStatus, error) {
 	result := []ResponseMigrateStatus{}
 
-	tpl := tpls.New(inputs, krabtpl.Functions)
+	tpl := tpls.New(inputs, krabtpl.Functions())
 	versions := NewSchemaMigrationTable(tpl.Render(c.Set.Schema))
 
 	hooksRunner := HookRunner{}

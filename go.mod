@@ -1,6 +1,6 @@
 module github.com/ohkrab/krab
 
-go 1.17
+go 1.19
 
 require (
 	github.com/emirpasic/gods v1.18.1
@@ -8,6 +8,7 @@ require (
 	github.com/hashicorp/hcl/v2 v2.12.0
 	github.com/hashicorp/hcl2 v0.0.0-20191002203319-fb75b3253c80
 	github.com/jackc/pgx/v4 v4.16.1
+	github.com/jaswdr/faker v1.16.0
 	github.com/jmoiron/sqlx v1.3.5
 	github.com/mitchellh/cli v1.1.4
 	github.com/pkg/errors v0.9.1

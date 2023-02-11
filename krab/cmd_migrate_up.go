@@ -51,7 +51,7 @@ func (c *CmdMigrateUp) Do(ctx context.Context, o CmdOpts) (interface{}, error) {
 func (c *CmdMigrateUp) run(ctx context.Context, db krabdb.DB, inputs NamedInputs) ([]ResponseMigrateUp, error) {
 	result := []ResponseMigrateUp{}
 
-	tpl := tpls.New(inputs, krabtpl.Functions)
+	tpl := tpls.New(inputs, krabtpl.Functions())
 	versions := NewSchemaMigrationTable(tpl.Render(c.Set.Schema))
 
 	// locking

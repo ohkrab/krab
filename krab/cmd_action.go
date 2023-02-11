@@ -45,7 +45,7 @@ func (c *CmdAction) Do(ctx context.Context, o CmdOpts) (interface{}, error) {
 func (c *CmdAction) run(ctx context.Context, db krabdb.DB, inputs NamedInputs) (ResponseAction, error) {
 	result := ResponseAction{}
 
-	tpl := tpls.New(inputs, krabtpl.Functions)
+	tpl := tpls.New(inputs, krabtpl.Functions())
 
 	sb := strings.Builder{}
 	c.Action.ToSQL(&sb)
