@@ -27,7 +27,7 @@ migration "create_version_function" {
       BEGIN
         _v := _ver;
 
-        CASE 
+        CASE
           WHEN _type = 'major' THEN
             _v.major = _v.major + 1;
             _v.minor = 0;
@@ -58,11 +58,7 @@ migration "create_version_function" {
 }
 
 migration_set "versions" {
-  arguments {
-    arg "schema" {}
-  }
-
-  schema = "{{.Args.schema}}"
+  schema = "public"
 
   migrations = [
     migration.create_version_type,

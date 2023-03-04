@@ -12,7 +12,7 @@ import (
 type TestExample struct {
 	TestSuiteRefName string                `hcl:"test_suite,label"`
 	Name             string                `hcl:"name,label"`
-	Set              *SetRuntimeParameters `hcl:"set,block"`
+	// Set              *SetRuntimeParameters `hcl:"set,block"`
 	Its              []*TestExampleIt      `hcl:"it,block"`
 }
 
