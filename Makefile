@@ -1,12 +1,12 @@
 .PHONY: default build install test docker_test docker_build docker_push docker_nightly
 
 default:
-	export DATABASE_URL="postgres://krab:secret@localhost:5432/krab?sslmode=disable"
-	export KRAB_ENV=test
-	export KRAB_DIR=./test/fixtures/tests
-	make build
-	./bin/krab test versions
-	ok
+	export DATABASE_URL="postgres://krab:secret@localhost:5432/krab?sslmode=disable" && \
+	export KRAB_ENV=test && \
+	export KRAB_DIR=./test/fixtures/tests && \
+	make build && \
+	./bin/krab test && \
+	echo "ok"
 
 build:
 	mkdir -p bin/

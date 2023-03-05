@@ -52,14 +52,9 @@ func (r *CmdRegistry) RegisterAll(config *Config, conn krabdb.Connection) {
 	}
 
 	if krabenv.Test() {
-		for _, suite := range config.TestSuites {
-			suite := suite
-
-			r.Register(&CmdTestRun{
-				Registry:   r,
-				Suite:      suite,
-				Connection: conn,
-			})
-		}
+		r.Register(&CmdTestRun{
+			Suite:      config.TestSuite,
+			Connection: conn,
+		})
 	}
 }
