@@ -1,4 +1,4 @@
-FROM golang:1.16-alpine AS build
+FROM golang:1.19-alpine AS build
 
 LABEL org.opencontainers.image.source https://github.com/ohkrab/krab
 
@@ -19,10 +19,9 @@ RUN go build \
   -ldflags="-s -w -X 'github.com/ohkrab/krab/krab.InfoVersion=$BUILD_VERSION' -X 'github.com/ohkrab/krab/krab.InfoCommit=$BUILD_COMMIT' -X 'github.com/ohkrab/krab/krab.InfoBuildDate=$BUILD_DATE'" \
   -o /tmp/krab .
 
-FROM alpine:3.14
+FROM alpine:3.17
 COPY --from=build /tmp/krab /usr/local/bin/krab
 ENTRYPOINT ["/usr/local/bin/krab"]
 
 ENV KRAB_DIR=/etc/krab
 ENV DATABASE_URL=
-

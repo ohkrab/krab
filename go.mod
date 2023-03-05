@@ -6,15 +6,15 @@ require (
 	github.com/emirpasic/gods v1.18.1
 	github.com/hashicorp/hcl/v2 v2.16.1
 	github.com/hashicorp/hcl2 v0.0.0-20191002203319-fb75b3253c80
-	github.com/jackc/pgx/v4 v4.18.0
+	github.com/jackc/pgx/v4 v4.18.1
 	github.com/jaswdr/faker v1.16.0
 	github.com/jmoiron/sqlx v1.3.5
 	github.com/mitchellh/cli v1.1.5
 	github.com/pkg/errors v0.9.1
-	github.com/spf13/afero v1.9.3
-	github.com/stretchr/testify v1.8.1
+	github.com/spf13/afero v1.9.4
+	github.com/stretchr/testify v1.8.2
 	github.com/wzshiming/ctc v1.2.3
-	github.com/zclconf/go-cty v1.12.1
+	github.com/zclconf/go-cty v1.13.0
 )
 
 require (
@@ -28,7 +28,6 @@ require (
 	github.com/bgentry/speakeasy v0.1.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/fatih/color v1.14.1 // indirect
-	github.com/google/go-cmp v0.5.8 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
@@ -52,9 +51,8 @@ require (
 	github.com/shopspring/decimal v1.3.1 // indirect
 	github.com/spf13/cast v1.5.0 // indirect
 	github.com/wzshiming/winseq v0.0.0-20200720163736-7fa652d2b50e // indirect
-	golang.org/x/crypto v0.6.0 // indirect
-	golang.org/x/sys v0.5.0 // indirect
-	golang.org/x/text v0.7.0 // indirect
-	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
+	golang.org/x/crypto v0.7.0 // indirect
+	golang.org/x/sys v0.6.0 // indirect
+	golang.org/x/text v0.8.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
