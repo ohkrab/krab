@@ -14,7 +14,6 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/afero v1.9.3
 	github.com/stretchr/testify v1.8.1
-	github.com/wasmerio/wasmer-go v1.0.0
 	github.com/wzshiming/ctc v1.2.3
 	github.com/zclconf/go-cty v1.12.1
 )
