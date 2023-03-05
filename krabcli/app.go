@@ -87,10 +87,6 @@ func (a *App) RegisterAll() {
 			panic(fmt.Sprintf("Not implemented: failed to register CLI action for command %T", c))
 		}
 	}
-
-	// a.RegisterCmd("agent", func() Command {
-	// 	return &CmdAgent{Registry: a.Registry}
-	// })
 }
 
 func (a *App) Run() (int, error) {

@@ -37,8 +37,6 @@ func main() {
 		VersionGenerator: &krab.TimestampVersionGenerator{},
 	}
 	registry.RegisterAll(config, conn)
-	// agent := krabapi.Agent{Registry: registry}
-	// agent.Run()
 
 	c := krabcli.New(ui, os.Args[1:], config, registry, conn)
 
