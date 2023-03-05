@@ -112,7 +112,7 @@ func (m *cliMock) AssertSuccessfulRun(t *testing.T, args []string) bool {
 			}
 			fmt.Println("---")
 			fmt.Println(ctc.ForegroundRed, m.uiErrorWriter.String(), ctc.Reset)
-			fmt.Println(ctc.ForegroundRed, m.uiErrorWriter.String(), ctc.Reset)
+			fmt.Println(ctc.ForegroundRed, m.uiWriter.String(), ctc.Reset)
 			return false
 		}
 	}

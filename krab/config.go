@@ -5,13 +5,11 @@ import (
 )
 
 // Config represents all configuration loaded from directory.
-//
 type Config struct {
 	MigrationSets map[string]*MigrationSet
 	Migrations    map[string]*Migration
 	Actions       map[string]*Action
-	Wasms         map[string]*WebAssembly
-	TestSuites    map[string]*TestSuite
+	TestSuite     *TestSuite
 	TestExamples  map[string]*TestExample
 }
 
@@ -22,8 +20,7 @@ func NewConfig(files []*File) (*Config, error) {
 		MigrationSets: map[string]*MigrationSet{},
 		Migrations:    map[string]*Migration{},
 		Actions:       map[string]*Action{},
-		Wasms:         map[string]*WebAssembly{},
-		TestSuites:    map[string]*TestSuite{},
+		TestSuite:     &TestSuite{},
 		TestExamples:  map[string]*TestExample{},
 	}
 
@@ -64,19 +61,7 @@ func NewConfig(files []*File) (*Config, error) {
 		}
 	}
 
-	for _, validatable := range c.TestSuites {
-		if err := validatable.Validate(); err != nil {
-			return nil, err
-		}
-	}
-
 	for _, validatable := range c.TestExamples {
-		if err := validatable.Validate(); err != nil {
-			return nil, err
-		}
-	}
-
-	for _, validatable := range c.Wasms {
 		if err := validatable.Validate(); err != nil {
 			return nil, err
 		}
@@ -110,30 +95,14 @@ func (c *Config) appendFile(file *File) error {
 		c.Actions[a.Addr().OnlyRefNames()] = a
 	}
 
-	for _, t := range file.TestSuites {
-		if _, found := c.TestSuites[t.Addr().OnlyRefNames()]; found {
-			return fmt.Errorf("TestSuite with the name '%s' already exists", t.Addr().OnlyRefNames())
-		}
-
-		c.TestSuites[t.Addr().OnlyRefNames()] = t
-	}
+	c.TestSuite = file.TestSuite
+	c.TestSuite.Tests = []*TestExample{}
 
 	for _, t := range file.TestExamples {
 		if _, found := c.TestExamples[t.Addr().OnlyRefNames()]; found {
 			return fmt.Errorf("Test with the name '%s' already exists", t.Addr().OnlyRefNames())
 		}
-
-		c.TestExamples[t.Addr().OnlyRefNames()] = t
-		suite, ok := c.TestSuites[t.Addr().Labels[0]] // first label is a test suite reference
-		if ok {
-			if suite.Tests == nil {
-				suite.Tests = []*TestExample{}
-			}
-
-			suite.Tests = append(suite.Tests, t)
-		} else {
-			return fmt.Errorf("Test suite '%s' is missing", suite.RefName)
-		}
+		c.TestSuite.Tests = append(c.TestSuite.Tests, t)
 	}
 
 	return nil
