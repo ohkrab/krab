@@ -1,6 +1,9 @@
 name: Release nightly
 
-on: [push]
+on:
+  push:
+    branches:
+      - master
 
 jobs:
   release_nightly:
