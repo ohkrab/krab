@@ -9,6 +9,7 @@ import (
 	"github.com/ohkrab/krab/krabhcl"
 	"github.com/ohkrab/krab/krabtpl"
 	"github.com/ohkrab/krab/tpls"
+	"github.com/pkg/errors"
 )
 
 // CmdAction returns migration status information.
@@ -51,7 +52,19 @@ func (c *CmdAction) run(ctx context.Context, db krabdb.DB, inputs NamedInputs) (
 	c.Action.ToSQL(&sb)
 	sql := tpl.Render(sb.String())
 
-	_, err := db.ExecContext(ctx, sql)
+	tx, err := db.NewTx(ctx, c.Action.Transaction)
+	if err != nil {
+		return result, errors.Wrap(err, "failed to create transaction")
+	}
+	_, err = tx.ExecContext(ctx, sql)
+	if err != nil {
+		tx.Rollback()
+		return result, errors.Wrap(err, "action failed")
+	}
+	err = tx.Commit()
+	if err != nil {
+		return result, errors.Wrap(err, "failed to commit transaction")
+	}
 
 	return result, err
 }

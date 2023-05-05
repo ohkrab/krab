@@ -9,7 +9,6 @@ import (
 )
 
 // Action represents custom action to execute.
-//
 type Action struct {
 	krabhcl.Source
 
@@ -18,7 +17,8 @@ type Action struct {
 
 	Arguments *Arguments
 
-	SQL string
+	SQL         string
+	Transaction bool // wrap operation in transaction
 }
 
 func (a *Action) Addr() krabhcl.Addr {
@@ -37,6 +37,10 @@ var schemaAction = &hcl.BodySchema{
 			Name:     "sql",
 			Required: true,
 		},
+		{
+			Name:     "transaction",
+			Required: false,
+		},
 	},
 }
 
@@ -47,6 +51,7 @@ func (a *Action) DecodeHCL(ctx *hcl.EvalContext, block *hcl.Block) error {
 	a.Namespace = block.Labels[0]
 	a.RefName = block.Labels[1]
 	a.Arguments = &Arguments{}
+	a.Transaction = true
 
 	content, diags := block.Body.Content(schemaAction)
 	if diags.HasErrors() {
@@ -75,6 +80,14 @@ func (a *Action) DecodeHCL(ctx *hcl.EvalContext, block *hcl.Block) error {
 				return err
 			}
 			a.SQL = val
+
+		case "transaction":
+			expr := krabhcl.Expression{Expr: v.Expr, EvalContext: ctx}
+			val, err := expr.Bool()
+			if err != nil {
+				return err
+			}
+			a.Transaction = val
 
 		default:
 			return fmt.Errorf("Unknown attribute `%s` for `%s` block", k, block.Type)
