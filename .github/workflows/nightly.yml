@@ -1,5 +1,8 @@
 name: Release nightly
 
+permissions:
+  packages: write
+
 on:
   push:
     branches:
