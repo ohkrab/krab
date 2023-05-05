@@ -84,6 +84,7 @@ jobs:
         with:
           # relative path to the place where source code with Dockerfile is located
           context: .
+          push: true
           tags: |
             ghcr.io/ohkrab/krab:${{ env.IMAGE_TAG }}
             qbart/krab:${{ env.IMAGE_TAG }}
