@@ -1,7 +1,8 @@
-import { AppShell, Box, Group, Header, Image, Navbar, ScrollArea, Text, ThemeIcon, UnstyledButton } from '@mantine/core';
-import { IconActivityHeartbeat, IconArticle, IconCopy, IconDatabase, IconDeviceFloppy, IconHierarchy2, IconLock, IconUser } from '@tabler/icons-react';
+import { AppShell, Code, ColorScheme, ColorSchemeProvider, Divider, Group, Image, MantineProvider, Navbar, Switch, Text, ThemeIcon, UnstyledButton, useMantineTheme } from '@mantine/core';
+import { IconActivityHeartbeat, IconArticle, IconDatabase, IconDeviceFloppy, IconHierarchy2, IconLock, IconMoonStars, IconSun, IconUser } from '@tabler/icons-react';
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import React from 'react';
+import { useState } from 'react';
 
 const queryClient = new QueryClient();
 
@@ -11,7 +12,7 @@ interface MainLinkProps {
   label: string;
 }
 
-function MainLink({ icon, color, label }: MainLinkProps) {
+function MainLink({ icon, label }: MainLinkProps) {
   return (
     <UnstyledButton
       sx={(theme) => ({
@@ -23,12 +24,12 @@ function MainLink({ icon, color, label }: MainLinkProps) {
 
         '&:hover': {
           backgroundColor:
-            theme.colorScheme === 'dark' ? theme.colors.dark[6] : theme.colors.gray[0],
+            theme.colorScheme === 'dark' ? theme.colors.dark[6] : theme.colors.gray[2],
         },
       })}
     >
       <Group>
-        <ThemeIcon size="md" color={color} variant="dark">
+        <ThemeIcon size="md" variant="transparent">
           {icon}
         </ThemeIcon>
         <Text size="md">{label}</Text>
@@ -37,13 +38,13 @@ function MainLink({ icon, color, label }: MainLinkProps) {
   );
 }
 const data = [
-  { icon: <IconDatabase size="1.2rem" />, color: 'green', label: 'Databases' },
-  { icon: <IconLock size="1.2rem" />, color: 'blue', label: 'Locks' },
-  { icon: <IconDeviceFloppy size="1.2rem" />, color: 'teal', label: 'Tablespaces' },
-  { icon: <IconUser size="1.2rem" />, color: 'violet', label: 'Roles' },
-  { icon: <IconArticle size="1.2rem" />, color: 'grape', label: 'WAL' },
-  { icon: <IconHierarchy2 size="1.2rem" />, color: 'grape', label: 'Replication' },
-  { icon: <IconActivityHeartbeat size="1.2rem" />, color: 'grape', label: 'Diagnostics' },
+  { icon: <IconDatabase size="1.2rem" />, label: 'Databases' },
+  { icon: <IconLock size="1.2rem" />, label: 'Locks' },
+  { icon: <IconDeviceFloppy size="1.2rem" />, label: 'Tablespaces' },
+  { icon: <IconUser size="1.2rem" />, label: 'Roles' },
+  { icon: <IconArticle size="1.2rem" />, label: 'WAL' },
+  { icon: <IconHierarchy2 size="1.2rem" />, label: 'Replication' },
+  { icon: <IconActivityHeartbeat size="1.2rem" />, label: 'Diagnostics' },
 ];
 
 const MainLinks = () => {
@@ -52,36 +53,53 @@ const MainLinks = () => {
 }
 
 function App() {
-  return (
-    <QueryClientProvider client={queryClient}>
-      <AppShell
-        padding="xl"
-        navbar={
-          <Navbar width={{ base: 300 }} p="md">
-            <Navbar.Section>
-              <Box pb="md">
-                <MainLinks />
-              </Box>
-            </Navbar.Section>
-          </Navbar>
-        }
-        header={
-          <Header height={60} p="md">
-            <Group sx={{ height: '100%' }} px="xs" position="apart">
-              <Image
-                width="auto"
-                height={30}
-                src="https://ohkrab.dev/images/favicon.svg"
-                alt="Oh, Krab!"
-              />
-            </Group>
-          </Header>
-        }
-      >
-        Content
-      </AppShell>
+  const [colorScheme, setColorScheme] = useState<ColorScheme>('light');
+  const toggleColorScheme = (value?: ColorScheme) =>
+    setColorScheme(value || (colorScheme === 'dark' ? 'light' : 'dark'));
+  const theme = useMantineTheme();
 
-    </QueryClientProvider>
+  return (
+    <ColorSchemeProvider colorScheme={colorScheme} toggleColorScheme={toggleColorScheme}>
+      <MantineProvider withGlobalStyles withNormalizeCSS theme={{ colorScheme }} >
+        <QueryClientProvider client={queryClient}>
+          <AppShell
+            padding="xl"
+            navbar={
+              <Navbar width={{ base: 300 }} p="md">
+                <Navbar.Section grow>
+                  <Group className="" position="apart" py="xxs" px="xs">
+                    <Image
+                      width="auto"
+                      height={30}
+                      src="https://ohkrab.dev/images/favicon.svg"
+                      alt="Oh, Krab!"
+                    />
+                    <Code sx={{ fontWeight: 700 }}>v0.8.0</Code>
+                  </Group>
+                  <Divider my="sm" />
+                  <MainLinks />
+                </Navbar.Section>
+
+                <Navbar.Section>
+                  <Group position="center" my={30}>
+                    <Switch
+                      checked={colorScheme === 'dark'}
+                      onChange={() => toggleColorScheme()}
+                      size="lg"
+                      onLabel={<IconSun color={theme.white} size="1.25rem" stroke={1.5} />}
+                      offLabel={<IconMoonStars color={theme.colors.gray[6]} size="1.25rem" stroke={1.5} />}
+                    />
+                  </Group>
+                </Navbar.Section>
+              </Navbar>
+            }
+          >
+            Content
+          </AppShell>
+
+        </QueryClientProvider>
+      </MantineProvider>
+    </ColorSchemeProvider>
   );
 }
 
