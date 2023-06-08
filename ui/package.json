@@ -15,7 +15,8 @@
     "@tabler/icons-react": "^2.20.0",
     "@tanstack/react-query": "^4.28.0",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.12.1"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.0.0",

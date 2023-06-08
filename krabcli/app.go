@@ -8,6 +8,7 @@ import (
 	"github.com/ohkrab/krab/cli"
 	"github.com/ohkrab/krab/krab"
 	"github.com/ohkrab/krab/krabdb"
+	"github.com/ohkrab/krab/web"
 )
 
 type Command mcli.Command
@@ -44,6 +45,14 @@ func New(
 }
 
 func (a *App) RegisterAll() {
+	a.RegisterCmd("agent", func() Command {
+		srv := &web.Server{
+			Config:     a.Config,
+			Connection: a.connection,
+		}
+		return srv
+	})
+
 	for _, cmd := range a.Registry.Commands {
 		name := strings.Join(cmd.Name(), " ")
 
