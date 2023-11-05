@@ -1,4 +1,18 @@
-.PHONY: default build install test docker_test docker_build docker_push docker_nightly
+.PHONY: default build install test docker_test docker_build docker_push docker_nightly 
+
+.PHONY: web
+web:
+	DATABASE_URL="postgres://krab:secret@localhost:5432/krab?sslmode=disable" \
+	air
+
+.PHONY: gen
+gen:
+	templ generate
+
+.PHONY: install
+install:
+	go install github.com/cosmtrek/air@latest
+	go install github.com/a-h/templ/cmd/templ@latest
 
 default:
 	export DATABASE_URL="postgres://krab:secret@localhost:5432/krab?sslmode=disable" && \

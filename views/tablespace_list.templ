@@ -1,0 +1,33 @@
+package views
+
+import "github.com/ohkrab/krab/web/dto"
+
+templ TablespaceList(tbs []*dto.TablespaceListItem) {
+<h1 class="mb-4 text-xl font-semibold text-gray-700">Tablespaces</h1>
+<div class="overflow-x-auto">
+  <table class="w-full whitespace-nowrap rounded-lg bg-white divide-y divide-gray-300 overflow-hidden shadow-md">
+    <thead class="bg-gray-50">
+      <tr class="text-left font-semibold text-gray-500">
+        <th class="px-6 py-4">Name</th>
+        <th class="px-6 py-4">Size</th>
+        <th class="px-6 py-4">Location</th>
+        <th class="px-6 py-4">Owner</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-200 text-gray-700">
+      for _, tb := range tbs {
+      @TablespaceListItem(tb)
+      }
+    </tbody>
+  </table>
+</div>
+}
+
+templ TablespaceListItem(tb *dto.TablespaceListItem) {
+<tr>
+  <td class="px-6 py-4">{ tb.Name }</td>
+  <td class="px-6 py-4">{ tb.Size }</td>
+  <td class="px-6 py-4">{ tb.Location }</td>
+  <td class="px-6 py-4">{ tb.OwnerName }</td>
+</tr>
+}

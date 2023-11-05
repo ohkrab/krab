@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 
+	_ "embed"
+
 	_ "github.com/jackc/pgx/v4"
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/ohkrab/krab/cli"
@@ -11,6 +13,15 @@ import (
 	"github.com/ohkrab/krab/krabcli"
 	"github.com/ohkrab/krab/krabdb"
 	"github.com/ohkrab/krab/krabenv"
+	"github.com/ohkrab/krab/web"
+)
+
+var (
+	//go:embed res/favicon/favicon.ico
+	favicon []byte
+
+	//go:embed res/crab-final-pure-white.svg
+	whiteLogo []byte
 )
 
 func main() {
@@ -38,7 +49,10 @@ func main() {
 	}
 	registry.RegisterAll(config, conn)
 
-	c := krabcli.New(ui, os.Args[1:], config, registry, conn)
+	c := krabcli.New(ui, os.Args[1:], config, registry, conn, web.EmbeddableResources{
+		Favicon:   favicon,
+		WhiteLogo: whiteLogo,
+	})
 
 	exitStatus, err := c.Run()
 	if err != nil {

@@ -12,35 +12,24 @@ import (
 	"github.com/go-chi/render"
 	"github.com/ohkrab/krab/krab"
 	"github.com/ohkrab/krab/krabdb"
+	"github.com/ohkrab/krab/views"
+	"github.com/ohkrab/krab/web/dto"
 )
 
 type Server struct {
 	Config     *krab.Config
 	Connection krabdb.Connection
-}
-
-type responseDatabase struct {
-	ID              uint64 `json:"ID" db:"id"`
-	Name            string `json:"name" db:"name"`
-	OwnerID         uint64 `json:"ownerID" db:"owner_id"`
-	OwnerName       string `json:"ownerName" db:"owner_name"`
-	IsTemplate      bool   `json:"isTemplate" db:"is_template"`
-	ConnectionLimit int64  `json:"connectionLimit" db:"connection_limit"`
-	TablespaceID    uint64 `json:"tablespaceID" db:"tablespace_id"`
-	TablespaceName  string `json:"tablespaceName" db:"tablespace_name"`
-	Size            string `json:"size" db:"size"`
-	Encoding        string `json:"encoding" db:"encoding"`
-	Collation       string `json:"collation" db:"collation"`
-	CharacterType   string `json:"characterType" db:"character_type"`
+	EmbeddableResources
+	render Renderer
 }
 
 type responseTablespace struct {
-	ID        uint64    `json:"ID" db:"id"`
-	Name      string    `json:"name" db:"name"`
-	OwnerID   uint64    `json:"ownerID" db:"owner_id"`
-	OwnerName string    `json:"ownerName" db:"owner_name"`
-	Size      string    `json:"size" db:"size"`
-	Location  string    `json:"location" db:"location"`
+	ID        uint64 `json:"ID" db:"id"`
+	Name      string `json:"name" db:"name"`
+	OwnerID   uint64 `json:"ownerID" db:"owner_id"`
+	OwnerName string `json:"ownerName" db:"owner_name"`
+	Size      string `json:"size" db:"size"`
+	Location  string `json:"location" db:"location"`
 }
 
 func (s *Server) Run(args []string) int {
@@ -51,16 +40,24 @@ func (s *Server) Run(args []string) int {
 	r.Use(middleware.Heartbeat("/health/live"))
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
+	r.Get("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "image/x-icon")
+		w.Header().Set("Cache-Control", "public, max-age=7776000")
+		w.Write(s.EmbeddableResources.Favicon)
+	})
+	r.Get("/images/logo-white.svg", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "image/svg+xml")
+		w.Header().Set("Cache-Control", "public, max-age=7776000")
+		w.Write(s.EmbeddableResources.WhiteLogo)
+	})
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("ok"))
 	})
-	r.Route("/api", func(r chi.Router) {
+	r.Route("/ui", func(r chi.Router) {
 		r.Use(render.SetContentType(render.ContentTypeJSON))
 
 		r.Get("/databases", func(w http.ResponseWriter, r *http.Request) {
-			var response struct {
-				Data []responseDatabase `json:"data"`
-			}
+			data := []*dto.DatabaseListItem{}
 			err := s.Connection.Get(func(db krabdb.DB) error {
 				sql := `select
 						  d.oid as id,
@@ -79,20 +76,19 @@ func (s *Server) Run(args []string) int {
 						inner join pg_tablespace ts on ts.oid = d.dattablespace
 						inner join pg_authid auth on auth.oid = d.datdba
 						order by name`
-				return db.SelectContext(r.Context(), &response.Data, sql)
+				return db.SelectContext(r.Context(), &data, sql)
 			})
 			if err != nil {
 				log.Println(err)
 				http.Error(w, http.StatusText(500), http.StatusInternalServerError)
 				return
 			}
-			render.JSON(w, r, response)
+			s.render.HTML(w, r, views.DatabaseList(data))
 		})
 
 		r.Get("/tablespaces", func(w http.ResponseWriter, r *http.Request) {
-			var response struct {
-				Data []responseTablespace `json:"data"`
-			}
+			data := []*dto.TablespaceListItem{}
+
 			err := s.Connection.Get(func(db krabdb.DB) error {
 				sql := `
 						with default_locations as (
@@ -111,7 +107,7 @@ func (s *Server) Run(args []string) int {
 						inner join pg_authid auth on auth.oid = t.spcowner
 						left join default_locations dl on dl.name = t.spcname
 						order by name`
-				return db.SelectContext(r.Context(), &response.Data, sql)
+				return db.SelectContext(r.Context(), &data, sql)
 			})
 
 			if err != nil {
@@ -119,7 +115,7 @@ func (s *Server) Run(args []string) int {
 				http.Error(w, http.StatusText(500), http.StatusInternalServerError)
 				return
 			}
-			render.JSON(w, r, response)
+			s.render.HTML(w, r, views.TablespaceList(data))
 		})
 	})
 

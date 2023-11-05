@@ -1,0 +1,59 @@
+package views
+
+import "strconv"
+import "fmt"
+import "github.com/ohkrab/krab/web/dto"
+
+templ DatabaseList(databases []*dto.DatabaseListItem) {
+<h1 class="mb-4 text-xl font-semibold text-gray-700">Database List</h1>
+<div class="overflow-x-auto">
+   <table class="w-full whitespace-nowrap rounded-lg bg-white divide-y divide-gray-300 overflow-hidden shadow-md">
+      <thead class="bg-gray-50">
+         <tr class="text-left font-semibold text-gray-500">
+            <th class="px-6 py-4">Database</th>
+            <th class="px-6 py-4">Size</th>
+            <th class="px-6 py-4">Tablespace</th>
+            <th class="px-6 py-4">Connection Limit</th>
+            <th class="px-6 py-4">Owner</th>
+            <th class="px-6 py-4">Encoding</th>
+            <th class="px-6 py-4">Collation</th>
+            <th class="px-6 py-4">Character Type</th>
+         </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-200 text-gray-700">
+         for _, db := range databases {
+         @DatabaseListItem(db)
+         }
+      </tbody>
+   </table>
+</div>
+}
+
+templ DatabaseListItem(db *dto.DatabaseListItem) {
+<tr>
+   <td class="px-6 py-4">
+      <a href={templ.SafeURL(fmt.Sprintf("/ui/databases/%d", db.ID))} class="text-blue-500 hover:underline" href="#">
+         { db.Name }
+      </a>
+      if db.IsTemplate {
+      <span
+         class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-md text-sm font-medium bg-neutral-200 text-neutral-800">
+         Template
+      </span>
+      }
+   </td>
+   <td class="px-6 py-4">{ db.Size }</td>
+   <td class="px-6 py-4">{ db.TablespaceName }</td>
+   <td class="px-6 py-4">
+      if db.ConnectionLimit == -1 {
+      No limits
+      } else {
+      { strconv.Itoa(int(db.ConnectionLimit)) }
+      }
+   </td>
+   <td class="px-6 py-4">{ db.OwnerName }</td>
+   <td class="px-6 py-4">{ db.Encoding }</td>
+   <td class="px-6 py-4">{ db.Collation }</td>
+   <td class="px-6 py-4">{ db.CharacterType }</td>
+</tr>
+}
