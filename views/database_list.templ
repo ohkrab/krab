@@ -5,9 +5,9 @@ import "fmt"
 import "github.com/ohkrab/krab/web/dto"
 
 templ DatabaseList(databases []*dto.DatabaseListItem) {
-<h1 class="mb-4 text-xl font-semibold text-gray-700">Database List</h1>
+<h1 class="mb-4 text-xl font-semibold text-gray-700">Databases</h1>
 <div class="overflow-x-auto">
-   <table class="w-full whitespace-nowrap rounded-lg bg-white divide-y divide-gray-300 overflow-hidden shadow-md">
+   <table class="w-full whitespace-nowrap bg-white divide-y divide-gray-300 overflow-hidden shadow-md">
       <thead class="bg-gray-50">
          <tr class="text-left font-semibold text-gray-500">
             <th class="px-6 py-4">Database</th>

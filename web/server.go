@@ -117,6 +117,48 @@ func (s *Server) Run(args []string) int {
 			}
 			s.render.HTML(w, r, views.TablespaceList(data))
 		})
+
+		r.Get("/actions", func(w http.ResponseWriter, r *http.Request) {
+			data := []*dto.ActionListItem{
+				{
+					Namespace:   "db",
+					Name:        "create",
+					Description: "Create database",
+					Transaction: false,
+					Arguments: []*dto.ActionListItemArgument{
+						{
+							Name:        "name",
+							Type:        "string",
+							Description: "Database name",
+						},
+						{
+							Name:        "user",
+							Type:        "string",
+							Description: "Database user",
+						},
+					},
+				},
+				{
+					Namespace:   "user",
+					Name:        "create",
+					Description: "Create user",
+					Transaction: true,
+					Arguments: []*dto.ActionListItemArgument{
+						{
+							Name:        "user",
+							Type:        "string",
+							Description: "Database user",
+						},
+						{
+							Name:        "password",
+							Type:        "string",
+							Description: "Database password",
+						},
+					},
+				},
+			}
+			s.render.HTML(w, r, views.ActionList(data))
+		})
 	})
 
 	server := &http.Server{Addr: ":8888", Handler: r}

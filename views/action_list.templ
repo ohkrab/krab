@@ -1,0 +1,52 @@
+package views
+
+import "github.com/ohkrab/krab/web/dto"
+
+templ ActionList(actions []*dto.ActionListItem) {
+<h1 class="mb-4 text-xl font-semibold text-gray-700">Actions</h1>
+<div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+  for _, action := range actions {
+  @ActionListItem(action)
+  }
+</div>
+}
+
+templ ActionListItem(action *dto.ActionListItem) {
+<div class="rounded-lg border bg-white shadow-sm" data-v0-t="card">
+  <div class="flex flex-col space-y-1.5 p-6">
+    <h3 class="text-2xl font-semibold leading-none tracking-tight flex justify-between items-center">
+      { action.Namespace } { action.Name }
+      if !action.Transaction {
+      <span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs bg-rose-300 text-white">
+        No transaction
+      </span>
+      }
+    </h3>
+    <p class="text-sm text-muted-foreground">{ action.Description }</p>
+  </div>
+  <div class="px-6 py-2">
+    <div class="flex flex-col space-y-2">
+      for _, arg := range action.Arguments {
+      <div class="flex items-center space-x-2">
+        <span class="px-2 py-1 text-sm text-black bg-white rounded">
+          { arg.Name } : { arg.Type }
+        </span>
+        <p class="text-sm text-gray-500">
+          { arg.Description }
+        </p>
+      </div>
+      }
+    </div>
+  </div>
+  <div class="flex items-center p-6">
+    <button
+      class="inline-flex items-center justify-center text-sm font-medium px-3 py-1 rounded-sm bg-rose-500 text-rose-100">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class=" mr-2">
+        <polygon points="5 3 19 12 5 21 5 3"></polygon>
+      </svg>
+      Run
+    </button>
+  </div>
+</div>
+}
