@@ -1,0 +1,36 @@
+package views
+
+import "github.com/ohkrab/krab/web/dto"
+import "fmt"
+
+templ ActionForm(form *dto.ActionForm) {
+<h1 class="mb-4 text-xl font-semibold text-gray-700">Run action</h1>
+<form>
+  <div class="text-sm font-medium text-gray-500">{ form.Namespace } / { form.Name }</div>
+  <input type="hidden" name="id" value={ form.ExecutionID } />
+  <div class="flex flex-col items-stretch mt-8 space-y-4">
+    for _, arg := range form.Arguments {
+    <div class="max-w-2xl">
+      <div class="flex justify-between">
+        <label for="email" class="block text-sm font-medium leading-6 text-gray-900">{ arg.Description }</label>
+        <!-- <span class="text-sm leading-6 text-gray-500">Optional</span> -->
+      </div>
+      <div class="mt-2">
+        <input type="text" name={ fmt.Sprintf("args[%s]", arg.Name) }
+          class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-rose-400 sm:text-sm sm:leading-6" />
+      </div>
+    </div>
+    }
+    <div class="max-w-2xl">
+      <button type="submit"
+        class="inline-flex items-center justify-center text-sm font-medium mt-2 px-4 py-2 rounded-sm bg-rose-500 hover:bg-rose-700 text-rose-100 ring-0 ring-rose-300 focus:ring-2 focus:outline-none">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mr-2" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class=" mr-2">
+          <polygon points="5 3 19 12 5 21 5 3"></polygon>
+        </svg>
+        Execute
+      </button>
+    </div>
+  </div>
+</form>
+}

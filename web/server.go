@@ -10,6 +10,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
+	"github.com/google/uuid"
 	"github.com/ohkrab/krab/krab"
 	"github.com/ohkrab/krab/krabdb"
 	"github.com/ohkrab/krab/views"
@@ -158,6 +159,27 @@ func (s *Server) Run(args []string) int {
 				},
 			}
 			s.render.HTML(w, r, views.ActionList(data))
+		})
+
+		r.Get("/actions/new/{namespace}/{name}", func(w http.ResponseWriter, r *http.Request) {
+			data := dto.ActionForm{
+				ExecutionID: uuid.New().String(),
+				Namespace:   chi.URLParam(r, "namespace"),
+				Name:        chi.URLParam(r, "name"),
+				Arguments: []*dto.ActionFormArgument{
+					{
+						Name:        "name",
+						Description: "Database name",
+						Value:       "test",
+					},
+					{
+						Name:        "user",
+						Description: "Database user",
+						Value:       "aa",
+					},
+				},
+			}
+			s.render.HTML(w, r, views.ActionForm(&data))
 		})
 	})
 

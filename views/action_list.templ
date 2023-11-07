@@ -1,10 +1,11 @@
 package views
 
 import "github.com/ohkrab/krab/web/dto"
+import "fmt"
 
 templ ActionList(actions []*dto.ActionListItem) {
 <h1 class="mb-4 text-xl font-semibold text-gray-700">Actions</h1>
-<div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
   for _, action := range actions {
   @ActionListItem(action)
   }
@@ -39,14 +40,14 @@ templ ActionListItem(action *dto.ActionListItem) {
     </div>
   </div>
   <div class="flex items-center p-6">
-    <button
+    <a href={ templ.SafeURL(fmt.Sprintf("/ui/actions/new/%s/%s", action.Namespace, action.Name)) }
       class="inline-flex items-center justify-center text-sm font-medium px-3 py-1 rounded-sm bg-rose-500 text-rose-100">
       <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor"
         stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class=" mr-2">
         <polygon points="5 3 19 12 5 21 5 3"></polygon>
       </svg>
       Run
-    </button>
+    </a>
   </div>
 </div>
 }

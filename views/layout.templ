@@ -13,29 +13,29 @@ templ Layout(yield templ.Component) {
 </head>
 
 <body>
-	<div class="flex flex-col h-screen bg-gray-100 ">
-		<div class="w-full h-12 bg-rose-700 flex items-center justify-between shadow-md px-8">
+	<div class="flex flex-col h-screen bg-gray-100">
+		<div class="w-full h-12 bg-rose-700 flex items-center justify-between shadow-md pl-5 pr-6">
 			<div class="flex items-center">
-				<img alt="Logo" class="object-contain object-center mr-4 h-8" src="/images/logo-white.svg" />
-				<h1 class="text-lg font-semibold text-rose-100">Oh, Krab!</h1>
+				<img alt="Logo" class="object-contain object-center mr-4 h-6" src="/images/logo-white.svg" />
+				<h1 class="text-lg font-semibold text-rose-100 invisible lg:visible">Oh, Krab!</h1>
 			</div>
 			<div class="flex items-center mx-auto">
 				<input accessKey="/" aria-label="Search"
-					class="w-96 h-8 px-4 rounded-lg text-sm border-none focus:outline-none focus:ring-2 focus:ring-rose-400 bg-rose-800 text-rose-200 placeholder-rose-200"
+					class="w-96 h-8 px-4 rounded-lg text-sm border-none focus:outline-none focus:ring-2 focus:ring-rose-400 bg-rose-800 text-rose-100 placeholder-rose-300"
 					placeholder="Search... (Press '/' to focus)" type="text" />
 			</div>
 			<div class="flex items-center">
-				<p class="text-sm font-medium text-rose-200 mr-4">Anonymous</p>
-				<img alt="" class="rounded-full mr-4 object-contain object-center h-6" src="/images/logo-white.svg" />
+				<p class="text-sm font-medium text-rose-200 mr-4 hidden lg:inline">Anonymous</p>
+				<img alt="" class="rounded-full mr-4 object-contain object-center h-6 invisible lg:visible"
+					src="/images/logo-white.svg" />
 				<a class="text-xs text-rose-300 hover:underline" href="#">
 					Logout
 				</a>
 			</div>
 		</div>
 
-
 		<div class="flex h-full">
-			<div class="flex flex-col w-64 bg-white px-8 py-4 shadow-md">
+			<div class="flex flex-col sm:w-64 bg-white py-4 shadow-md">
 				<nav class="">
 					<a class="flex items-center mt-4 py-2 px-6 text-gray-700 hover:bg-gray-100" href="/ui/monitor">
 						<svg class=" h-6 w-6" fill="none" height="24" stroke="currentColor" strokeLinecap="round"
@@ -45,7 +45,7 @@ templ Layout(yield templ.Component) {
 								d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
 							<path d="M3.22 12H9.5l.5-1 2 4.5 2-7 1.5 3.5h5.27" />
 						</svg>
-						<span class="mx-3">Monitor</span>
+						<span class="mx-3 hidden sm:inline">Monitor</span>
 					</a>
 					<a class="flex items-center mt-4 py-2 px-6 text-gray-700 hover:bg-gray-100" href="/ui/tablespaces">
 						<svg class=" h-6 w-6" fill="none" height="24" stroke="currentColor" strokeLinecap="round"
@@ -57,7 +57,7 @@ templ Layout(yield templ.Component) {
 							<line x1="6" x2="6.01" y1="16" y2="16" />
 							<line x1="10" x2="10.01" y1="16" y2="16" />
 						</svg>
-						<span class="mx-3">Tablespaces</span>
+						<span class="mx-3 hidden sm:inline">Tablespaces</span>
 					</a>
 					<a class="flex items-center mt-4 py-2 px-6 text-gray-700 hover:bg-gray-100" href="/ui/databases">
 						<svg class=" h-6 w-6" fill="none" height="24" stroke="currentColor" strokeLinecap="round"
@@ -67,7 +67,7 @@ templ Layout(yield templ.Component) {
 							<path d="M3 5V19A9 3 0 0 0 21 19V5" />
 							<path d="M3 12A9 3 0 0 0 21 12" />
 						</svg>
-						<span class="mx-3">Databases</span>
+						<span class="mx-3 hidden sm:inline">Databases</span>
 					</a>
 					<a class="flex items-center mt-4 py-2 px-6 text-gray-700 hover:bg-gray-100" href="/ui/actions">
 						<svg class=" h-6 w-6" fill="none" height="24" stroke="currentColor" strokeLinecap="round"
@@ -75,10 +75,10 @@ templ Layout(yield templ.Component) {
 							xmlns="http://www.w3.org/2000/svg">
 							<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
 						</svg>
-						<span class="mx-3">Actions</span>
+						<span class="mx-3 hidden sm:inline">Actions</span>
 					</a>
 				</nav>
-				<div class="mt-auto mb-4 text-center">
+				<div class="mt-auto mb-4 text-center hidden sm:block">
 					<p class="text-sm text-gray-400">v0.8.0</p>
 				</div>
 			</div>
