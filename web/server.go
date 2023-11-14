@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"os/signal"
+	"strings"
 	"syscall"
 
 	"github.com/go-chi/chi/v5"
@@ -13,6 +14,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/ohkrab/krab/krab"
 	"github.com/ohkrab/krab/krabdb"
+	"github.com/ohkrab/krab/krabenv"
+	"github.com/ohkrab/krab/krabhcl"
 	"github.com/ohkrab/krab/views"
 	"github.com/ohkrab/krab/web/dto"
 )
@@ -40,6 +43,9 @@ func (s *Server) Run(args []string) int {
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Heartbeat("/health/live"))
 	r.Use(middleware.Logger)
+	if krabenv.Auth() == "basic" {
+		r.Use(middleware.BasicAuth("Krab", krabenv.HttpBasicAuthData()))
+	}
 	r.Use(middleware.Recoverer)
 	r.Get("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "image/x-icon")
@@ -52,7 +58,46 @@ func (s *Server) Run(args []string) int {
 		w.Write(s.EmbeddableResources.WhiteLogo)
 	})
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("ok"))
+		if r.Header.Get("Content-type") == "application/json" {
+			w.Write([]byte(`{"status":"ok"}`))
+		} else {
+			http.Redirect(w, r, "/ui/databases", http.StatusFound)
+		}
+	})
+	r.Route("/api", func(r chi.Router) {
+		r.Post("/actions/execute", func(w http.ResponseWriter, r *http.Request) {
+			r.ParseForm()
+
+			form := PostForm(r.PostForm)
+
+			addr := krabhcl.AddrFromStrings([]string{"action", form.Get("namespace"), form.Get("name")})
+			action, ok := s.Config.Actions[addr.OnlyRefNames()]
+			if !ok {
+				http.Error(w, http.StatusText(404), http.StatusNotFound)
+				return
+			}
+			formArgs := form.GetObject("args")
+			inputs := krab.NamedInputs{}
+			for _, arg := range action.Arguments.Args {
+				inputs[arg.Name] = formArgs.Get(arg.Name)
+			}
+
+			conn := &krabdb.DefaultConnection{}
+			cmd := krab.CmdAction{
+				Action:     action,
+				Connection: conn,
+			}
+			_, err := cmd.Do(context.Background(), krab.CmdOpts{
+				NamedInputs: inputs,
+			})
+			if err != nil {
+				log.Println(err)
+				http.Error(w, http.StatusText(500), http.StatusInternalServerError)
+				return
+			}
+
+			http.Redirect(w, r, "/ui/actions", http.StatusFound)
+		})
 	})
 	r.Route("/ui", func(r chi.Router) {
 		r.Use(render.SetContentType(render.ContentTypeJSON))
@@ -120,65 +165,49 @@ func (s *Server) Run(args []string) int {
 		})
 
 		r.Get("/actions", func(w http.ResponseWriter, r *http.Request) {
-			data := []*dto.ActionListItem{
-				{
-					Namespace:   "db",
-					Name:        "create",
-					Description: "Create database",
-					Transaction: false,
-					Arguments: []*dto.ActionListItemArgument{
-						{
-							Name:        "name",
-							Type:        "string",
-							Description: "Database name",
-						},
-						{
-							Name:        "user",
-							Type:        "string",
-							Description: "Database user",
-						},
-					},
-				},
-				{
-					Namespace:   "user",
-					Name:        "create",
-					Description: "Create user",
-					Transaction: true,
-					Arguments: []*dto.ActionListItemArgument{
-						{
-							Name:        "user",
-							Type:        "string",
-							Description: "Database user",
-						},
-						{
-							Name:        "password",
-							Type:        "string",
-							Description: "Database password",
-						},
-					},
-				},
+			data := []*dto.ActionListItem{}
+			for _, action := range s.Config.Actions {
+				args := []*dto.ActionListItemArgument{}
+				for _, arg := range action.Arguments.Args {
+					args = append(args, &dto.ActionListItemArgument{
+						Name:        arg.Name,
+						Type:        arg.Type,
+						Description: arg.Description,
+					})
+				}
+				data = append(data, &dto.ActionListItem{
+					Namespace:   action.Namespace,
+					Name:        action.RefName,
+					Description: "",
+					Transaction: action.Transaction,
+					Arguments:   args,
+				})
 			}
 			s.render.HTML(w, r, views.ActionList(data))
 		})
 
 		r.Get("/actions/new/{namespace}/{name}", func(w http.ResponseWriter, r *http.Request) {
+			addr := krabhcl.AddrFromStrings([]string{"action", chi.URLParam(r, "namespace"), chi.URLParam(r, "name")})
+			action, ok := s.Config.Actions[addr.OnlyRefNames()]
+			if !ok {
+				http.Error(w, http.StatusText(404), http.StatusNotFound)
+				return
+			}
+			args := []*dto.ActionFormArgument{}
+			for _, arg := range action.Arguments.Args {
+				args = append(args, &dto.ActionFormArgument{
+					Name:        arg.Name,
+					Description: arg.Description,
+					Value:       "",
+				})
+			}
 			data := dto.ActionForm{
 				ExecutionID: uuid.New().String(),
-				Namespace:   chi.URLParam(r, "namespace"),
-				Name:        chi.URLParam(r, "name"),
-				Arguments: []*dto.ActionFormArgument{
-					{
-						Name:        "name",
-						Description: "Database name",
-						Value:       "test",
-					},
-					{
-						Name:        "user",
-						Description: "Database user",
-						Value:       "aa",
-					},
-				},
+				Namespace:   action.Namespace,
+				Name:        action.RefName,
+				Arguments:   args,
 			}
+
 			s.render.HTML(w, r, views.ActionForm(&data))
 		})
 	})
@@ -234,4 +263,27 @@ var ErrNotFound = &ErrResponse{HTTPStatusCode: 404, StatusText: "Resource not fo
 func (e *ErrResponse) Render(w http.ResponseWriter, r *http.Request) error {
 	render.Status(r, e.HTTPStatusCode)
 	return nil
+}
+
+type PostForm map[string][]string
+
+func (f PostForm) Get(key string) string {
+	if _, ok := f[key]; !ok {
+		return ""
+	}
+
+	return f[key][0]
+}
+
+func (f PostForm) GetObject(key string) PostForm {
+	prefix := key + "["
+	suffix := "]"
+	obj := map[string][]string{}
+	for k, v := range f {
+		if strings.HasPrefix(k, prefix) && strings.HasSuffix(k, suffix) {
+			obj[strings.TrimPrefix(strings.TrimSuffix(k, suffix), prefix)] = v
+		}
+	}
+
+	return PostForm(obj)
 }

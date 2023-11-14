@@ -5,9 +5,11 @@ import "fmt"
 
 templ ActionForm(form *dto.ActionForm) {
 <h1 class="mb-4 text-xl font-semibold text-gray-700">Run action</h1>
-<form>
+<form action="/api/actions/execute" method="POST">
   <div class="text-sm font-medium text-gray-500">{ form.Namespace } / { form.Name }</div>
   <input type="hidden" name="id" value={ form.ExecutionID } />
+  <input type="hidden" name="namespace" value={ form.Namespace } />
+  <input type="hidden" name="name" value={ form.Name } />
   <div class="flex flex-col items-stretch mt-8 space-y-4">
     for _, arg := range form.Arguments {
     <div class="max-w-2xl">
