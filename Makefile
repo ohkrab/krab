@@ -2,7 +2,7 @@
 
 .PHONY: web
 web:
-	KRAB_AUTH=basic \
+	KRAB_AUTH=none \
 	KRAB_AUTH_BASIC_USERNAME=krab \
 	KRAB_AUTH_BASIC_PASSWORD=secret \
 	DATABASE_URL="postgres://krab:secret@localhost:5432/krab?sslmode=disable" \

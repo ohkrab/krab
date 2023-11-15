@@ -120,7 +120,7 @@ func (s *Server) Run(args []string) int {
 						  d.datctype AS character_type
 						from pg_database d
 						inner join pg_tablespace ts on ts.oid = d.dattablespace
-						inner join pg_authid auth on auth.oid = d.datdba
+						inner join pg_roles auth on auth.oid = d.datdba
 						order by name`
 				return db.SelectContext(r.Context(), &data, sql)
 			})
@@ -150,7 +150,7 @@ func (s *Server) Run(args []string) int {
 						  pg_size_pretty(pg_tablespace_size(t.oid)) AS size,
 						  coalesce(nullif(pg_tablespace_location(t.oid), ''), dl.location) AS location
 						from pg_tablespace t
-						inner join pg_authid auth on auth.oid = t.spcowner
+						inner join pg_roles auth on auth.oid = t.spcowner
 						left join default_locations dl on dl.name = t.spcname
 						order by name`
 				return db.SelectContext(r.Context(), &data, sql)
