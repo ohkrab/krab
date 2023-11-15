@@ -23,5 +23,6 @@ FROM alpine:3.18
 COPY --from=build /tmp/krab /usr/local/bin/krab
 ENTRYPOINT ["/usr/local/bin/krab"]
 
+RUN mkdir -p /etc/krab
+
 ENV KRAB_DIR=/etc/krab
-ENV DATABASE_URL=
