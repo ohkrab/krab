@@ -10,6 +10,6 @@ import (
 type Renderer struct {
 }
 
-func (renderer *Renderer) HTML(w http.ResponseWriter, r *http.Request, view templ.Component) {
-	views.Layout(view).Render(r.Context(), w)
+func (renderer *Renderer) HTML(w http.ResponseWriter, r *http.Request, info views.LayoutInfo, view templ.Component) {
+	views.Layout(info, view).Render(r.Context(), w)
 }

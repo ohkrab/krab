@@ -1,0 +1,31 @@
+package views
+
+import "fmt"
+import "github.com/ohkrab/krab/web/dto"
+
+templ SchemaList(schemas []*dto.SchemaListItem) {
+<h1 class="mb-4 text-xl font-semibold text-gray-700">Schemas</h1>
+<div class="overflow-x-auto">
+   <table class="w-full whitespace-nowrap bg-white divide-y divide-gray-300 overflow-hidden shadow-md">
+      <thead class="bg-gray-50">
+         <tr class="text-left font-semibold text-gray-500">
+            <th class="px-6 py-4">Name</th>
+            <th class="px-6 py-4">Owner</th>
+         </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-200 text-gray-700">
+         for _, s := range schemas {
+         <tr>
+            <td class="px-6 py-4">
+               <a href={templ.SafeURL(fmt.Sprintf("/ui/databases/%d/schemas/%s/tables", s.DatabaseID, s.Name))}
+                  class="text-rose-500 hover:underline" href="#">
+                  { s.Name }
+               </a>
+            </td>
+            <td class="px-6 py-4">{ s.OwnerName }</td>
+         </tr>
+         }
+      </tbody>
+   </table>
+</div>
+}

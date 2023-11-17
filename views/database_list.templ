@@ -32,7 +32,7 @@ templ DatabaseList(databases []*dto.DatabaseListItem) {
 templ DatabaseListItem(db *dto.DatabaseListItem) {
 <tr>
    <td class="px-6 py-4">
-      <a href={templ.SafeURL(fmt.Sprintf("/ui/databases/%d", db.ID))} class="text-rose-500 hover:underline" href="#">
+      <a href={templ.SafeURL(fmt.Sprintf("/ui/databases/%d/schemas", db.ID))} class="text-rose-500 hover:underline" href="#">
          { db.Name }
       </a>
       if db.IsTemplate {

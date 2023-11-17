@@ -1,0 +1,56 @@
+package views
+
+import "fmt"
+import "github.com/ohkrab/krab/web/dto"
+
+templ TableList(tables []*dto.TableListItem) {
+<h1 class="mb-4 text-xl font-semibold text-gray-700">Tables</h1>
+<div class="overflow-x-auto">
+   <table class="w-full whitespace-nowrap bg-white divide-y divide-gray-300 overflow-hidden shadow-md">
+      <thead class="bg-gray-50">
+         <tr class="text-left font-semibold text-gray-500">
+            <th class="px-6 py-4">Name</th>
+            <th class="px-6 py-4">Size</th>
+            <th class="px-6 py-4">Tablespace</th>
+            <th class="px-6 py-4">Owner</th>
+            <th class="px-6 py-4">Row-Level Security</th>
+         </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-200 text-gray-700">
+         for _, t := range tables {
+         @TableListItem(t)
+         }
+      </tbody>
+   </table>
+</div>
+}
+
+
+templ TableListItem(t *dto.TableListItem) {
+<tr>
+   <td class="px-6 py-4">
+      <a href={templ.SafeURL(fmt.Sprintf("/ui/databases/%d/schemas/%s/tables/%s", t.DatabaseID, t.Schema, t.Name))}
+         class="text-rose-500 hover:underline" href="#">
+         { t.Name }
+      </a>
+   </td>
+   <td class="px-6 py-4">
+      <div class="flex items-center justify-items-center">
+         <div class="w-16 bg-gray-200 rounded-full h-2">
+            <!-- w-16 is 4 rem so we can calculate percentage of it, style interpolation not supported in templ -->
+            <div class={"bg-rose-400", "h-2", "rounded-full", fmt.Sprintf("w-[%drem]", int(t.SizePercent*4))}></div>
+         </div>
+         <div class="pl-2">{ t.Size }</div>
+      </div>
+   </td>
+   <td class="px-6 py-4">{ t.TablespaceName }</td>
+   <td class="px-6 py-4">{ t.OwnerName }</td>
+   <td class="px-6 py-4">
+      if t.RLS {
+      Yes
+      } else {
+      No
+      }
+   </td>
+</tr>
+}

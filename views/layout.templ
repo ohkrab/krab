@@ -1,6 +1,8 @@
 package views
 
-templ Layout(yield templ.Component) {
+import "fmt"
+
+templ Layout(info LayoutInfo, yield templ.Component) {
 <!doctype html>
 <html>
 
@@ -41,6 +43,7 @@ templ Layout(yield templ.Component) {
 		<div class="flex h-full">
 			<div class="flex flex-col sm:w-64 bg-white py-4 shadow-md">
 				<nav class="">
+
 					<!-- <a class="flex items-center mt-4 py-2 px-6 text-gray-700 hover:bg-gray-100" href="/ui/monitor">
 						<svg class=" h-6 w-6" fill="none" height="24" stroke="currentColor" strokeLinecap="round"
 							strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" width="24"
@@ -51,6 +54,7 @@ templ Layout(yield templ.Component) {
 						</svg>
 						<span class="mx-3 hidden sm:inline">Monitor</span>
 					</a> -->
+					if info.Nav == NavNone {
 					<a class="flex items-center mt-4 py-2 px-6 text-gray-700 hover:bg-gray-100" href="/ui/tablespaces">
 						<svg class=" h-6 w-6" fill="none" height="24" stroke="currentColor" strokeLinecap="round"
 							strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" width="24"
@@ -81,6 +85,37 @@ templ Layout(yield templ.Component) {
 						</svg>
 						<span class="mx-3 hidden sm:inline">Actions</span>
 					</a>
+					}
+
+					if info.Nav == NavDatabase {
+					<a class="flex items-center mt-4 py-2 px-6 text-gray-700 hover:bg-gray-100" href="/ui/databases">
+						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+							stroke="currentColor" class="w-6 h-6">
+							<path stroke-linecap="round" stroke-linejoin="round"
+								d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
+						</svg>
+
+						<span class="mx-3 hidden sm:inline">Back</span>
+					</a>
+					<a class="flex items-center mt-4 py-2 px-6 text-gray-700 hover:bg-gray-100" href={
+						templ.SafeURL(fmt.Sprintf("/ui/databases/%d/schemas", info.OID)) }>
+						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+							stroke="currentColor" class="w-6 h-6">
+							<path stroke-linecap="round" stroke-linejoin="round"
+								d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z" />
+						</svg>
+						<span class="mx-3 hidden sm:inline">Schemas</span>
+					</a>
+					<a class="flex items-center mt-4 py-2 px-6 text-gray-700 hover:bg-gray-100" href={
+						templ.SafeURL(fmt.Sprintf("/ui/databases/%d/schemas/public/tables", info.OID)) }>
+						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+							stroke="currentColor" class="w-6 h-6">
+							<path stroke-linecap="round" stroke-linejoin="round"
+								d="M3.375 19.5h17.25m-17.25 0a1.125 1.125 0 01-1.125-1.125M3.375 19.5h7.5c.621 0 1.125-.504 1.125-1.125m-9.75 0V5.625m0 12.75v-1.5c0-.621.504-1.125 1.125-1.125m18.375 2.625V5.625m0 12.75c0 .621-.504 1.125-1.125 1.125m1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125m0 3.75h-7.5A1.125 1.125 0 0112 18.375m9.75-12.75c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125m19.5 0v1.5c0 .621-.504 1.125-1.125 1.125M2.25 5.625v1.5c0 .621.504 1.125 1.125 1.125m0 0h17.25m-17.25 0h7.5c.621 0 1.125.504 1.125 1.125M3.375 8.25c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125m17.25-3.75h-7.5c-.621 0-1.125.504-1.125 1.125m8.625-1.125c.621 0 1.125.504 1.125 1.125v1.5c0 .621-.504 1.125-1.125 1.125m-17.25 0h7.5m-7.5 0c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125M12 10.875v-1.5m0 1.5c0 .621-.504 1.125-1.125 1.125M12 10.875c0 .621.504 1.125 1.125 1.125m-2.25 0c.621 0 1.125.504 1.125 1.125M13.125 12h7.5m-7.5 0c-.621 0-1.125.504-1.125 1.125M20.625 12c.621 0 1.125.504 1.125 1.125v1.5c0 .621-.504 1.125-1.125 1.125m-17.25 0h7.5M12 14.625v-1.5m0 1.5c0 .621-.504 1.125-1.125 1.125M12 14.625c0 .621.504 1.125 1.125 1.125m-2.25 0c.621 0 1.125.504 1.125 1.125m0 1.5v-1.5m0 0c0-.621.504-1.125 1.125-1.125m0 0h7.5" />
+						</svg>
+						<span class="mx-3 hidden sm:inline">Tables</span>
+					</a>
+					}
 				</nav>
 				<div class="mt-auto mb-4 text-center hidden sm:block">
 					<p class="text-sm text-gray-400">v0.8.0</p>

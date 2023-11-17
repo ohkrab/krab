@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"os/signal"
+	"strconv"
 	"strings"
 	"syscall"
 
@@ -129,7 +130,7 @@ func (s *Server) Run(args []string) int {
 				http.Error(w, http.StatusText(500), http.StatusInternalServerError)
 				return
 			}
-			s.render.HTML(w, r, views.DatabaseList(data))
+			s.render.HTML(w, r, views.LayoutInfo{}, views.DatabaseList(data))
 		})
 
 		r.Get("/tablespaces", func(w http.ResponseWriter, r *http.Request) {
@@ -161,7 +162,77 @@ func (s *Server) Run(args []string) int {
 				http.Error(w, http.StatusText(500), http.StatusInternalServerError)
 				return
 			}
-			s.render.HTML(w, r, views.TablespaceList(data))
+			s.render.HTML(w, r, views.LayoutInfo{}, views.TablespaceList(data))
+		})
+
+		r.Get("/databases/{oid}/schemas", func(w http.ResponseWriter, r *http.Request) {
+			oidParam := chi.URLParam(r, "oid")
+			oid, err := strconv.Atoi(oidParam)
+			if err != nil {
+				http.Error(w, http.StatusText(400), http.StatusBadRequest)
+				return
+			}
+
+			data := []*dto.SchemaListItem{}
+			err = s.Connection.Get(func(db krabdb.DB) error {
+				sql := `select
+							n.oid AS id,
+							n.nspname AS name,
+							n.nspowner AS owner_id,
+							r.rolname AS owner_name
+						from pg_namespace n
+						join pg_roles r on n.nspowner = r.oid`
+				return db.SelectContext(r.Context(), &data, sql)
+			})
+			if err != nil {
+				log.Println(err)
+				http.Error(w, http.StatusText(500), http.StatusInternalServerError)
+				return
+			}
+			for _, schema := range data {
+				schema.DatabaseID = uint64(oid)
+			}
+			s.render.HTML(w, r, views.LayoutInfo{Nav: views.NavDatabase, OID: oid}, views.SchemaList(data))
+		})
+
+		r.Get("/databases/{doid}/schemas/{schema}/tables", func(w http.ResponseWriter, r *http.Request) {
+			doidParam := chi.URLParam(r, "doid")
+			schema := chi.URLParam(r, "schema")
+			doid, err := strconv.Atoi(doidParam)
+			if err != nil {
+				http.Error(w, http.StatusText(400), http.StatusBadRequest)
+				return
+			}
+
+			data := []*dto.TableListItem{}
+			err = s.Connection.Get(func(db krabdb.DB) error {
+				sql := `select
+					schemaname as schema_name,
+					tablename as name,
+					tableowner as owner_name,
+					coalesce(tablespace, 'pg_default') as tablespace_name,
+					rowsecurity as rls,
+					pg_size_pretty(pg_relation_size(format('%I.%I', schemaname, tablename))) AS size,
+					(
+						pg_relation_size(
+							format('%I.%I', schemaname, tablename)
+						)::numeric /
+						SUM( pg_relation_size(format('%I.%I', schemaname, tablename)) ) OVER ()
+					)::double precision AS size_percent
+				from pg_tables
+				where schemaname = $1
+				order by schemaname, pg_relation_size(format('%I.%I', schemaname, tablename)) desc, tablename`
+				return db.SelectContext(r.Context(), &data, sql, schema)
+			})
+			if err != nil {
+				log.Println(err)
+				http.Error(w, http.StatusText(500), http.StatusInternalServerError)
+				return
+			}
+			for _, table := range data {
+				table.DatabaseID = uint64(doid)
+			}
+			s.render.HTML(w, r, views.LayoutInfo{Nav: views.NavDatabase, OID: doid}, views.TableList(data))
 		})
 
 		r.Get("/actions", func(w http.ResponseWriter, r *http.Request) {
@@ -183,7 +254,7 @@ func (s *Server) Run(args []string) int {
 					Arguments:   args,
 				})
 			}
-			s.render.HTML(w, r, views.ActionList(data))
+			s.render.HTML(w, r, views.LayoutInfo{}, views.ActionList(data))
 		})
 
 		r.Get("/actions/new/{namespace}/{name}", func(w http.ResponseWriter, r *http.Request) {
@@ -208,7 +279,7 @@ func (s *Server) Run(args []string) int {
 				Arguments:   args,
 			}
 
-			s.render.HTML(w, r, views.ActionForm(&data))
+			s.render.HTML(w, r, views.LayoutInfo{}, views.ActionForm(&data))
 		})
 	})
 
