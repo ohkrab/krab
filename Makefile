@@ -56,3 +56,7 @@ docker_nightly:
 		.
 	docker tag ohkrab/krab:nightly ohkrab/krab:latest
 	docker push ohkrab/krab:nightly
+
+.PHONY: changelog
+changelog:
+	git-chglog -o CHANGELOG.md --next-tag ${TAG}
