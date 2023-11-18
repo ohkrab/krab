@@ -16,6 +16,7 @@
 - New UI
 
 ### Fix
+- Buld templ in dockerfiles
 - Helper spec signature
 - Install templ
 - Add version
