@@ -4,10 +4,8 @@
 
 <a name="0.9.0"></a>
 ## [0.9.0] - 2023-11-18
-### Chore
-- Hide not implemented features
-
 ### Feat
+- Add action description to UI
 - Use valid db conn
 - Tables
 - Set default config path
@@ -18,6 +16,9 @@
 - New UI
 
 ### Fix
+- Helper spec signature
+- Install templ
+- Add version
 - RDS does not allow super user access, so use pg_roles
 - Dockerfile
 
