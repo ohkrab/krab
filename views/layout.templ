@@ -15,6 +15,10 @@ templ Layout(info LayoutInfo, yield templ.Component) {
 </head>
 
 <body>
+	if info.Blank {
+	{! yield }
+	} else {
+
 	<div class="flex flex-col h-screen bg-gray-100">
 		<div class="w-full h-12 bg-rose-700 flex items-center justify-between shadow-md pl-5 pr-6">
 			<div class="flex items-center">
@@ -98,7 +102,7 @@ templ Layout(info LayoutInfo, yield templ.Component) {
 						<span class="mx-3 hidden sm:inline">Back</span>
 					</a>
 					<a class="flex items-center mt-4 py-2 px-6 text-gray-700 hover:bg-gray-100" href={
-						templ.SafeURL(fmt.Sprintf("/ui/databases/%d/schemas", info.OID)) }>
+						templ.SafeURL(fmt.Sprintf("/ui/databases/%s/schemas", info.Database)) }>
 						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
 							stroke="currentColor" class="w-6 h-6">
 							<path stroke-linecap="round" stroke-linejoin="round"
@@ -107,7 +111,7 @@ templ Layout(info LayoutInfo, yield templ.Component) {
 						<span class="mx-3 hidden sm:inline">Schemas</span>
 					</a>
 					<a class="flex items-center mt-4 py-2 px-6 text-gray-700 hover:bg-gray-100" href={
-						templ.SafeURL(fmt.Sprintf("/ui/databases/%d/schemas/public/tables", info.OID)) }>
+						templ.SafeURL(fmt.Sprintf("/ui/databases/%s/schemas/public/tables", info.Database)) }>
 						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
 							stroke="currentColor" class="w-6 h-6">
 							<path stroke-linecap="round" stroke-linejoin="round"
@@ -126,6 +130,7 @@ templ Layout(info LayoutInfo, yield templ.Component) {
 			</div>
 		</div>
 	</div>
+	}
 </body>
 
 </html>

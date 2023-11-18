@@ -3,7 +3,7 @@ testdata_dir = "testdata"
 tmp_dir = "tmp"
 
 [build]
-  args_bin = ["agent"]
+  args_bin = ["server"]
   bin = "./tmp/main"
   cmd = "templ generate && go build -o ./tmp/main"
   delay = 0

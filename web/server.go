@@ -5,7 +5,6 @@ import (
 	"log"
 	"net/http"
 	"os/signal"
-	"strconv"
 	"strings"
 	"syscall"
 
@@ -57,6 +56,11 @@ func (s *Server) Run(args []string) int {
 		w.Header().Set("Content-Type", "image/svg+xml")
 		w.Header().Set("Cache-Control", "public, max-age=7776000")
 		w.Write(s.EmbeddableResources.WhiteLogo)
+	})
+	r.Get("/images/logo.svg", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "image/svg+xml")
+		w.Header().Set("Cache-Control", "public, max-age=7776000")
+		w.Write(s.EmbeddableResources.Logo)
 	})
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("Content-type") == "application/json" {
@@ -116,19 +120,23 @@ func (s *Server) Run(args []string) int {
 						  d.dattablespace AS tablespace_id,
 						  ts.spcname AS tablespace_name,
 						  pg_size_pretty( pg_database_size(d.datname)) as size,
+						  (pg_database_size(d.datname)::numeric / (SUM(pg_database_size(d.datname)) OVER ()))::double precision AS size_percent,
 						  pg_encoding_to_char(d.encoding) AS encoding,
 						  d.datcollate AS collation,
 						  d.datctype AS character_type
 						from pg_database d
 						inner join pg_tablespace ts on ts.oid = d.dattablespace
 						inner join pg_roles auth on auth.oid = d.datdba
-						order by name`
+						order by size_percent desc, name`
 				return db.SelectContext(r.Context(), &data, sql)
 			})
 			if err != nil {
 				log.Println(err)
 				http.Error(w, http.StatusText(500), http.StatusInternalServerError)
 				return
+			}
+			for _, db := range data {
+				db.CanConnect = !(db.IsTemplate && db.Name == "template0")
 			}
 			s.render.HTML(w, r, views.LayoutInfo{}, views.DatabaseList(data))
 		})
@@ -165,16 +173,14 @@ func (s *Server) Run(args []string) int {
 			s.render.HTML(w, r, views.LayoutInfo{}, views.TablespaceList(data))
 		})
 
-		r.Get("/databases/{oid}/schemas", func(w http.ResponseWriter, r *http.Request) {
-			oidParam := chi.URLParam(r, "oid")
-			oid, err := strconv.Atoi(oidParam)
-			if err != nil {
-				http.Error(w, http.StatusText(400), http.StatusBadRequest)
-				return
-			}
+		r.Get("/databases/{dbname}/schemas", func(w http.ResponseWriter, r *http.Request) {
+			dbName := chi.URLParam(r, "dbname")
+
+			conn := s.Connection.(*krabdb.SwitchableDatabaseConnection)
+			conn.DatabaseName = dbName
 
 			data := []*dto.SchemaListItem{}
-			err = s.Connection.Get(func(db krabdb.DB) error {
+			err := conn.Get(func(db krabdb.DB) error {
 				sql := `select
 							n.oid AS id,
 							n.nspname AS name,
@@ -190,26 +196,25 @@ func (s *Server) Run(args []string) int {
 				return
 			}
 			for _, schema := range data {
-				schema.DatabaseID = uint64(oid)
+				schema.DatabaseName = dbName
 			}
-			s.render.HTML(w, r, views.LayoutInfo{Nav: views.NavDatabase, OID: oid}, views.SchemaList(data))
+			s.render.HTML(w, r, views.LayoutInfo{Nav: views.NavDatabase, Database: dbName}, views.SchemaList(data))
 		})
 
-		r.Get("/databases/{doid}/schemas/{schema}/tables", func(w http.ResponseWriter, r *http.Request) {
-			doidParam := chi.URLParam(r, "doid")
+		r.Get("/databases/{dbname}/schemas/{schema}/tables", func(w http.ResponseWriter, r *http.Request) {
+			dbName := chi.URLParam(r, "dbname")
 			schema := chi.URLParam(r, "schema")
-			doid, err := strconv.Atoi(doidParam)
-			if err != nil {
-				http.Error(w, http.StatusText(400), http.StatusBadRequest)
-				return
-			}
+
+			conn := s.Connection.(*krabdb.SwitchableDatabaseConnection)
+			conn.DatabaseName = dbName
 
 			data := []*dto.TableListItem{}
-			err = s.Connection.Get(func(db krabdb.DB) error {
+			err := conn.Get(func(db krabdb.DB) error {
 				sql := `select
 					schemaname as schema_name,
 					tablename as name,
 					tableowner as owner_name,
+					schemaname IN ('information_schema', 'pg_catalog') AS internal,
 					coalesce(tablespace, 'pg_default') as tablespace_name,
 					rowsecurity as rls,
 					pg_size_pretty(pg_relation_size(format('%I.%I', schemaname, tablename))) AS size,
@@ -218,7 +223,8 @@ func (s *Server) Run(args []string) int {
 							format('%I.%I', schemaname, tablename)
 						)::numeric /
 						SUM( pg_relation_size(format('%I.%I', schemaname, tablename)) ) OVER ()
-					)::double precision AS size_percent
+					)::double precision AS size_percent,
+					(select reltuples::bigint from pg_class where oid = (format('%I.%I', schemaname, tablename)::regclass)) AS estimated_rows
 				from pg_tables
 				where schemaname = $1
 				order by schemaname, pg_relation_size(format('%I.%I', schemaname, tablename)) desc, tablename`
@@ -230,9 +236,9 @@ func (s *Server) Run(args []string) int {
 				return
 			}
 			for _, table := range data {
-				table.DatabaseID = uint64(doid)
+				table.DatabaseName = dbName
 			}
-			s.render.HTML(w, r, views.LayoutInfo{Nav: views.NavDatabase, OID: doid}, views.TableList(data))
+			s.render.HTML(w, r, views.LayoutInfo{Nav: views.NavDatabase, Database: dbName}, views.TableList(data))
 		})
 
 		r.Get("/actions", func(w http.ResponseWriter, r *http.Request) {
@@ -280,6 +286,10 @@ func (s *Server) Run(args []string) int {
 			}
 
 			s.render.HTML(w, r, views.LayoutInfo{}, views.ActionForm(&data))
+		})
+
+		r.Get("/*", func(w http.ResponseWriter, r *http.Request) {
+			s.render.HTML(w, r, views.LayoutInfo{Blank: true}, views.Error404())
 		})
 	})
 

@@ -17,7 +17,7 @@ templ SchemaList(schemas []*dto.SchemaListItem) {
          for _, s := range schemas {
          <tr>
             <td class="px-6 py-4">
-               <a href={templ.SafeURL(fmt.Sprintf("/ui/databases/%d/schemas/%s/tables", s.DatabaseID, s.Name))}
+               <a href={templ.SafeURL(fmt.Sprintf("/ui/databases/%s/schemas/%s/tables", s.DatabaseName, s.Name))}
                   class="text-rose-500 hover:underline" href="#">
                   { s.Name }
                </a>

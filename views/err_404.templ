@@ -1,0 +1,17 @@
+package views
+
+templ Error404() {
+<section class="min-h-screen bg-white flex flex-col items-center justify-center space-y-10">
+    <img src="/images/logo.svg" width="120" height="120" alt="Logo"
+        class="aspect-[1/1] overflow-hidden rounded-lg object-contain object-center" />
+    <h1 class="text-5xl font-bold text-rose-500">Oh, Krabbb!</h1>
+    <p
+        class="mx-auto max-w-[700px] text-zinc-500 md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
+        We couldn't find the page you were looking for.
+    </p>
+    <a class="inline-flex h-10 items-center justify-center rounded-md bg-rose-500 px-8 text-sm font-medium text-white shadow transition-colors hover:bg-rose-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 disabled:pointer-events-none disabled:opacity-50"
+        href="/ui/databases">
+        Return to Home
+    </a>
+</section>
+}

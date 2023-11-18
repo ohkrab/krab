@@ -27,7 +27,7 @@ func New(
 	config *krab.Config,
 	registry *krab.CmdRegistry,
 	connection krabdb.Connection,
-	res web.EmbeddableResources,
+	srv *web.Server,
 ) *App {
 	c := mcli.NewCLI(krab.InfoName, krab.InfoVersion)
 	c.Args = args
@@ -40,18 +40,13 @@ func New(
 		Registry:   registry,
 		connection: connection,
 	}
-	app.RegisterAll(res)
+	app.RegisterAll(srv)
 
 	return app
 }
 
-func (a *App) RegisterAll(res web.EmbeddableResources) {
-	a.RegisterCmd("agent", func() Command {
-		srv := &web.Server{
-			EmbeddableResources: res,
-			Config:              a.Config,
-			Connection:          a.connection,
-		}
+func (a *App) RegisterAll(srv *web.Server) {
+	a.RegisterCmd("server", func() Command {
 		return srv
 	})
 

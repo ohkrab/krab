@@ -6,6 +6,7 @@ const (
 )
 
 type LayoutInfo struct {
-	Nav int
-	OID int
+	Blank    bool
+	Nav      int
+	Database string
 }

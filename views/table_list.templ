@@ -10,6 +10,7 @@ templ TableList(tables []*dto.TableListItem) {
       <thead class="bg-gray-50">
          <tr class="text-left font-semibold text-gray-500">
             <th class="px-6 py-4">Name</th>
+            <th class="px-6 py-4">~Rows</th>
             <th class="px-6 py-4">Size</th>
             <th class="px-6 py-4">Tablespace</th>
             <th class="px-6 py-4">Owner</th>
@@ -29,16 +30,23 @@ templ TableList(tables []*dto.TableListItem) {
 templ TableListItem(t *dto.TableListItem) {
 <tr>
    <td class="px-6 py-4">
-      <a href={templ.SafeURL(fmt.Sprintf("/ui/databases/%d/schemas/%s/tables/%s", t.DatabaseID, t.Schema, t.Name))}
+      if t.Internal {
+      { t.Name }
+      } else {
+      <a href={templ.SafeURL(fmt.Sprintf("/ui/databases/%s/schemas/%s/tables/%s", t.DatabaseName, t.Schema, t.Name))}
          class="text-rose-500 hover:underline" href="#">
          { t.Name }
       </a>
+      }
+   </td>
+   <td class="px-6 py-4">
+      { fmt.Sprint(t.EstimatedRows) }
    </td>
    <td class="px-6 py-4">
       <div class="flex items-center justify-items-center">
          <div class="w-16 bg-gray-200 rounded-full h-2">
-            <!-- w-16 is 4 rem so we can calculate percentage of it, style interpolation not supported in templ -->
-            <div class={"bg-rose-400", "h-2", "rounded-full", fmt.Sprintf("w-[%drem]", int(t.SizePercent*4))}></div>
+            <!-- w-16 is 4rem = 64px so we can calculate percentage of it, style interpolation not supported in templ -->
+            <div class={"bg-rose-400", "h-2" , "rounded-full" , fmt.Sprintf("w-[%dpx]", int(t.SizePercent*64))}></div>
          </div>
          <div class="pl-2">{ t.Size }</div>
       </div>

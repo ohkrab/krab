@@ -32,9 +32,14 @@ templ DatabaseList(databases []*dto.DatabaseListItem) {
 templ DatabaseListItem(db *dto.DatabaseListItem) {
 <tr>
    <td class="px-6 py-4">
-      <a href={templ.SafeURL(fmt.Sprintf("/ui/databases/%d/schemas", db.ID))} class="text-rose-500 hover:underline" href="#">
+      if db.CanConnect {
+      <a href={templ.SafeURL(fmt.Sprintf("/ui/databases/%s/schemas", db.Name))} class="text-rose-500 hover:underline"
+         href="#">
          { db.Name }
       </a>
+      } else {
+      { db.Name }
+      }
       if db.IsTemplate {
       <span
          class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-md text-sm font-medium bg-neutral-200 text-neutral-800">
@@ -42,7 +47,15 @@ templ DatabaseListItem(db *dto.DatabaseListItem) {
       </span>
       }
    </td>
-   <td class="px-6 py-4">{ db.Size }</td>
+   <td class="px-6 py-4">
+      <div class="flex items-center justify-items-center">
+         <div class="w-16 bg-gray-200 rounded-full h-2">
+            <!-- w-16 is 4rem = 64px so we can calculate percentage of it, style interpolation not supported in templ -->
+            <div class={"bg-rose-400", "h-2" , "rounded-full" , fmt.Sprintf("w-[%dpx]", int(db.SizePercent*64))}></div>
+         </div>
+         <div class="pl-2">{ db.Size }</div>
+      </div>
+   </td>
    <td class="px-6 py-4">{ db.TablespaceName }</td>
    <td class="px-6 py-4">
       if db.ConnectionLimit == -1 {

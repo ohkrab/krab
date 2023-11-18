@@ -22,6 +22,9 @@ var (
 
 	//go:embed res/crab-final-pure-white.svg
 	whiteLogo []byte
+
+	//go:embed res/crab-final-pure.svg
+	logo []byte
 )
 
 func main() {
@@ -41,6 +44,17 @@ func main() {
 	}
 
 	conn := &krabdb.DefaultConnection{}
+	switchableConn := &krabdb.SwitchableDatabaseConnection{}
+
+	srv := &web.Server{
+		Config:     config,
+		Connection: switchableConn,
+		EmbeddableResources: web.EmbeddableResources{
+			Favicon:   favicon,
+			WhiteLogo: whiteLogo,
+			Logo:      logo,
+		},
+	}
 
 	registry := &krab.CmdRegistry{
 		Commands:         []krab.Cmd{},
@@ -49,10 +63,7 @@ func main() {
 	}
 	registry.RegisterAll(config, conn)
 
-	c := krabcli.New(ui, os.Args[1:], config, registry, conn, web.EmbeddableResources{
-		Favicon:   favicon,
-		WhiteLogo: whiteLogo,
-	})
+	c := krabcli.New(ui, os.Args[1:], config, registry, conn, srv)
 
 	exitStatus, err := c.Run()
 	if err != nil {
