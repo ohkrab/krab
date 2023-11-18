@@ -15,6 +15,7 @@ type ActionListItemArgument struct {
 }
 
 type ActionForm struct {
+	Description string
 	ExecutionID string
 	Namespace   string
 	Name        string

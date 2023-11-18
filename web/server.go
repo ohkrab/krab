@@ -255,7 +255,7 @@ func (s *Server) Run(args []string) int {
 				data = append(data, &dto.ActionListItem{
 					Namespace:   action.Namespace,
 					Name:        action.RefName,
-					Description: "",
+					Description: action.Description,
 					Transaction: action.Transaction,
 					Arguments:   args,
 				})
@@ -280,6 +280,7 @@ func (s *Server) Run(args []string) int {
 			}
 			data := dto.ActionForm{
 				ExecutionID: uuid.New().String(),
+				Description: action.Description,
 				Namespace:   action.Namespace,
 				Name:        action.RefName,
 				Arguments:   args,

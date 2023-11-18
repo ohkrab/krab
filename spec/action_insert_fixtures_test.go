@@ -20,6 +20,8 @@ migration_set "public" {
 }
 
 action "seed" "fakes" {
+  description = "Insert fake data into the fakes table"
+
   sql = <<-SQL
 		INSERT INTO fakes(name) VALUES
 		({{ fake "Food.Fruit" | quote }}),

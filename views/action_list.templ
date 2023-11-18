@@ -5,7 +5,7 @@ import "fmt"
 
 templ ActionList(actions []*dto.ActionListItem) {
 <h1 class="mb-4 text-xl font-semibold text-gray-700">Actions</h1>
-<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
   for _, action := range actions {
   @ActionListItem(action)
   }
@@ -24,20 +24,6 @@ templ ActionListItem(action *dto.ActionListItem) {
       }
     </h3>
     <p class="text-sm text-muted-foreground">{ action.Description }</p>
-  </div>
-  <div class="px-6 py-2">
-    <div class="flex flex-col space-y-2">
-      for _, arg := range action.Arguments {
-      <div class="flex items-center space-x-2">
-        <span class="px-2 py-1 text-sm text-black bg-white rounded">
-          { arg.Name } : { arg.Type }
-        </span>
-        <p class="text-sm text-gray-500">
-          { arg.Description }
-        </p>
-      </div>
-      }
-    </div>
   </div>
   <div class="flex items-center p-6">
     <a href={ templ.SafeURL(fmt.Sprintf("/ui/actions/new/%s/%s", action.Namespace, action.Name)) }

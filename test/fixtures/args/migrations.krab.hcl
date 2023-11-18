@@ -34,6 +34,8 @@ migration_set "animals" {
 }
 
 action "view" "refresh" {
+  description = "Refresh a materialized view"
+  
   arguments {
     arg "name" {
       description = "Materialized view to be refreshed"

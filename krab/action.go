@@ -17,6 +17,7 @@ type Action struct {
 
 	Arguments *Arguments
 
+	Description string
 	SQL         string
 	Transaction bool // wrap operation in transaction
 }
@@ -40,6 +41,10 @@ var schemaAction = &hcl.BodySchema{
 		{
 			Name:     "transaction",
 			Required: false,
+		},
+		{
+			Name:     "description",
+			Required: true,
 		},
 	},
 }
@@ -81,6 +86,14 @@ func (a *Action) DecodeHCL(ctx *hcl.EvalContext, block *hcl.Block) error {
 			}
 			a.SQL = val
 
+		case "description":
+			expr := krabhcl.Expression{Expr: v.Expr, EvalContext: ctx}
+			val, err := expr.String()
+			if err != nil {
+				return err
+			}
+			a.Description = val
+
 		case "transaction":
 			expr := krabhcl.Expression{Expr: v.Expr, EvalContext: ctx}
 			val, err := expr.Bool()
@@ -101,6 +114,7 @@ func (a *Action) Validate() error {
 	return ErrorCoalesce(
 		ValidateRefName(a.Namespace),
 		ValidateRefName(a.RefName),
+		ValidateStringNonEmpty("description", a.Description),
 	)
 }
 

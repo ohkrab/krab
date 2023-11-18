@@ -32,14 +32,18 @@ migration "seed_animals" {
 migration_set "animals" {
   migrations = [
     migration.create_animals,
-	migration.create_animals_view,
-	migration.seed_animals,
+    migration.create_animals_view,
+    migration.seed_animals,
   ]
 }
 
 action "view" "refresh" {
+  description = "Refresh a materialized view"
+
   arguments {
-    arg "name" {}
+    arg "name" {
+      description = "Name of the materialized view to refresh"
+    }
   }
 
   sql = "REFRESH MATERIALIZED VIEW {{ quote_ident .Args.name }}"

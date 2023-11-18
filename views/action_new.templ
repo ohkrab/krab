@@ -4,9 +4,11 @@ import "github.com/ohkrab/krab/web/dto"
 import "fmt"
 
 templ ActionForm(form *dto.ActionForm) {
-<h1 class="mb-4 text-xl font-semibold text-gray-700">Run action</h1>
+<h1 class="mb-2 text-xl font-semibold text-gray-700">Run { form.Namespace }/{ form.Name } action</h1>
 <form action="/api/actions/execute" method="POST">
-  <div class="text-sm font-medium text-gray-500">{ form.Namespace } / { form.Name }</div>
+  <div class="text-sm font-medium text-gray-500">
+    { form.Description }
+  </div>
   <input type="hidden" name="id" value={ form.ExecutionID } />
   <input type="hidden" name="namespace" value={ form.Namespace } />
   <input type="hidden" name="name" value={ form.Name } />
