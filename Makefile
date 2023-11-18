@@ -1,4 +1,4 @@
-.PHONY: default build install test docker_test docker_build docker_push docker_nightly 
+.PHONY: default build test docker_test docker_build docker_push docker_nightly 
 
 .PHONY: web
 web:
