@@ -1,6 +1,7 @@
 before:
   hooks:
-    - templ generate
+    - make install
+    - make gen
 builds:
   -
     ldflags:

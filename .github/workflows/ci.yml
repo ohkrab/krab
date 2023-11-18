@@ -47,6 +47,7 @@ jobs:
           DATABASE_URL: "postgres://krab:secret@localhost:5432/krab?sslmode=disable&prefer_simple_protocol=true"
         run: |
           mkdir -p bin/
+          make install
           make gen
           go test -v ./...
 
