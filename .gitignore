@@ -17,3 +17,4 @@
 /tmp/
 node_modules/
 views/*_templ.go
+/dist/

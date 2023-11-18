@@ -1,3 +1,6 @@
+before:
+  hooks:
+    - templ generate
 builds:
   -
     ldflags:
@@ -16,6 +19,8 @@ builds:
         goarch: arm64
       - goos: windows
         goarch: arm64
+    env:
+      - CGO_ENABLED=0
 
     binary: krab
 

@@ -138,7 +138,7 @@ func (s *Server) Run(args []string) int {
 			for _, db := range data {
 				db.CanConnect = !(db.IsTemplate && db.Name == "template0")
 			}
-			s.render.HTML(w, r, views.LayoutInfo{}, views.DatabaseList(data))
+			s.render.HTML(w, r, views.LayoutInfo{Footer: krab.InfoVersion}, views.DatabaseList(data))
 		})
 
 		r.Get("/tablespaces", func(w http.ResponseWriter, r *http.Request) {
@@ -170,7 +170,7 @@ func (s *Server) Run(args []string) int {
 				http.Error(w, http.StatusText(500), http.StatusInternalServerError)
 				return
 			}
-			s.render.HTML(w, r, views.LayoutInfo{}, views.TablespaceList(data))
+			s.render.HTML(w, r, views.LayoutInfo{Footer: krab.InfoVersion}, views.TablespaceList(data))
 		})
 
 		r.Get("/databases/{dbname}/schemas", func(w http.ResponseWriter, r *http.Request) {
@@ -198,7 +198,7 @@ func (s *Server) Run(args []string) int {
 			for _, schema := range data {
 				schema.DatabaseName = dbName
 			}
-			s.render.HTML(w, r, views.LayoutInfo{Nav: views.NavDatabase, Database: dbName}, views.SchemaList(data))
+			s.render.HTML(w, r, views.LayoutInfo{Footer: krab.InfoVersion, Nav: views.NavDatabase, Database: dbName}, views.SchemaList(data))
 		})
 
 		r.Get("/databases/{dbname}/schemas/{schema}/tables", func(w http.ResponseWriter, r *http.Request) {
@@ -238,7 +238,7 @@ func (s *Server) Run(args []string) int {
 			for _, table := range data {
 				table.DatabaseName = dbName
 			}
-			s.render.HTML(w, r, views.LayoutInfo{Nav: views.NavDatabase, Database: dbName}, views.TableList(data))
+			s.render.HTML(w, r, views.LayoutInfo{Footer: krab.InfoVersion, Nav: views.NavDatabase, Database: dbName}, views.TableList(data))
 		})
 
 		r.Get("/actions", func(w http.ResponseWriter, r *http.Request) {
@@ -260,7 +260,7 @@ func (s *Server) Run(args []string) int {
 					Arguments:   args,
 				})
 			}
-			s.render.HTML(w, r, views.LayoutInfo{}, views.ActionList(data))
+			s.render.HTML(w, r, views.LayoutInfo{Footer: krab.InfoVersion}, views.ActionList(data))
 		})
 
 		r.Get("/actions/new/{namespace}/{name}", func(w http.ResponseWriter, r *http.Request) {
@@ -285,7 +285,7 @@ func (s *Server) Run(args []string) int {
 				Arguments:   args,
 			}
 
-			s.render.HTML(w, r, views.LayoutInfo{}, views.ActionForm(&data))
+			s.render.HTML(w, r, views.LayoutInfo{Footer: krab.InfoVersion}, views.ActionForm(&data))
 		})
 
 		r.Get("/*", func(w http.ResponseWriter, r *http.Request) {

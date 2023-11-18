@@ -9,4 +9,5 @@ type LayoutInfo struct {
 	Blank    bool
 	Nav      int
 	Database string
+	Footer   string
 }
