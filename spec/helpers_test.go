@@ -14,6 +14,7 @@ import (
 	"github.com/ohkrab/krab/krab"
 	"github.com/ohkrab/krab/krabcli"
 	"github.com/ohkrab/krab/krabdb"
+	"github.com/ohkrab/krab/web"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/wzshiming/ctc"
@@ -57,6 +58,7 @@ func (m *cliMock) setup(args []string) {
 		m.config,
 		registry,
 		m.connection,
+		&web.Server{},
 	)
 	m.app.CLI.ErrorWriter = &m.errorWriter
 	m.app.CLI.HelpWriter = &m.helpWriter
