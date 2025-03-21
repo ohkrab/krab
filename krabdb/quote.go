@@ -7,21 +7,19 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v5"
 )
 
 // QuoteIdent escapes identifiers in PG.
 //
-//     public -> "public"
-//
+//	public -> "public"
 func QuoteIdent(s string) string {
 	return pgx.Identifier{s}.Sanitize()
 }
 
 // QuoteIdentWithDots escapes identifiers in PG.
 //
-//     public.test -> "public"."test"
-//
+//	public.test -> "public"."test"
 func QuoteIdentWithDots(s string) string {
 	names := strings.Split(s, ".")
 	for i, name := range names {

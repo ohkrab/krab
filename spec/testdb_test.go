@@ -4,8 +4,8 @@ import (
 	"context"
 	"database/sql"
 
-	_ "github.com/jackc/pgx/v4"
-	_ "github.com/jackc/pgx/v4/stdlib"
+	_ "github.com/jackc/pgx/v5"
+	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/jmoiron/sqlx"
 	"github.com/ohkrab/krab/krabdb"
 	"github.com/ohkrab/krab/krabenv"
