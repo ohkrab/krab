@@ -36,8 +36,8 @@ func (p *parser) Args() []string {
 	return p.flags.Args()
 }
 
-func (p *parser) Values() map[string]interface{} {
-	r := map[string]interface{}{}
+func (p *parser) Values() map[string]any {
+	r := map[string]any{}
 
 	for k, v := range p.stringValues {
 		r[k] = *v

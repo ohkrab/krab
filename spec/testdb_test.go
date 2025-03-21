@@ -35,17 +35,17 @@ func (d *testDB) GetDatabase() *sqlx.DB {
 	return d.db
 }
 
-func (d *testDB) SelectContext(ctx context.Context, dest interface{}, query string, args ...interface{}) error {
+func (d *testDB) SelectContext(ctx context.Context, dest any, query string, args ...any) error {
 	*d.recorder = append(*d.recorder, query)
 	return sqlx.SelectContext(ctx, d.GetDatabase(), dest, query, args...)
 }
 
-func (d *testDB) QueryContext(ctx context.Context, query string, args ...interface{}) (*sqlx.Rows, error) {
+func (d *testDB) QueryContext(ctx context.Context, query string, args ...any) (*sqlx.Rows, error) {
 	*d.recorder = append(*d.recorder, query)
 	return d.GetDatabase().QueryxContext(ctx, query, args...)
 }
 
-func (d *testDB) ExecContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
+func (d *testDB) ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error) {
 	*d.recorder = append(*d.recorder, query)
 	return d.GetDatabase().ExecContext(ctx, query, args...)
 }
@@ -62,10 +62,10 @@ func (d *testDB) NewTx(ctx context.Context, createTransaction bool) (krabdb.Tran
 	return &mockNullTransaction{db: d, recorder: d.recorder}, nil
 }
 
-func sqlxRowsMapScan(rows *sqlx.Rows) []map[string]interface{} {
-	res := []map[string]interface{}{}
+func sqlxRowsMapScan(rows *sqlx.Rows) []map[string]any {
+	res := []map[string]any{}
 	for rows.Next() {
-		row := map[string]interface{}{}
+		row := map[string]any{}
 		rows.MapScan(row)
 		res = append(res, row)
 	}
@@ -86,7 +86,7 @@ func (t *mockTransaction) Commit() error {
 	return t.tx.Commit()
 }
 
-func (t *mockTransaction) ExecContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
+func (t *mockTransaction) ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error) {
 	*t.recorder = append(*t.recorder, query)
 	return t.tx.ExecContext(ctx, query, args...)
 }
@@ -104,7 +104,7 @@ func (t *mockNullTransaction) Commit() error {
 	return nil
 }
 
-func (t *mockNullTransaction) ExecContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
+func (t *mockNullTransaction) ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error) {
 	*t.recorder = append(*t.recorder, query)
 	return t.db.ExecContext(ctx, query, args...)
 }

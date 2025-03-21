@@ -230,9 +230,9 @@ func (m *cliMock) ResetSQLRecorder() {
 	m.connection.recorder = []string{}
 }
 
-func (m *cliMock) Query(t *testing.T, query string) ([]string, []map[string]interface{}) {
+func (m *cliMock) Query(t *testing.T, query string) ([]string, []map[string]any) {
 	var cols []string
-	var vals []map[string]interface{}
+	var vals []map[string]any
 
 	m.connection.Get(func(db krabdb.DB) error {
 		rows, err := db.QueryContext(context.TODO(), query)

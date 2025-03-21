@@ -27,7 +27,7 @@ func (t *Transaction) Commit() error {
 	return t.tx.Commit()
 }
 
-func (t *Transaction) ExecContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
+func (t *Transaction) ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error) {
 	return t.tx.ExecContext(ctx, query, args...)
 }
 
@@ -44,6 +44,6 @@ func (t *NullTransaction) Commit() error {
 	return nil
 }
 
-func (t *NullTransaction) ExecContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
+func (t *NullTransaction) ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error) {
 	return t.db.GetDatabase().ExecContext(ctx, query, args...)
 }

@@ -1,6 +1,6 @@
 package cliargs
 
-type Values map[string]interface{}
+type Values map[string]any
 
 func (v Values) Get(key string) string {
 	val, exists := v[key]

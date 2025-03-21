@@ -45,7 +45,7 @@ func (c *CmdMigrateDown) Name() []string {
 
 func (c *CmdMigrateDown) HttpMethod() string { return http.MethodPost }
 
-func (c *CmdMigrateDown) Do(ctx context.Context, o CmdOpts) (interface{}, error) {
+func (c *CmdMigrateDown) Do(ctx context.Context, o CmdOpts) (any, error) {
 	err := c.Set.Arguments.Validate(o.NamedInputs)
 	if err != nil {
 		return nil, err

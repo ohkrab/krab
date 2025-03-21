@@ -18,7 +18,7 @@ type Cmd interface {
 	HttpMethod() string
 
 	// Do executes the action.
-	Do(ctx context.Context, opts CmdOpts) (interface{}, error)
+	Do(ctx context.Context, opts CmdOpts) (any, error)
 }
 
 // CmdOpts are options passed to command.

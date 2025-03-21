@@ -3,7 +3,7 @@ package krab
 import "github.com/zclconf/go-cty/cty"
 
 // NamedInputs are params passed to command.
-type NamedInputs map[string]interface{}
+type NamedInputs map[string]any
 
 // Inputs are params passed to command.
 type PositionalInputs []string

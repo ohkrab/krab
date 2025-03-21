@@ -3,10 +3,10 @@ package krab
 type Templates struct {
 }
 
-func (t Templates) ProcessArguments(tpl string, args map[string]interface{}) (string, error) {
+func (t Templates) ProcessArguments(tpl string, args map[string]any) (string, error) {
 	return tpl, nil
 }
 
-func EmptyArgs() map[string]interface{} {
-	return map[string]interface{}{}
+func EmptyArgs() map[string]any {
+	return map[string]any{}
 }

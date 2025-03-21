@@ -26,7 +26,7 @@ func (c *CmdTestRun) Name() []string { return []string{"test"} }
 
 func (c *CmdTestRun) HttpMethod() string { return http.MethodPost }
 
-func (c *CmdTestRun) Do(ctx context.Context, o CmdOpts) (interface{}, error) {
+func (c *CmdTestRun) Do(ctx context.Context, o CmdOpts) (any, error) {
 	var result ResponseTestRun
 
 	// for _, do := range c.Suite.Before.Dos {

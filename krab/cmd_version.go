@@ -23,7 +23,7 @@ func (c *CmdVersion) Name() []string { return []string{"version"} }
 
 func (c *CmdVersion) HttpMethod() string { return http.MethodGet }
 
-func (c *CmdVersion) Do(ctx context.Context, o CmdOpts) (interface{}, error) {
+func (c *CmdVersion) Do(ctx context.Context, o CmdOpts) (any, error) {
 	return ResponseVersion{
 		Name:  fmt.Sprint(InfoName, " ", InfoVersion),
 		Build: fmt.Sprint("Build ", InfoCommit, " ", InfoBuildDate),

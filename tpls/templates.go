@@ -7,16 +7,16 @@ import (
 
 // Templates is used for templates rendering.
 type Templates struct {
-	values   map[string]interface{}
+	values   map[string]any
 	template *template.Template
 }
 
 type root struct {
-	Args map[string]interface{}
+	Args map[string]any
 }
 
 // New created template renderer with values to replace.
-func New(values map[string]interface{}, funcMap template.FuncMap) *Templates {
+func New(values map[string]any, funcMap template.FuncMap) *Templates {
 	t := &Templates{
 		values:   values,
 		template: template.New("").Funcs(funcMap),

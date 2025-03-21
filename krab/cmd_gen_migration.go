@@ -50,7 +50,7 @@ func (c *CmdGenMigration) Name() []string {
 
 func (c *CmdGenMigration) HttpMethod() string { return "" }
 
-func (c *CmdGenMigration) Do(ctx context.Context, o CmdOpts) (interface{}, error) {
+func (c *CmdGenMigration) Do(ctx context.Context, o CmdOpts) (any, error) {
 	err := c.Arguments().Validate(o.NamedInputs)
 	if err != nil {
 		return nil, err

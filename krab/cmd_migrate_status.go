@@ -33,7 +33,7 @@ func (c *CmdMigrateStatus) Name() []string {
 
 func (c *CmdMigrateStatus) HttpMethod() string { return http.MethodGet }
 
-func (c *CmdMigrateStatus) Do(ctx context.Context, o CmdOpts) (interface{}, error) {
+func (c *CmdMigrateStatus) Do(ctx context.Context, o CmdOpts) (any, error) {
 	err := c.Set.Arguments.Validate(o.NamedInputs)
 	if err != nil {
 		return nil, err

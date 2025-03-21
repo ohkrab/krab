@@ -30,7 +30,6 @@ var schemaArgument = hcl.BodySchema{
 }
 
 // Arguments represents command line arguments or params that you can pass to action.
-//
 type Arguments struct {
 	Args []*Argument
 }
@@ -143,7 +142,7 @@ func (a *Argument) DecodeHCL(ctx *hcl.EvalContext, block *hcl.Block) error {
 	return nil
 }
 
-func (a *Argument) Validate(value interface{}) error {
+func (a *Argument) Validate(value any) error {
 	switch value.(type) {
 	case string:
 		if len(value.(string)) == 0 {

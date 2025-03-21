@@ -38,7 +38,7 @@ func QuoteIdentStrings(in []string) []string {
 }
 
 // Quote escapes values in PG.
-func Quote(o interface{}) string {
+func Quote(o any) string {
 	switch o := o.(type) {
 	case nil:
 		return "null"

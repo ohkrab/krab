@@ -8,12 +8,12 @@ import (
 )
 
 type ExecerContext interface {
-	ExecContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error)
+	ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error)
 }
 
 type QueryerContext interface {
-	SelectContext(ctx context.Context, dest interface{}, query string, args ...interface{}) error
-	QueryContext(ctx context.Context, query string, args ...interface{}) (*sqlx.Rows, error)
+	SelectContext(ctx context.Context, dest any, query string, args ...any) error
+	QueryContext(ctx context.Context, query string, args ...any) (*sqlx.Rows, error)
 }
 
 type DB interface {
@@ -29,15 +29,15 @@ type Instance struct {
 	database *sqlx.DB
 }
 
-func (d *Instance) SelectContext(ctx context.Context, dest interface{}, query string, args ...interface{}) error {
+func (d *Instance) SelectContext(ctx context.Context, dest any, query string, args ...any) error {
 	return sqlx.SelectContext(ctx, d.GetDatabase(), dest, query, args...)
 }
 
-func (d *Instance) QueryContext(ctx context.Context, query string, args ...interface{}) (*sqlx.Rows, error) {
+func (d *Instance) QueryContext(ctx context.Context, query string, args ...any) (*sqlx.Rows, error) {
 	return d.GetDatabase().QueryxContext(ctx, query, args...)
 }
 
-func (d *Instance) ExecContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
+func (d *Instance) ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error) {
 	return d.GetDatabase().ExecContext(ctx, query, args...)
 }
 

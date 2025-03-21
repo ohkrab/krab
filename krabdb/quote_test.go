@@ -7,7 +7,7 @@ import (
 
 func TestQuote(t *testing.T) {
 	testCases := []struct {
-		given    interface{}
+		given    any
 		expected string
 	}{
 		{nil, "null"},

@@ -27,7 +27,7 @@ func (c *CmdAction) Name() []string { return append([]string{"action"}, c.Action
 
 func (c *CmdAction) HttpMethod() string { return http.MethodPost }
 
-func (c *CmdAction) Do(ctx context.Context, o CmdOpts) (interface{}, error) {
+func (c *CmdAction) Do(ctx context.Context, o CmdOpts) (any, error) {
 	err := c.Action.Arguments.Validate(o.NamedInputs)
 	if err != nil {
 		return nil, err
