@@ -1,0 +1,287 @@
+apiVersion: migrations.unit/v1
+kind: Migration
+metadata:
+  name: add_tenants
+  description: |
+    We need to add the tenants table to the database
+spec:
+  version: "202006_01"
+  transaction: true
+  run:
+    up:
+      sql: "CREATE TABLE tenants(name varchar PRIMARY KEY)"
+    down:
+      sql: "DROP TABLE tenants"
+---
+apiVersion: migrations.unit/v1
+kind: Migration
+metadata:
+  name: create_users
+  description: |
+    We need to add the users table to the database
+spec:
+  version: "202006_01"
+  run:
+    up:
+      sql: "CREATE TABLE users(name varchar PRIMARY KEY)"
+    down:
+      sql: "DROP TABLE users"
+---
+apiVersion: migrations.set/v1
+kind: MigrationSet
+metadata:
+  name: public
+spec:
+  context:
+    schema: public
+  migrations:
+    - add_tenants_index
+    - add_users
+---
+apiVersion: migrations.set/v1
+kind: MigrationSet
+spec:
+  args:
+    schema:
+      type: string
+      description: "Namespace where to create everything"
+  name: tenant
+  context:
+    schema: $({ args.schema })
+  migrations:
+    - add_tenants_index
+    - add_users
+---
+apiVersion: migrations.unit/v1
+kind: Migration
+metadata:
+  name: create_assets
+spec:
+  version: "tenants_v1"
+  run:
+    up:
+      pgdsl:
+        - create_table:
+            name: assets
+            columns:
+              - id:
+                  type: int
+                  identity:
+                    always: true
+              - name:
+                  type: varchar
+                  null: false
+              - size:
+                  type: int
+                  default: 0
+            constraints:
+              - ensure_positive_size:
+                  check: "size > 0"
+        - alter_table:
+            name: users
+            actions:
+              - add_column:
+                  name: email
+                  type: varchar
+                  null: true
+              - drop_column:
+                  name: deprecated_field
+              - add_primary_key:
+                  columns:
+                    - email
+                    - name
+              - create_index:
+                  name: idx_uniq_emails
+                  unique: true
+                  columns:
+                    - email
+              - add_constraint:
+                  name: users_pk
+                  check: "email IS NOT NULL AND name IS NOT NULL"
+    down:
+      reverse: impossible
+---
+apiVersion: migrations.hook/v1
+kind: MigrationHook
+metadata:
+  name: after_each_migration_set
+spec:
+  on:
+    event: "before.migration_set.up"
+    filter:
+      migration_set:
+        success: true
+    
+  run:
+    - http:
+        url: ${{ env.HOOK_URL }}
+        method: POST
+        content_type: application/json
+        body: |
+          {
+            "migration_set": "$migration_set.name",
+            "migration": "$migration.name"
+          }
+        # or json builder:
+        json:
+          migration_set: $migration_set.name
+          ok: true
+---
+apiVersion: testing.suite/v1
+kind: TestSuite
+metadata:
+  name: public
+spec:
+  strategy: truncate
+  # strategy: transaction
+  # strategy: none
+  before:
+    - name: "Run the migration set"
+      command: migrate up --set public
+  after:
+    - name: "Run the migration set"
+      command: migrate down --set public
+---
+apiVersion: testing.database/v1
+kind: TestCase
+metadata:
+  name: version_inc_tests
+spec:
+  description: Tests version changes
+  testSuites:
+    - version_inc_tests_pg_12
+    - version_inc_tests_pg_13
+  testExamples:
+    - it: Increases major version resets others
+      query: "SELECT version_inc(row(1,1,1)::sem_version) AS ver"
+      assert:
+        - data:
+            row: 0
+            col: ver
+            sql: "ver = row(2,0,0)::sem_version"
+    - it: Increases major version resets others explicit
+      query: "SELECT version_inc(row(1,1,1)::sem_version, 'major') AS ver"
+      assert:
+        - data:
+            row: 0
+            col: ver
+            sql: "ver = row(2,0,0)::sem_version"
+    - it: Increases minor resets patch
+      query: "SELECT version_inc(row(1,1,1)::sem_version, 'minor') AS ver"
+      assert:
+        - data:
+            row: 0
+            col: ver
+            sql: "ver = row(1,2,0)::sem_version"
+    - it: Increases patch
+      query: "SELECT version_inc(row(1,1,1)::sem_version, 'patch') AS ver"
+      assert:
+        - data:
+            row: 0
+            col: ver
+            sql: "ver = row(1,1,2)::sem_version"
+    - it: Returns null on null input
+      query: "SELECT version_inc(null) AS ver"
+      assert:
+        - data:
+            row: 0
+            col: ver
+            sql: "ver IS NULL"
+---
+apiVersion: testing.database/v1
+kind: TestCase
+metadata:
+  name: version_inc_string_tests
+spec:
+  description: Tests version on strings
+  testSuites:
+    - version_inc_tests_pg_12
+    - version_inc_tests_pg_13
+  testExamples:
+    - xit: Version inc string
+      query: "SELECT version_inc('1.1.1') AS ver"
+---
+apiVersion: testing.database/v1
+kind: TestSuite
+metadata:
+  name: version_inc_tests_pg_12
+spec:
+  setup:
+    - migration_set.up:
+        name: versions
+    - db.execute:
+        command: "SET postgresql.version TO '12';"
+  teardown:
+    - migration_set.down:
+        name: versions
+---
+apiVersion: testing.database/v1
+kind: TestSuite
+metadata:
+  name: version_inc_tests_pg_13
+spec:
+  setup:
+    - migration_set.up:
+        name: versions
+    - db.execute:
+        command: "SET postgresql.version TO '13';"
+  teardown:
+    - migration_set.down:
+        name: versions
+apiVersion: testing.case/v1
+kind: TestCase
+metadata:
+  name: user_info_tests
+spec:
+  description: Tests user information retrieval
+  suites:
+    - user_info_tests_suite
+  tests:
+    - it: Retrieves user information
+      before:
+        initial_count: "SELECT COUNT(*) as c FROM users"
+      execute:
+        insert: "INSERT INTO users (name, email, age) VALUES ('John Doe', 'john@example.com', 25)"
+      after:
+        final_count: "SELECT COUNT(*) as c FROM users"
+
+      expect:
+        - source: initial_count
+          data:
+            - row: 0
+              asserts:
+                - c = 0
+        - source: final_count
+          data:
+            - row: 0
+              asserts:
+                - c = 1
+        - source: query
+          data:
+            - row: 0
+              asserts:
+                - ID = 1
+                - NAME = 'John Doe'
+                - EMAIL = 'john@example.com'
+                - AGE BETWEEN 20 AND 30
+            - row: 1 
+              asserts:
+                - ID = 2
+                - NAME = 'Jane Smith'
+                - EMAIL = 'jane@example.com'
+                - AGE BETWEEN 25 AND 35
+            - row: 2
+              asserts:
+                - ID = 3
+                - NAME = 'Mike Johnson'
+                - EMAIL = 'mike@example.com'
+                - AGE BETWEEN 30 AND 40
+
+    - it: Handles unique constraint violation
+      execute:
+        insert: "INSERT INTO users (name, email, age) VALUES ('John Doe', 'john@example.com', 25)"
+      expect:
+        - source: insert
+          error:
+            message: "duplicate key value violates unique constraint"
+            code: 23505
