@@ -1,0 +1,195 @@
+apiVersion: migrations/v1
+kind: Migration
+metadata:
+  name: add_tenants
+  description: |
+    We need to add the tenants table to the database
+spec:
+  version: "202006_01"
+  transaction: true
+  run:
+    up:
+      sql: "CREATE TABLE tenants(name varchar PRIMARY KEY)"
+    down:
+      sql: "DROP TABLE tenants"
+---
+apiVersion: migrations/v1
+kind: Migration
+metadata:
+  name: create_users
+  description: |
+    We need to add the users table to the database
+spec:
+  version: "202006_01"
+  run:
+    up:
+      sql: "CREATE TABLE users(name varchar PRIMARY KEY)"
+    down:
+      sql: "DROP TABLE users"
+---
+apiVersion: migrations/v1
+kind: MigrationSet
+metadata:
+  name: public
+spec:
+  context:
+    schema: public
+  migrations:
+    - add_tenants_index
+    - add_users
+---
+apiVersion: migrations/v1
+kind: MigrationSet
+spec:
+  args:
+    schema:
+      type: string
+      description: "Namespace where to create everything"
+  name: tenant
+  context:
+    schema: $({ args.schema })
+  migrations:
+    - add_tenants_index
+    - add_users
+---
+apiVersion: migrations/v1
+kind: Migration
+metadata:
+  name: create_assets
+spec:
+  version: "tenants_v1"
+  run:
+    up:
+      pgdsl:
+        - create_table:
+            name: assets
+            columns:
+              - id:
+                  type: int
+                  identity:
+                    always: true
+              - name:
+                  type: varchar
+                  null: false
+              - size:
+                  type: int
+                  default: 0
+            constraints:
+              - ensure_positive_size:
+                  check: "size > 0"
+        - alter_table:
+            name: users
+            actions:
+              - add_column:
+                  name: email
+                  type: varchar
+                  null: true
+              - drop_column:
+                  name: deprecated_field
+              - add_primary_key:
+                  columns:
+                    - email
+                    - name
+              - create_index:
+                  name: idx_uniq_emails
+                  unique: true
+                  columns:
+                    - email
+              - add_constraint:
+                  name: users_pk
+                  check: "email IS NOT NULL AND name IS NOT NULL"
+    down:
+      reverse: impossible
+---
+apiVersion: actions/v1
+kind: Action
+metadata:
+  name: create_database
+  description: Create a new database with quoted parameters
+spec:
+  args:
+    - name: database_name
+      description: The name of the database to create
+      type: string
+    - name: database_owner
+      description: The owner of the database
+      type: string
+      log: false
+  run:
+    transaction: false
+    steps:
+      - sql: |
+          CREATE DATABASE $({ .args.database_name | quote_ident }) OWNER $({ .args.database_owner | quote_ident });
+---
+apiVersion: actions/v1
+kind: Action
+metadata:
+  name: insert_tenant
+  description: Create a new tenant for the given database
+spec:
+  args:
+    - name: tenant
+      description: The name of the tenant to create
+      type: string
+  run:
+    steps:
+      - sql: |
+          CREATE SCHEMA $({ .args.tenant | quote_ident });
+      - sql: |
+          INSERT INTO tenants (name) VALUES ($({ .args.tenant | quote }));
+---
+apiVersion: actions/v1
+kind: Action
+metadata:
+  name: create_tenant
+  description: Create a new tenant for the given database
+spec:
+  args:
+    - name: tenant
+      description: The name of the tenant to create
+      type: string
+  run:
+    transaction: false
+    steps:
+      - sql: |
+          CREATE SCHEMA $({ .args.tenant | quote_ident });
+          INSERT INTO tenants (name) VALUES ($({ .args.tenant | quote }));
+      - invoke:
+          resource:
+            kind: Action
+            name: insert_tenant
+          args:
+            tenant: $({ .args.tenant }) # pass it raw, migration set will quote it
+      - invoke:
+          resource:
+            kind: MigrationSet
+            name: public
+          command: up
+          args:
+            schema: $({ .args.tenant }) # pass it raw, migration set will quote it
+---
+apiVersion: events/v1
+kind: EventHook
+metadata:
+  name: after_each_migration_set
+spec:
+  on:
+    event: "before.migration_set.up"
+    filter:
+      migration_set:
+        success: true
+    
+  run:
+    - http:
+        url: ${{ env.HOOK_URL }}
+        method: POST
+        content_type: application/json
+        body: |
+          {
+            "migration_set": "$migration_set.name",
+            "migration": "$migration.name"
+          }
+        # or json builder:
+        json:
+          migration_set: $migration_set.name
+          ok: true
