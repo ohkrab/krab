@@ -1,0 +1,149 @@
+---@TestSuite
+apiVersion: 1
+name: public
+spec:
+  strategy: truncate
+  # strategy: transaction
+  # strategy: none
+  before:
+    - invoke:
+        resource:
+          kind: MigrationSet
+          name: public
+        command: up
+  after:
+    - invoke:
+        resource:
+          kind: MigrationSet
+          name: public
+        command: down
+---
+
+---@TestCase
+apiVersion: 1
+name: version_inc_tests
+spec:
+  description: Tests version changes
+  testSuites:
+    - version_inc_tests_pg_12
+    - version_inc_tests_pg_13
+  testExamples:
+    - it: Increases major version resets others
+      query: "SELECT version_inc(row(1,1,1)::sem_version) AS ver"
+      assert:
+        - data:
+            row: 0
+            col: ver
+            sql: "ver = row(2,0,0)::sem_version"
+    - it: Increases major version resets others explicit
+      query: "SELECT version_inc(row(1,1,1)::sem_version, 'major') AS ver"
+      assert:
+        - data:
+            row: 0
+            col: ver
+            sql: "ver = row(2,0,0)::sem_version"
+    - it: Increases minor resets patch
+      query: "SELECT version_inc(row(1,1,1)::sem_version, 'minor') AS ver"
+      assert:
+        - data:
+            row: 0
+            col: ver
+            sql: "ver = row(1,2,0)::sem_version"
+    - it: Increases patch
+      query: "SELECT version_inc(row(1,1,1)::sem_version, 'patch') AS ver"
+      assert:
+        - data:
+            row: 0
+            col: ver
+            sql: "ver = row(1,1,2)::sem_version"
+    - it: Returns null on null input
+      query: "SELECT version_inc(null) AS ver"
+      assert:
+        - data:
+            row: 0
+            col: ver
+            sql: "ver IS NULL"
+---
+apiVersion: testing/v1
+kind: TestCase
+metadata:
+  name: version_inc_string_tests
+spec:
+  description: Tests version on strings
+  suites:
+    - version_inc_tests_pg_12
+    - version_inc_tests_pg_13
+  testExamples:
+    - xit: Version inc string
+      query: "SELECT version_inc('1.1.1') AS ver"
+---
+apiVersion: testing.database/v1
+kind: TestSuite
+metadata:
+  name: version_inc_tests_pg_12
+spec:
+  setup:
+    - migration_set.up:
+        name: versions
+    - db.execute:
+        command: "SET postgresql.version TO '12';"
+  teardown:
+    - migration_set.down:
+        name: versions
+---
+
+---@TestCase
+name: user_info_tests
+spec:
+  description: Tests user information retrieval
+  suites:
+    - user_info_tests_suite
+  tests:
+    - it: Retrieves user information
+      before:
+        initial_count: "SELECT COUNT(*) as c FROM users"
+      execute:
+        insert: "INSERT INTO users (name, email, age) VALUES ('John Doe', 'john@example.com', 25)"
+      after:
+        final_count: "SELECT COUNT(*) as c FROM users"
+
+      expect:
+        - source: initial_count
+          data:
+            - row: 0
+              asserts:
+                - c = 0
+        - source: final_count
+          data:
+            - row: 0
+              asserts:
+                - c = 1
+        - source: query
+          data:
+            - row: 0
+              asserts:
+                - ID = 1
+                - NAME = 'John Doe'
+                - EMAIL = 'john@example.com'
+                - AGE BETWEEN 20 AND 30
+            - row: 1 
+              asserts:
+                - ID = 2
+                - NAME = 'Jane Smith'
+                - EMAIL = 'jane@example.com'
+                - AGE BETWEEN 25 AND 35
+            - row: 2
+              asserts:
+                - ID = 3
+                - NAME = 'Mike Johnson'
+                - EMAIL = 'mike@example.com'
+                - AGE BETWEEN 30 AND 40
+
+    - it: Handles unique constraint violation
+      execute:
+        insert: "INSERT INTO users (name, email, age) VALUES ('John Doe', 'john@example.com', 25)"
+      expect:
+        - source: insert
+          error:
+            message: "duplicate key value violates unique constraint"
+            code: 23505

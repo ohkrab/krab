@@ -1,0 +1,143 @@
+---@package
+apiVersion: app/v1
+name: module/animals
+imports:
+  - "fauna/core"
+---
+
+---@type
+type: "struct"
+struct:
+  name: Animal
+  attrs:
+    - name: "id"
+      type: "int"
+    - name: "name"
+      type: "string"
+---
+
+---@type
+name: Kingdom
+type: "enum"
+values:
+  - "KINGDOM_SEA"
+  - "KINGDOM_FOREST"
+---
+
+---@query
+name: ListAnimals
+description: "List all animals"
+args:
+  - name: "limit"
+    type: "int"
+    default: "10"
+  - name: "offset"
+    type: "int"
+    default: "10"
+returns:
+  type: "array"
+  array:
+    type: "struct"
+    struct:
+      ref: "Animal"
+---
+SELECT * FROM animals ORDER BY name;
+---
+
+---@query
+name: AnimalsReport
+description: "Get a report of all animals"
+returns:
+  type: "array"
+  array:
+    type: "struct"
+    struct:
+      ref: "Animal"
+file: "animals_report.sql.tpl"
+---
+---
+
+
+---@query
+name: CreateAnimal
+args:
+  - name: "name"
+    type: "string"
+returns:
+  type: "struct"
+  struct:
+    ref: "Animal"
+---
+INSERT INTO animals (name) VALUES ({{ .name | quote }}) RETURNING *;
+---
+
+---@query
+name: FindAnimalById
+native: true
+args:
+  - name: "id"
+    type: "int"
+returns:
+  type: "struct"
+  struct:
+    ref: "Animal"
+---
+SELECT * FROM animals WHERE id = $1 LIMIT 1;
+---
+
+---@query
+name: CreateAnimals
+args:
+  - name: "animals"
+    type: "array"
+    array:
+  - name: "animals"
+    type: "array"
+    array:
+      type: "struct"
+      struct:
+        ref: "Animal"
+---
+{{ $animals := len(.animals) }}
+{{ $index := 0 }}
+INSERT INTO animals (name) VALUES (
+  {{ range .animals }}
+    {{ $index += 1 -}}
+    {{ .name | quote }}{{ if ne $index $animals }},{{ end -}}
+  {{ end }}
+) RETURNING *;
+---
+
+---@query
+name: UpdateAnimal
+args:
+  - name: "id"
+    type: "int"
+  - name: "name"
+    type: "string"
+returns:
+  type: "array"
+  array:
+    type: "struct"
+    struct:
+      attrs:
+        - name: "id"
+          type: "int"
+---
+UPDATE animals SET name = {{ .name | quote }} WHERE id = {{ .id | quote }} RETURNING id;
+---
+
+---@query
+name: DeleteAnimal
+args:
+  - name: "id"
+    type: "int"
+---
+DELETE FROM animals WHERE id = {{ .id | quote }};
+---
+
+---@query
+name: TruncateAnimals
+---
+TRUNCATE TABLE animals RESTART IDENTITY;
+---

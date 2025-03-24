@@ -5,14 +5,6 @@ lock_id, api_version,kind,applied_at,event,data,metadata
 3, migrations/v1, Migration, 20250505T1200Z, migrations.completed, {version: "202006_01"}, {name: "add_tenants"}
 4, migrations/v1, Migration, 20250505T1200Z, migrations.failed, {version: "202006_01"}, {name: "add_tenants"}
 5, migrations/v1, MigrationSet, 20250505T1200Z, migration_sets.up.completed, {}, {name: "public"}
-# 6, actions/v1, Action, 20250505T1200Z, actions.started, {args: {database_name: "animals"}, {name: "create_database"}
-# 7, actions/v1, Action, 20250505T1200Z, actions.completed, {args: {database_name: "animals"}, {name: "create_database"}
-# 8, actions/v1, Action, 20250505T1200Z, actions.failed, {args: {database_name: "animals"}, {name: "create_database"}
-
-# 9, actions/v1, Action, 20250505T1200Z, actions.started, {args: {tenant: "animals"}, {name: "create_tenant", "transaction": false}}
-# 10, actions/v1, Action, 20250505T1200Z, actions.started, {args: {tenant: "animals"}, {name: "insert_tenant"}
-# 11, actions/v1, Action, 20250505T1200Z, actions.completed, {args: {tenant: "animals"}, {name: "insert_tenant"}
-# 18, actions/v1, Action, 20250505T1200Z, actions.completed, {args: {tenant: "animals"}, {name: "create_tenant", "transaction": false}}
 
 12, migrations/v1, MigrationSet, 20250505T1200Z, migration_sets.up.started, {args: {schema: "animals"}}, {name: "tenant"}
 13, migrations/v1, Migration, 20250505T1200Z, migrations.started, {version: "v1"}, {name: "create_kinds"}
