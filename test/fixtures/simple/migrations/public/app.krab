@@ -67,6 +67,15 @@ returns:
   type: "struct"
   struct:
     ref: "Animal"
+notify:
+  - name: "kingdom.animals.created"
+    trigger: 
+      when: "after"
+      on: "success"
+    pass:
+      - name: "animal"
+        type: "struct"
+        ref: "Animal"
 ---
 INSERT INTO animals (name) VALUES ({{ .name | quote }}) RETURNING *;
 ---

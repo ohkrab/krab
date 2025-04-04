@@ -32,8 +32,7 @@ kind: MigrationSet
 metadata:
   name: public
 spec:
-  context:
-    schema: public
+  namespace: ["public"]
   migrations:
     - add_tenants_index
     - add_users
