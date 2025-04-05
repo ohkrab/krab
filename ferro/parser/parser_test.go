@@ -250,35 +250,3 @@ spec:
 // 		)
 // 	}
 // }
-
-// func TestParserRecursiveDir(t *testing.T) {
-// 	assert := assert.New(t)
-
-// 	parser, cleanup := mockParser(
-// 		"src/a.fyml",
-// 		`
-// migration "abc" {
-//   version = "v1"
-//   up {}
-//   down {}
-// }
-// `,
-// 		"src/nested/b.fyml",
-// 		`
-// migration "def" {
-//   version = "v2"
-//   up {}
-//   down {}
-// }
-// `,
-// 	)
-// 	defer cleanup()
-
-// 	config, err := parser.LoadConfigDir("src")
-// 	if assert.NoError(err, "Parsing config should not fail") {
-// 		_, abcOk := config.Migrations["abc"]
-// 		_, defOk := config.Migrations["def"]
-
-// 		assert.True(abcOk, "`abc` migration exists")
-// 		assert.True(defOk, "`def` migration exists")
-// 	}
