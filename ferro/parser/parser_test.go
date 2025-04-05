@@ -64,9 +64,8 @@ spec:
 		"v1")
 	should.NotNil("migration transaction",
 		cfg.Migrations["CreateAnimals"].Spec.Transaction)
-	should.Eq("deafult is true",
-		*cfg.Migrations["CreateAnimals"].Spec.Transaction,
-		true)
+	should.True("deafult is true",
+		*cfg.Migrations["CreateAnimals"].Spec.Transaction)
 	should.Eq("migration up",
 		cfg.Migrations["CreateAnimals"].Spec.Run.Up.Sql,
 		"CREATE TABLE animals(name varchar PRIMARY KEY)")
@@ -83,69 +82,73 @@ spec:
 		[]string{"CreateAnimals"})
 }
 
-// func TestParserMigrationSetWithDuplicatedRefName(t *testing.T) {
-// 	assert := assert.New(t)
+func TestParser_WithDuplicatedRefNames(t *testing.T) {
+	fs, _, cleanup := expecto.TempFS(
+		"src/animals.fyml",
+		`
+apiVersion: migrations/v1
+kind: Migration
+metadata:
+  name: CreateAnimals
+spec:
+  version: "v1"
+  run:
+    up:
+      sql: "CREATE TABLE animals(name varchar PRIMARY KEY)"
+    down:
+      sql: "DROP TABLE animals"
+---
+apiVersion: migrations/v1
+kind: Migration
+metadata:
+  name: CreateAnimals
+spec:
+  version: "v2"
+  run:
+    up:
+      sql: "CREATE TABLE habitats(name varchar PRIMARY KEY)"
+    down:
+      sql: "DROP TABLE habitats"
+`)
+	defer cleanup()
 
-// func TestParserWithDuplicatedRefNames(t *testing.T) {
-// 	assert := assert.New(t)
+	should := expecto.New(t)
+	parsed, err := (&Parser{FS: fs}).LoadConfigDir("src")
 
-// 	parser, cleanup := mockParser(
-// 		"src/animals.fyml",
-// 		`
-// apiVersion: migrations/v1
-// kind: Migration
-// metadata:
-//   name: CreateAnimals
-// spec:
-//   version: "v1"
-//   run:
-//     up:
-//       sql: "CREATE TABLE animals(name varchar PRIMARY KEY)"
-//     down:
-//       sql: "DROP TABLE animals"
-// ---
-// apiVersion: migrations/v1
-// kind: Migration
-// metadata:
-//   name: CreateAnimals
-// spec:
-//   version: "v2"
-//   run:
-//     up:
-//       sql: "CREATE TABLE habitats(name varchar PRIMARY KEY)"
-//     down:
-//       sql: "DROP TABLE habitats"
-// `)
-// 	defer cleanup()
+	should.NoErr("parsing config", err)
 
-// 	_, err := parser.LoadConfigDir("src")
+	_, err = parsed.BuildConfig()
+	should.ErrContains("duplicate migration", err, "adding Migration: migration `CreateAnimals` already exists")
+}
 
-// 	if assert.Error(err) {
-// 		assert.Contains(err.Error(), "Migration with the name 'abc' already exists")
-// 	}
-// }
+func TestParser_MigrationSetWithDuplicatedRefName(t *testing.T) {
+	fs, _, cleanup := expecto.TempFS(
+		"src/sets.fyml",
+		`
+apiVersion: migrations/v1
+kind: MigrationSet
+metadata:
+  name: public
+spec:
+  migrations: []
+---
+apiVersion: migrations/v1
+kind: MigrationSet
+metadata:
+  name: public
+spec:
+  migrations: []
+`)
+	defer cleanup()
 
-// func TestParserMigrationSetWithDuplicatedRefName(t *testing.T) {
-// 	assert := assert.New(t)
+	should := expecto.New(t)
+	parsed, err := (&Parser{FS: fs}).LoadConfigDir("src")
 
-// 	parser, cleanup := mockParser(
-// 		"src/sets.fyml",
-// 		`
-// migration_set "abc" {
-//   migrations = []
-// }
+	should.NoErr("parsing config", err)
 
-// migration_set "abc" {
-//   migrations = []
-// }
-// `)
-// 	defer cleanup()
-
-// 	_, err := parser.LoadConfigDir("src")
-// 	if assert.Error(err) {
-// 		assert.Contains(err.Error(), "Migration Set with the name 'abc' already exists", "Names must be unique")
-// 	}
-// }
+	_, err = parsed.BuildConfig()
+	should.ErrContains("duplicate migration set", err, "adding MigrationSet: migration set `public` already exists")
+}
 
 // func TestParserMigrationSetWithMissingMigrationReference(t *testing.T) {
 // 	assert := assert.New(t)
