@@ -25,8 +25,8 @@ type MigrationRun struct {
 // MigrationSet
 
 type MigrationSet struct {
-	Metadata Metadata `yaml:"metadata"`
-	Spec     MigrationSetSpec
+	Metadata Metadata         `yaml:"metadata"`
+	Spec     MigrationSetSpec `yaml:"spec"`
 }
 
 type MigrationSetSpec struct {

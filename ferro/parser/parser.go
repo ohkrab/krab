@@ -21,9 +21,9 @@ type Parser struct {
 }
 
 // New initializes parser and default file system.
-func New() *Parser {
+func New(dir string) *Parser {
 	return &Parser{
-		FS: os.DirFS("."),
+		FS: os.DirFS(dir),
 	}
 }
 

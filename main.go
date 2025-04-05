@@ -9,11 +9,8 @@ import (
 	_ "github.com/jackc/pgx/v5"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/ohkrab/krab/cli"
-	"github.com/ohkrab/krab/krab"
-	"github.com/ohkrab/krab/krabcli"
-	"github.com/ohkrab/krab/krabdb"
-	"github.com/ohkrab/krab/krabenv"
-	"github.com/ohkrab/krab/web"
+	"github.com/ohkrab/krab/ferro/config"
+	"github.com/ohkrab/krab/ferro/parser"
 )
 
 var (
@@ -30,45 +27,53 @@ var (
 func main() {
 	ui := cli.DefaultUI()
 
-	dir, err := krabenv.ConfigDir()
+	configDir, err := config.Dir()
 	if err != nil {
 		ui.Error(fmt.Errorf("can't read config dir: %w", err).Error())
 		os.Exit(1)
 	}
 
-	parser := krab.NewParser()
-	config, err := parser.LoadConfigDir(dir)
+	preconfig, err := parser.New(configDir).LoadConfigDir(configDir)
 	if err != nil {
 		ui.Error(fmt.Errorf("parsing error: %w", err).Error())
 		os.Exit(1)
 	}
-
-	conn := &krabdb.DefaultConnection{}
-	switchableConn := &krabdb.SwitchableDatabaseConnection{}
-
-	srv := &web.Server{
-		Config:     config,
-		Connection: switchableConn,
-		EmbeddableResources: web.EmbeddableResources{
-			Favicon:   favicon,
-			WhiteLogo: whiteLogo,
-			Logo:      logo,
-		},
-	}
-
-	registry := &krab.CmdRegistry{
-		Commands:         []krab.Cmd{},
-		FS:               parser.FS,
-		VersionGenerator: &krab.TimestampVersionGenerator{},
-	}
-	registry.RegisterAll(config, conn)
-
-	c := krabcli.New(ui, os.Args[1:], config, registry, conn, srv)
-
-	exitStatus, err := c.Run()
+	cfg, err := preconfig.BuildConfig()
 	if err != nil {
-		ui.Error(err.Error())
+		ui.Error(fmt.Errorf("config: %w", err).Error())
+		os.Exit(1)
 	}
 
-	os.Exit(exitStatus)
+	for _, migrationSet := range cfg.MigrationSets {
+		ui.Info(fmt.Sprintf("MigrationSet: %s", migrationSet.Metadata.Name))
+	}
+
+	// conn := &krabdb.DefaultConnection{}
+	// switchableConn := &krabdb.SwitchableDatabaseConnection{}
+
+	// srv := &web.Server{
+	// 	Config:     config,
+	// 	Connection: switchableConn,
+	// 	EmbeddableResources: web.EmbeddableResources{
+	// 		Favicon:   favicon,
+	// 		WhiteLogo: whiteLogo,
+	// 		Logo:      logo,
+	// 	},
+	// }
+
+	// registry := &krab.CmdRegistry{
+	// 	Commands:         []krab.Cmd{},
+	// 	FS:               parser.FS,
+	// 	VersionGenerator: &krab.TimestampVersionGenerator{},
+	// }
+	// registry.RegisterAll(config, conn)
+
+	// c := krabcli.New(ui, os.Args[1:], config, registry, conn, srv)
+
+	// exitStatus, err := c.Run()
+	// if err != nil {
+	// 	ui.Error(err.Error())
+	// }
+
+	// os.Exit(exitStatus)
 }
