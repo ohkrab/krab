@@ -9,6 +9,7 @@ type Config struct {
 
 type Resource interface {
 	EnforceDefaults()
+	Validate() *Errors
 }
 
 func New() *Config {
@@ -49,6 +50,15 @@ func (c *Config) Validate() *Errors {
 				errors.Append(
 					fmt.Errorf("invalid reference: Migration `%s` (referenced by MigrationSet `%s`) does not exist", migrationName, migrationSet.Metadata.Name),
 				)
+			}
+		}
+	}
+
+	// validate resources
+	for _, resource := range c.Migrations {
+		if errs := resource.Validate(); errs != nil {
+			for _, err := range errs.Errors {
+				errors.Append(err)
 			}
 		}
 	}
