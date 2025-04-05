@@ -15,7 +15,7 @@ kind: Migration
 metadata:
   name: CreateAnimals
 spec:
-  version: "v5"
+  version: "v1"
   run:
     up:
       sql: "CREATE TABLE animals(name varchar PRIMARY KEY)"
@@ -32,39 +32,54 @@ spec:
 `)
 	defer cleanup()
 
-	c, err := (&Parser{FS: fs}).LoadConfigDir("src")
-
 	should := expecto.New(t)
+
+	parsed, err := (&Parser{FS: fs}).LoadConfigDir("src")
 	should.NoErr("parsing config", err)
+
+	cfg, err := parsed.BuildConfig()
+	should.NoErr("building config", err)
+
 	should.Eq("number of files",
-		len(c.Files), 1)
+		len(parsed.Files), 1)
 	should.Eq("number of chunks",
-		len(c.Files[0].Chunks), 2)
+		len(parsed.Files[0].Chunks), 2)
 	should.Eq("number of migrations",
-		len(c.Files[0].Migrations), 1)
+		len(parsed.Files[0].Migrations), 1)
+	should.Eq("number of migration sets",
+		len(parsed.Files[0].MigrationSets), 1)
+
+	migrations := expecto.Map(t, cfg.Migrations)
+	migrations.HasKey("has animals", "CreateAnimals")
+
+	sets := expecto.Map(t, cfg.MigrationSets)
+	sets.HasKey("has public", "public")
 
 	// migration
 	should.Eq("migration name",
-		c.Files[0].Migrations[0].Metadata.Name,
+		cfg.Migrations["CreateAnimals"].Metadata.Name,
 		"CreateAnimals")
 	should.Eq("migration version",
-		c.Files[0].Migrations[0].Spec.Version,
+		cfg.Migrations["CreateAnimals"].Spec.Version,
 		"v1")
-	should.Nil("migration transaction",
-		c.Files[0].Migrations[0].Spec.Transaction)
+	should.NotNil("migration transaction",
+		cfg.Migrations["CreateAnimals"].Spec.Transaction)
+	should.Eq("deafult is true",
+		*cfg.Migrations["CreateAnimals"].Spec.Transaction,
+		true)
 	should.Eq("migration up",
-		c.Files[0].Migrations[0].Spec.Run.Up.Sql,
+		cfg.Migrations["CreateAnimals"].Spec.Run.Up.Sql,
 		"CREATE TABLE animals(name varchar PRIMARY KEY)")
 	should.Eq("migration down",
-		c.Files[0].Migrations[0].Spec.Run.Down.Sql,
+		cfg.Migrations["CreateAnimals"].Spec.Run.Down.Sql,
 		"DROP TABLE animals")
 
 	// migration set
 	should.Eq("migration set name",
-		c.Files[0].MigrationSets[0].Metadata.Name,
+		cfg.MigrationSets["public"].Metadata.Name,
 		"public")
 	should.Eq("migration set migrations",
-		c.Files[0].MigrationSets[0].Spec.Migrations,
+		cfg.MigrationSets["public"].Spec.Migrations,
 		[]string{"CreateAnimals"})
 }
 
@@ -250,4 +265,3 @@ spec:
 // 		assert.True(abcOk, "`abc` migration exists")
 // 		assert.True(defOk, "`def` migration exists")
 // 	}
-// }

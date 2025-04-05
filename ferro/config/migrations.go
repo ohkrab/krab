@@ -22,6 +22,13 @@ type MigrationRun struct {
 	} `yaml:"down"`
 }
 
+func (m *Migration) EnforceDefaults() {
+	if m.Spec.Transaction == nil {
+		defaultTransaction := true
+		m.Spec.Transaction = &defaultTransaction
+	}
+}
+
 // MigrationSet
 
 type MigrationSet struct {
@@ -31,4 +38,10 @@ type MigrationSet struct {
 
 type MigrationSetSpec struct {
 	Migrations []string `yaml:"migrations"`
+}
+
+func (m *MigrationSet) EnforceDefaults() {
+	if m.Spec.Migrations == nil {
+		m.Spec.Migrations = []string{}
+	}
 }
