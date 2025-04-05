@@ -38,6 +38,24 @@ func (c *Config) AddMigration(migration *Migration) error {
 	return nil
 }
 
-func (c *Config) Validate() error {
+func (c *Config) Validate() *Errors {
+	errors := &Errors{
+		Errors: []error{},
+	}
+	// check invalid references
+	for _, migrationSet := range c.MigrationSets {
+		for _, migrationName := range migrationSet.Spec.Migrations {
+			if _, ok := c.Migrations[migrationName]; !ok {
+				errors.Append(
+					fmt.Errorf("invalid reference: Migration `%s` (referenced by MigrationSet `%s`) does not exist", migrationName, migrationSet.Metadata.Name),
+				)
+			}
+		}
+	}
+
+	if len(errors.Errors) > 0 {
+		return errors
+	}
+
 	return nil
 }

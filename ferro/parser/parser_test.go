@@ -37,8 +37,8 @@ spec:
 	parsed, err := (&Parser{FS: fs}).LoadConfigDir("src")
 	should.NoErr("parsing config", err)
 
-	cfg, err := parsed.BuildConfig()
-	should.NoErr("building config", err)
+	cfg, errs := parsed.BuildConfig()
+	should.Nil("build errors", errs)
 
 	should.Eq("number of files",
 		len(parsed.Files), 1)
@@ -117,8 +117,11 @@ spec:
 
 	should.NoErr("parsing config", err)
 
-	_, err = parsed.BuildConfig()
-	should.ErrContains("duplicate migration", err, "adding Migration: migration `CreateAnimals` already exists")
+	_, errs := parsed.BuildConfig()
+	should.NotNil("build errors", errs)
+	should.Eq("number of errors",
+		len(errs.Errors), 1)
+	should.ErrContains("duplicate migration", errs.Errors[0], "adding Migration: migration `CreateAnimals` already exists")
 }
 
 func TestParser_MigrationSetWithDuplicatedRefName(t *testing.T) {
@@ -146,27 +149,38 @@ spec:
 
 	should.NoErr("parsing config", err)
 
-	_, err = parsed.BuildConfig()
-	should.ErrContains("duplicate migration set", err, "adding MigrationSet: migration set `public` already exists")
+	_, errs := parsed.BuildConfig()
+	should.NotNil("build errors", errs)
+	should.Eq("number of errors",
+		len(errs.Errors), 1)
+	should.ErrContains("duplicate migration set", errs.Errors[0], "adding MigrationSet: migration set `public` already exists")
 }
 
-// func TestParserMigrationSetWithMissingMigrationReference(t *testing.T) {
-// 	assert := assert.New(t)
+func TestParser_MigrationSetWithMissingMigrationReference(t *testing.T) {
+	should := expecto.New(t)
 
-// 	parser, cleanup := mockParser(
-// 		"src/sets.fyml",
-// 		`
-// migration_set "abc" {
-//   migrations = [migration.does_not_exist]
-// }
-// `)
-// 	defer cleanup()
+	fs, _, cleanup := expecto.TempFS(
+		"src/sets.fyml",
+		`
+apiVersion: migrations/v1
+kind: MigrationSet
+metadata:
+  name: public
+spec:
+  migrations: ["DoesNotExist"]
+`)
+	defer cleanup()
 
-// 	_, err := parser.LoadConfigDir("src")
-// 	if assert.Error(err, "Parsing config should fail") {
-// 		assert.Contains(err.Error(), "Migration Set references 'does_not_exist' migration that does not exist", "Missing migration")
-// 	}
-// }
+	parsed, err := (&Parser{FS: fs}).LoadConfigDir("src")
+	should.NoErr("parsing config", err)
+
+	_, errs := parsed.BuildConfig()
+	should.NotNil("build errors", errs)
+	should.Eq("number of errors",
+		len(errs.Errors), 1)
+	should.ErrContains("missing migration", errs.Errors[0],
+		"invalid reference: Migration `DoesNotExist` (referenced by MigrationSet `public`) does not exist")
+}
 
 // func TestParserWithMigrationsDefinedInSQLFiles(t *testing.T) {
 // 	assert := assert.New(t)
