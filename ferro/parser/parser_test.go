@@ -3,11 +3,12 @@ package parser
 import (
 	"testing"
 
+	"github.com/ohkrab/krab/ferro/config"
 	"github.com/qbart/expecto/expecto"
 )
 
 func TestParser_SingleMigrationSetWithMigration(t *testing.T) {
-	fs, _, cleanup := expecto.TempFS(
+	_, dir, cleanup := expecto.TempFS(
 		"src/a/b/c/animals.fyml",
 		`
 apiVersion: migrations/v1
@@ -34,11 +35,13 @@ spec:
 
 	should := expecto.New(t)
 
-	parsed, err := (&Parser{FS: fs}).LoadConfigDir("src")
+	parser := New(config.NewFilesystem(dir))
+	parsed, err := parser.LoadAndParse()
 	should.NoErr("parsing config", err)
 
 	cfg, errs := parsed.BuildConfig()
-	should.Nil("build errors", errs)
+	should.NotNil("build errors", errs)
+	should.Eq("number of errors", len(errs.Errors), 0)
 
 	should.Eq("number of files",
 		len(parsed.Files), 1)
@@ -83,7 +86,7 @@ spec:
 }
 
 func TestParser_WithDuplicatedRefNames(t *testing.T) {
-	fs, _, cleanup := expecto.TempFS(
+	_, dir, cleanup := expecto.TempFS(
 		"src/animals.fyml",
 		`
 apiVersion: migrations/v1
@@ -113,7 +116,8 @@ spec:
 	defer cleanup()
 
 	should := expecto.New(t)
-	parsed, err := (&Parser{FS: fs}).LoadConfigDir("src")
+	parser := New(config.NewFilesystem(dir))
+	parsed, err := parser.LoadAndParse()
 
 	should.NoErr("parsing config", err)
 
@@ -125,7 +129,7 @@ spec:
 }
 
 func TestParser_MigrationSetWithDuplicatedRefName(t *testing.T) {
-	fs, _, cleanup := expecto.TempFS(
+	_, dir, cleanup := expecto.TempFS(
 		"src/sets.fyml",
 		`
 apiVersion: migrations/v1
@@ -145,7 +149,8 @@ spec:
 	defer cleanup()
 
 	should := expecto.New(t)
-	parsed, err := (&Parser{FS: fs}).LoadConfigDir("src")
+	parser := New(config.NewFilesystem(dir))
+	parsed, err := parser.LoadAndParse()
 
 	should.NoErr("parsing config", err)
 
@@ -159,7 +164,7 @@ spec:
 func TestParser_MigrationSetWithMissingMigrationReference(t *testing.T) {
 	should := expecto.New(t)
 
-	fs, _, cleanup := expecto.TempFS(
+	_, dir, cleanup := expecto.TempFS(
 		"src/sets.fyml",
 		`
 apiVersion: migrations/v1
@@ -171,7 +176,8 @@ spec:
 `)
 	defer cleanup()
 
-	parsed, err := (&Parser{FS: fs}).LoadConfigDir("src")
+	parser := New(config.NewFilesystem(dir))
+	parsed, err := parser.LoadAndParse()
 	should.NoErr("parsing config", err)
 
 	_, errs := parsed.BuildConfig()
@@ -182,71 +188,66 @@ spec:
 		"invalid reference: Migration `DoesNotExist` (referenced by MigrationSet `public`) does not exist")
 }
 
-// func TestParserWithMigrationsDefinedInSQLFiles(t *testing.T) {
-// 	assert := assert.New(t)
+func TestParser_MigrationsDefinedInSQLFiles(t *testing.T) {
+	_, dir, cleanup := expecto.TempFS(
+		"src/animals.fyml",
+		`
+apiVersion: migrations/v1
+kind: Migration
+metadata:
+  name: CreateAnimals
+spec:
+  version: "v1"
+  run:
+    up:
+      file: "animals/up.sql"
+    down:
+      file: "animals/down.sql"
+`,
+		"src/animals/up.sql",
+		`CREATE TABLE animals(name varchar PRIMARY KEY)`,
+		"src/animals/down.sql",
+		`DROP TABLE animals`,
+	)
+	defer cleanup()
 
-// 	parser, cleanup := mockParser(
-// 		"src/migrations.fyml",
-// 		`
-// migration "abc" {
-//   version = "2006"
-//   up {
-// 	sql = file_read("src/up.sql")
-//   }
-//   down {
-// 	sql = file_read("src/down.sql")
-//   }
-// }
-// `,
-// 		"src/up.sql",
-// 		"CREATE TABLE abc",
-// 		"src/down.sql",
-// 		"DROP TABLE abc",
-// 	)
-// 	defer cleanup()
+	should := expecto.New(t)
+	parser := New(config.NewFilesystem(dir))
+	parsed, err := parser.LoadAndParse()
 
-// 	config, err := parser.LoadConfigDir("src")
-// 	if assert.NoError(err, "Parsing config should not fail") {
-// 		if assert.Equal(len(config.Files), 1) {
-// 			migration := config.Files[0].Migrations[0]
-// 		}
-// 		migration := config.Files[0].Migrations[0]
-// 		if assert.True(exists) {
-// 			assert.Equal(migration.RefName, "abc")
-// 			var up strings.Builder
-// 			var down strings.Builder
-// 			migration.Up.ToSQL(&up)
-// 			migration.Down.ToSQL(&down)
-// 			assert.Equal(up.String(), "CREATE TABLE abc")
-// 			assert.Equal(down.String(), "DROP TABLE abc")
-// 		}
-// 	}
-// }
+	should.NoErr("parsing config", err)
+	_, errs := parsed.BuildConfig()
+	should.NotNil("build errors", errs)
+	should.Eq("number of errors", len(errs.Errors), 0)
+}
 
-// func TestParserWithMigrationsDefinedInSQLFilesThatAreMissing(t *testing.T) {
-// 	assert := assert.New(t)
+func TestParser_MigrationsDefinedInSQLFilesThatAreMissing(t *testing.T) {
+	_, dir, cleanup := expecto.TempFS(
+		"src/animals.fyml",
+		`
+apiVersion: migrations/v1
+kind: Migration
+metadata:
+  name: CreateAnimals
+spec:
+  version: "v1"
+  run:
+    up:
+      file: "animals/up.sql"
+    down:
+      file: "animals/down.sql"
+`)
+	defer cleanup()
 
-// 	parser, cleanup := mockParser(
-// 		"src/migrations.fyml",
-// 		`
-// migration "abc" {
-//   version = "2006"
-//   up {
-// 	sql = file_read("src/up.sql")
-//   }
-//   down {
-// 	sql = file_read("src/down.sql")
-//   }
-// }
-// `,
-// 	)
-// 	defer cleanup()
+	should := expecto.New(t)
+	parser := New(config.NewFilesystem(dir))
+	parsed, err := parser.LoadAndParse()
 
-// 	_, err := parser.LoadConfigDir("src")
-// 	if assert.Error(err, "Parsing config should fail") {
-// 		assert.Contains(
-// 			err.Error(),
-// 			`Call to function "file_read" failed`,
-// 		)
-// 	}
-// }
+	should.NoErr("parsing config", err)
+	_, errs := parsed.BuildConfig()
+	should.NotNil("build errors", errs)
+	should.Eq("number of errors",
+		len(errs.Errors), 1)
+	should.ErrContains("missing migration", errs.Errors[0],
+		"io error: Migration(up) `CreateAnimals` cannot load file `"+dir+"/src/animals/up.sql`")
+}

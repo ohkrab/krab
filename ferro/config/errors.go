@@ -15,3 +15,7 @@ func Errorf(format string, args ...any) *Errors {
 func (e *Errors) Append(err error) {
 	e.Errors = append(e.Errors, err)
 }
+
+func (e *Errors) HasErrors() bool {
+	return len(e.Errors) > 0
+}

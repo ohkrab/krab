@@ -1,40 +1,32 @@
 package parser
 
 import (
-	"bytes"
 	"fmt"
-	"io/fs"
-	"os"
-	"strings"
+	"path/filepath"
 
 	"github.com/ohkrab/krab/ferro/config"
-	"golang.org/x/sync/errgroup"
 	"gopkg.in/yaml.v3"
 )
 
-const (
-	FileExt = ".fyml"
-)
-
 type Parser struct {
-	FS fs.FS
+	fs *config.Filesystem
 }
 
 // New initializes parser and default file system.
-func New(dir string) *Parser {
+func New(fs *config.Filesystem) *Parser {
 	return &Parser{
-		FS: os.DirFS(dir),
+		fs: fs,
 	}
 }
 
-// LoadConfigDir parses files in a dir and returns ParsedConfig.
-func (p *Parser) LoadConfigDir(path string) (*ParsedConfig, error) {
-	paths, err := p.dirFiles(path)
+// LoadAndParse parses files in a dir and returns ParsedConfig.
+func (p *Parser) LoadAndParse() (*config.ParsedConfig, error) {
+	paths, err := p.fs.DirFiles()
 	if err != nil {
 		return nil, err
 	}
 
-	parsedFiles, err := p.loadParsedFiles(paths)
+	parsedFiles, err := p.fs.LoadFiles(paths)
 	if err != nil {
 		return nil, err
 	}
@@ -43,14 +35,14 @@ func (p *Parser) LoadConfigDir(path string) (*ParsedConfig, error) {
 		return nil, err
 	}
 
-	cfg := &ParsedConfig{
+	cfg := &config.ParsedConfig{
 		Files: parsedFiles,
 	}
 
 	return cfg, nil
 }
 
-func (p *Parser) parse(files []*ParsedFile) error {
+func (p *Parser) parse(files []*config.ParsedFile) error {
 	for _, file := range files {
 		for _, chunk := range file.Chunks {
 			var parseErr error
@@ -70,13 +62,14 @@ func (p *Parser) parse(files []*ParsedFile) error {
 	return nil
 }
 
-func (p *Parser) parseMigrationsV1(file *ParsedFile, chunk *ParsedChunk) error {
+func (p *Parser) parseMigrationsV1(file *config.ParsedFile, chunk *config.ParsedChunk) error {
 	switch chunk.Header.Kind {
 	case "Migration":
 		var migration config.Migration
 		if err := yaml.Unmarshal(chunk.Raw, &migration); err != nil {
 			return fmt.Errorf("failed to parse Migration: %w", err)
 		}
+		migration.Path = filepath.Join(p.fs.Dir, file.Path)
 		file.Migrations = append(file.Migrations, &migration)
 
 	case "MigrationSet":
@@ -84,6 +77,7 @@ func (p *Parser) parseMigrationsV1(file *ParsedFile, chunk *ParsedChunk) error {
 		if err := yaml.Unmarshal(chunk.Raw, &migrationSet); err != nil {
 			return fmt.Errorf("failed to parse MigrationSet: %w", err)
 		}
+		migrationSet.Path = filepath.Join(p.fs.Dir, file.Path)
 		file.MigrationSets = append(file.MigrationSets, &migrationSet)
 
 	default:
@@ -91,86 +85,4 @@ func (p *Parser) parseMigrationsV1(file *ParsedFile, chunk *ParsedChunk) error {
 	}
 
 	return nil
-}
-
-func (p *Parser) loadParsedFiles(paths []string) ([]*ParsedFile, error) {
-	parsedFiles := make([]*ParsedFile, len(paths))
-	for i, path := range paths {
-		parsedFiles[i] = &ParsedFile{
-			Path:   path,
-			Chunks: []*ParsedChunk{},
-		}
-	}
-
-	eg := errgroup.Group{}
-	for f, file := range parsedFiles {
-		eg.Go(func() error {
-			src, err := fs.ReadFile(p.FS, file.Path)
-			if err != nil {
-				return fmt.Errorf("failed to read config file %s: %w", file.Path, err)
-			}
-
-			chunks := bytes.Split(src, []byte("\n---"))
-			for i, chunk := range chunks {
-				var parsedHeader config.Header
-				if err := yaml.Unmarshal(chunk, &parsedHeader); err != nil {
-					return fmt.Errorf("failed to unmarshal chunk (%d): %w", i, err)
-				}
-
-				parsedFiles[f].Chunks = append(parsedFiles[f].Chunks, &ParsedChunk{
-					Header: &parsedHeader,
-					Raw:    chunk,
-				})
-			}
-
-			return nil
-		})
-	}
-
-	if err := eg.Wait(); err != nil {
-		return nil, err
-	}
-
-	return parsedFiles, nil
-}
-
-func (p *Parser) dirFiles(root string) ([]string, error) {
-	paths := []string{}
-
-	err := fs.WalkDir(p.FS, root, func(path string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		if d.IsDir() {
-			return nil
-		}
-
-		ext := fileExt(path)
-		if ext == "" || isIgnoredFile(path) {
-			return nil
-		}
-
-		paths = append(paths, path)
-		return nil
-	})
-
-	if err != nil {
-		return nil, err
-	}
-
-	return paths, nil
-}
-
-func fileExt(path string) string {
-	if strings.HasSuffix(path, FileExt) {
-		return FileExt
-	}
-
-	return "" // unrecognized
-}
-
-func isIgnoredFile(name string) bool {
-	return strings.HasPrefix(name, ".") || // dotfiles
-		strings.HasSuffix(name, "~") || // vim/backups
-		strings.HasPrefix(name, "#") && strings.HasSuffix(name, "#") // emacs
 }
