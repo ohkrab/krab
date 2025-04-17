@@ -1,0 +1,52 @@
+apiVersion: migrations/v1
+kind: Migration
+metadata:
+  name: add_tenants
+  description: |
+    We need to add the tenants table to the database
+spec:
+  version: "202006_01"
+  transaction: true
+  run:
+    up:
+      sql: "CREATE TABLE tenants(name varchar PRIMARY KEY)"
+    down:
+      sql: "DROP TABLE tenants"
+---
+apiVersion: migrations/v1
+kind: Migration
+metadata:
+  name: create_users
+  description: |
+    We need to add the users table to the database
+spec:
+  version: "202006_01"
+  run:
+    up:
+      sql: "CREATE TABLE users(name varchar PRIMARY KEY)"
+    down:
+      sql: "DROP TABLE users"
+---
+apiVersion: migrations/v1
+kind: MigrationSet
+metadata:
+  name: public
+spec:
+  namespace: ["public"]
+  migrations:
+    - add_tenants
+    - create_users
+---
+apiVersion: migrations/v1
+kind: MigrationSet
+spec:
+  args:
+    schema:
+      type: string
+      description: "Namespace where to create everything"
+  name: tenant
+  context:
+    schema: $({ args.schema })
+  migrations:
+    - add_tenants
+    - create_users

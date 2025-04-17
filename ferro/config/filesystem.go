@@ -39,7 +39,6 @@ func (f *Filesystem) LoadFiles(paths []string) ([]*ParsedFile, error) {
 	eg := errgroup.Group{}
 	for i, file := range parsedFiles {
 		eg.Go(func() error {
-			fmt.Println("path", file.Path)
 			src, err := fs.ReadFile(f.fs, file.Path)
 			if err != nil {
 				return fmt.Errorf("failed to read config file %s: %w", file.Path, err)
@@ -49,7 +48,7 @@ func (f *Filesystem) LoadFiles(paths []string) ([]*ParsedFile, error) {
 			for c, chunk := range chunks {
 				var parsedHeader Header
 				if err := yaml.Unmarshal(chunk, &parsedHeader); err != nil {
-					return fmt.Errorf("failed to unmarshal chunk (%d): %w", c, err)
+					return fmt.Errorf("failed to unmarshal chunk (%d): %w\n  %s", c, err, string(chunk))
 				}
 
 				parsedFiles[i].Chunks = append(parsedFiles[i].Chunks, &ParsedChunk{
@@ -145,9 +144,5 @@ func (p *ParsedConfig) BuildConfig() (*Config, *Errors) {
 	}
 
 	errors := cfg.Validate()
-	if errors != nil {
-		return nil, errors
-	}
-
-	return cfg, &Errors{}
+	return cfg, errors
 }

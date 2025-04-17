@@ -1,0 +1,48 @@
+apiVersion: migrations/v1
+kind: Migration
+metadata:
+  name: create_assets
+spec:
+  version: "tenants_v1"
+  run:
+    up:
+      pgdsl:
+        - create_table:
+            name: assets
+            columns:
+              - id:
+                  type: int
+                  identity:
+                    always: true
+              - name:
+                  type: varchar
+                  null: false
+              - size:
+                  type: int
+                  default: 0
+            constraints:
+              - ensure_positive_size:
+                  check: "size > 0"
+        - alter_table:
+            name: users
+            actions:
+              - add_column:
+                  name: email
+                  type: varchar
+                  null: true
+              - drop_column:
+                  name: deprecated_field
+              - add_primary_key:
+                  columns:
+                    - email
+                    - name
+              - create_index:
+                  name: idx_uniq_emails
+                  unique: true
+                  columns:
+                    - email
+              - add_constraint:
+                  name: users_pk
+                  check: "email IS NOT NULL AND name IS NOT NULL"
+    down:
+      reverse: impossible

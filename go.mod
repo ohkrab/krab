@@ -16,7 +16,7 @@ require (
 	github.com/mitchellh/cli v1.1.5
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/afero v1.14.0
-	github.com/stretchr/testify v1.8.2
+	github.com/stretchr/testify v1.10.0
 	github.com/wzshiming/ctc v1.2.3
 	github.com/zclconf/go-cty v1.16.2
 )
@@ -50,6 +50,7 @@ require (
 	github.com/qbart/expecto v0.2.3 // indirect
 	github.com/shopspring/decimal v1.4.0 // indirect
 	github.com/spf13/cast v1.7.1 // indirect
+	github.com/urfave/cli/v3 v3.1.1 // indirect
 	github.com/wzshiming/winseq v0.0.0-20200720163736-7fa652d2b50e // indirect
 	golang.org/x/crypto v0.36.0 // indirect
 	golang.org/x/mod v0.24.0 // indirect

@@ -67,7 +67,7 @@ func (p *Parser) parseMigrationsV1(file *config.ParsedFile, chunk *config.Parsed
 	case "Migration":
 		var migration config.Migration
 		if err := yaml.Unmarshal(chunk.Raw, &migration); err != nil {
-			return fmt.Errorf("failed to parse Migration: %w", err)
+			return fmt.Errorf("failed to parse Migration: %w\n%s", err, string(chunk.Raw))
 		}
 		migration.Path = filepath.Join(p.fs.Dir, file.Path)
 		file.Migrations = append(file.Migrations, &migration)
@@ -75,7 +75,7 @@ func (p *Parser) parseMigrationsV1(file *config.ParsedFile, chunk *config.Parsed
 	case "MigrationSet":
 		var migrationSet config.MigrationSet
 		if err := yaml.Unmarshal(chunk.Raw, &migrationSet); err != nil {
-			return fmt.Errorf("failed to parse MigrationSet: %w", err)
+			return fmt.Errorf("failed to parse MigrationSet: %w\n%s", err, string(chunk.Raw))
 		}
 		migrationSet.Path = filepath.Join(p.fs.Dir, file.Path)
 		file.MigrationSets = append(file.MigrationSets, &migrationSet)

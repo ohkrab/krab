@@ -65,9 +65,5 @@ func (c *Config) Validate() *Errors {
 		}
 	}
 
-	if len(errors.Errors) > 0 {
-		return errors
-	}
-
-	return nil
+	return errors
 }

@@ -23,8 +23,6 @@ spec:
     - "KINGDOM_SEA"
     - "KINGDOM_FOREST"
 ---
-
----
 kind: Query
 spec:
   name: ListAnimals
@@ -56,21 +54,17 @@ spec:
         ref: "Animal"
   file: "animals_report.sql.tpl"
 ---
-
----
 kind: Query
 spec:
   name: CreateAnimal
   args:
     - name: "name"
-    type: "string"
+      type: "string"
   returns:
     type: "struct"
     struct:
       ref: "Animal"
   sql: "INSERT INTO animals (name) VALUES ({{ .name | quote }}) RETURNING *;"
-  ---
-
 ---
 name: FindAnimalById
 native: true
@@ -82,8 +76,6 @@ returns:
   struct:
     ref: "Animal"
   sql: "SELECT * FROM animals WHERE id = $1 LIMIT 1;"
----
-
 ---
 kind: Query
 spec:
@@ -105,8 +97,6 @@ spec:
       {{ end }}
     ) RETURNING *;
 ---
-
----
 kind: Query
 spec:
   name: UpdateAnimal
@@ -125,8 +115,6 @@ spec:
             type: "int"
   sql: "UPDATE animals SET name = {{ .name | quote }} WHERE id = {{ .id | quote }} RETURNING id;"
 ---
-
----
 kind: Query
 spec:
   name: DeleteAnimal
@@ -135,10 +123,7 @@ spec:
       type: "int"
   sql: "DELETE FROM animals WHERE id = {{ .id | quote }};"
 ---
-
----
 kind: Query
 spec:
   name: TruncateAnimals
   sql: "TRUNCATE TABLE animals RESTART IDENTITY;"
----
