@@ -271,6 +271,9 @@ spec:
 apiVersion: migrations/v1
 kind: MigrationSet
 spec:
+  namespace:
+    schema: public
+    prefix: "public_"
   migrations:
     - CreateAnimals
 `)

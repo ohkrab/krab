@@ -32,19 +32,22 @@ kind: MigrationSet
 metadata:
   name: public
 spec:
-  namespace: ["public"]
+  namespace:
+    name: public
+    prefix: "public_"
   migrations:
     - add_tenants
     - create_users
 ---
 apiVersion: migrations/v1
 kind: MigrationSet
+metadata:
+  name: tenant
 spec:
   args:
     schema:
       type: string
       description: "Namespace where to create everything"
-  name: tenant
   context:
     schema: $({ args.schema })
   migrations:

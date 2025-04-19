@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"golang.org/x/sync/errgroup"
@@ -25,6 +26,18 @@ func NewFilesystem(dir string) *Filesystem {
 		Dir: dir,
 		fs:  os.DirFS(dir),
 	}
+}
+
+func (f *Filesystem) MkdirAll(paths []string) error {
+	dir := f.Dir
+	for _, path := range paths {
+		dir = filepath.Join(dir, path)
+	}
+
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (f *Filesystem) LoadFiles(paths []string) ([]*ParsedFile, error) {

@@ -99,6 +99,10 @@ func (m *Migration) Validate() *Errors {
 		panic(fmt.Sprintf("invalid spec: Migration(transaction) `%s` transaction is nil", m.Metadata.Name))
 	}
 
+	if len(m.Metadata.Args) > 0 {
+		errors.Append(fmt.Errorf("invalid spec: Migration(args) `%s` cannot have args defined", m.Metadata.Name))
+	}
+
 	if m.Spec.Run.Up.Sql != "" && m.Spec.Run.Up.File != "" {
 		errors.Append(fmt.Errorf("invalid spec: Migration(up) `%s` cannot have both `sql` and `file` defined", m.Metadata.Name))
 	}
@@ -127,7 +131,13 @@ type MigrationSet struct {
 }
 
 type MigrationSetSpec struct {
-	Migrations []string `yaml:"migrations"`
+	Namespace  MigrationSetNamespace `yaml:"namespace"`
+	Migrations []string              `yaml:"migrations"`
+}
+
+type MigrationSetNamespace struct {
+	Schema string `yaml:"schema"`
+	Prefix string `yaml:"prefix"`
 }
 
 func (m *MigrationSet) EnforceDefaults() {
