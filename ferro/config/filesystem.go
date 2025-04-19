@@ -33,7 +33,16 @@ func (f *Filesystem) MkdirAll(paths []string) error {
 	}
 
 	if err := os.MkdirAll(dir, 0755); err != nil {
-		return err
+		return fmt.Errorf("failed to mkdir %s: %w", strings.Join(paths, "/"), err)
+	}
+	return nil
+}
+
+func (f *Filesystem) TouchFile(path string, data []byte) error {
+	if _, err := os.Stat(filepath.Join(f.Dir, path)); os.IsNotExist(err) {
+		if err := os.WriteFile(filepath.Join(f.Dir, path), data, 0644); err != nil {
+			return fmt.Errorf("failed to write file %s: %w", path, err)
+		}
 	}
 	return nil
 }

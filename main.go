@@ -12,6 +12,7 @@ import (
 	"github.com/ohkrab/krab/ferro/config"
 	"github.com/ohkrab/krab/ferro/parser"
 	"github.com/ohkrab/krab/ferro/run"
+	"github.com/ohkrab/krab/ferro/run/generators"
 	"github.com/ohkrab/krab/fmtx"
 
 	// "github.com/ohkrab/krab/cli"
@@ -113,13 +114,13 @@ func main() {
 	}
 
 	// runners
-	initializer := run.NewInitializer(filesystem)
+	initializer := run.NewInitializer(filesystem, &generators.TimestampVersionGenerator{})
 	migrator := run.NewMigrator(filesystem)
 
 	// init commands
 	initCmd := &cli.Command{
 		Name:  "init",
-		Usage: "Initialize a new FerroDB default files structure",
+		Usage: "Initialize FerroDB default files structure",
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			return initializer.Initialize(ctx, run.InitializeOptions{})
 		},
@@ -128,7 +129,7 @@ func main() {
 	// migrate commands
 	migrateInitCmd := &cli.Command{
 		Name:  "init",
-		Usage: "Initialize a new FerroDB migration with timestamp",
+		Usage: "Initialize a single timestamped migration",
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			return migrator.MigrateInit(ctx, cfg, run.MigrateInitOptions{})
 		},
@@ -141,19 +142,22 @@ func main() {
 		},
 	}
 	migrateUpCmd := &cli.Command{
-		Name: "up",
+		Name:  "up",
+		Usage: "Apply all pending migrations",
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			return migrator.MigrateUp(ctx, cfg, run.MigrateUpOptions{})
 		},
 	}
 	migrateDownCmd := &cli.Command{
-		Name: "down",
+		Name:  "down",
+		Usage: "Rollback single migration",
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			return migrator.MigrateDown(ctx, cfg, run.MigrateDownOptions{})
 		},
 	}
 	migrateStatusCmd := &cli.Command{
-		Name: "status",
+		Name:  "status",
+		Usage: "Show the current status of migrations",
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			return migrator.MigrateStatus(ctx, cfg, run.MigrateStatusOptions{})
 		},
