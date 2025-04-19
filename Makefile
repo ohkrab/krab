@@ -1,4 +1,6 @@
-.PHONY: default build test docker_test docker_build docker_push docker_nightly 
+.PHONY: quicktest
+quicktest:
+	cd ferro && go test -v ./...
 
 .PHONY: web
 web:
@@ -17,6 +19,7 @@ install:
 	go install github.com/cosmtrek/air@latest
 	go install github.com/a-h/templ/cmd/templ@latest
 
+.PHONY: default
 default:
 	export DATABASE_URL="postgres://krab:secret@localhost:5432/krab?sslmode=disable" && \
 	export KRAB_ENV=test && \
@@ -25,17 +28,21 @@ default:
 	./bin/krab test && \
 	echo "ok"
 
+.PHONY: build
 build:
 	mkdir -p bin/
 	go build -o bin/krab main.go
 
+.PHONY: test
 test:
 	DATABASE_URL="postgres://krab:secret@localhost:5432/krab?sslmode=disable&prefer_simple_protocol=true" go test -v ./... && echo "☑️ "
 
+.PHONY: docker_test
 docker_test:
 	docker run --rm -e DATABASE_URL="postgres://krab:secret@localhost:5432/krab?sslmode=disable" \
 		-v ${HOME}/oh/krab/test/fixtures/simple:/etc/krab:ro ohkrab/krab-cli:${BUILD_VERSION} version
 
+.PHONY: docker_build
 docker_build:
 	docker build -t ohkrab/krab:${BUILD_VERSION} \
 		--build-arg BUILD_VERSION=${BUILD_VERSION} \
@@ -43,11 +50,13 @@ docker_build:
 		--build-arg BUILD_DATE=${BUILD_DATE} \
 		.
 
+.PHONY: docker_push
 docker_push:
 	docker tag ohkrab/krab:${BUILD_VERSION} ohkrab/krab:latest
 	docker push ohkrab/krab:${BUILD_VERSION}
 	docker push ohkrab/krab:latest
 
+.PHONY: docker_nightly
 docker_nightly:
 	docker build -t ohkrab/krab:nightly \
 		--build-arg BUILD_VERSION=nightly \

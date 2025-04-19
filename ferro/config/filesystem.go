@@ -18,13 +18,11 @@ const (
 
 type Filesystem struct {
 	Dir string
-	fs  fs.FS
 }
 
 func NewFilesystem(dir string) *Filesystem {
 	return &Filesystem{
 		Dir: dir,
-		fs:  os.DirFS(dir),
 	}
 }
 
@@ -52,7 +50,7 @@ func (f *Filesystem) LoadFiles(paths []string) ([]*ParsedFile, error) {
 	eg := errgroup.Group{}
 	for i, file := range parsedFiles {
 		eg.Go(func() error {
-			src, err := fs.ReadFile(f.fs, file.Path)
+			src, err := os.ReadFile(filepath.Join(f.Dir, file.Path))
 			if err != nil {
 				return fmt.Errorf("failed to read config file %s: %w", file.Path, err)
 			}
@@ -84,7 +82,7 @@ func (f *Filesystem) LoadFiles(paths []string) ([]*ParsedFile, error) {
 func (f *Filesystem) DirFiles() ([]string, error) {
 	paths := []string{}
 
-	err := fs.WalkDir(f.fs, ".", func(path string, d fs.DirEntry, err error) error {
+	err := fs.WalkDir(os.DirFS(f.Dir), ".", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
