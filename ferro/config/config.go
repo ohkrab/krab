@@ -38,6 +38,11 @@ func (c *Config) AddMigration(migration *Migration) error {
 	c.Migrations[migration.Metadata.Name] = migration
 	migration.EnforceDefaults()
 
+	err := migration.ResolveFiles()
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -45,6 +50,27 @@ func (c *Config) Validate() *Errors {
 	errors := &Errors{
 		Errors: []error{},
 	}
+
+	//// validate resources
+	// Migrations
+	for _, resource := range c.Migrations {
+		if errs := resource.Validate(); errs != nil {
+			for _, err := range errs.Errors {
+				errors.Append(err)
+			}
+		}
+	}
+
+	// MigrationSets
+	for _, resource := range c.MigrationSets {
+		if errs := resource.Validate(); errs != nil {
+			for _, err := range errs.Errors {
+				errors.Append(err)
+			}
+		}
+	}
+	////
+
 	// check invalid references
 	for _, migrationSet := range c.MigrationSets {
 		for _, migrationName := range migrationSet.Spec.Migrations {
@@ -52,15 +78,6 @@ func (c *Config) Validate() *Errors {
 				errors.Append(
 					fmt.Errorf("invalid reference: Migration `%s` (referenced by MigrationSet `%s`) does not exist", migrationName, migrationSet.Metadata.Name),
 				)
-			}
-		}
-	}
-
-	// validate resources
-	for _, resource := range c.Migrations {
-		if errs := resource.Validate(); errs != nil {
-			for _, err := range errs.Errors {
-				errors.Append(err)
 			}
 		}
 	}

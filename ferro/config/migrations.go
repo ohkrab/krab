@@ -57,6 +57,7 @@ func (m *Migration) ResolveFiles() error {
 			return fmt.Errorf("io error: Migration(up) `%s` cannot read file `%s`", m.Metadata.Name, path)
 		}
 		m.Spec.Run.Up.Sql = string(upBytes)
+		m.Spec.Run.Up.File = ""
 	}
 
 	if m.Spec.Run.Down.File != "" {
@@ -76,6 +77,7 @@ func (m *Migration) ResolveFiles() error {
 			return fmt.Errorf("io error: Migration(down) `%s` cannot read file `%s`", m.Metadata.Name, m.Spec.Run.Down.File)
 		}
 		m.Spec.Run.Down.Sql = string(downBytes)
+		m.Spec.Run.Down.File = ""
 	}
 
 	return nil
@@ -113,13 +115,6 @@ func (m *Migration) Validate() *Errors {
 		errors.Append(fmt.Errorf("invalid spec: Migration(down) `%s` must have either `sql` or `file` defined", m.Metadata.Name))
 	}
 
-	if !errors.HasErrors() {
-		err := m.ResolveFiles()
-		if err != nil {
-			errors.Append(err)
-		}
-	}
-
 	return errors
 }
 
@@ -139,4 +134,23 @@ func (m *MigrationSet) EnforceDefaults() {
 	if m.Spec.Migrations == nil {
 		m.Spec.Migrations = []string{}
 	}
+}
+
+func (m *MigrationSet) Validate() *Errors {
+	errors := &Errors{
+		Errors: []error{},
+	}
+
+	// break early if no name because it's hard to explain other errors without it
+	if m.Metadata.Name == "" {
+		errors.Append(fmt.Errorf("invalid spec: MigrationSet must have a name"))
+		return errors
+	}
+
+	// sanity check
+	if m.Spec.Migrations == nil {
+		panic(fmt.Sprintf("invalid spec: MigrationSet(migrations) `%s` migrations is nil", m.Metadata.Name))
+	}
+
+	return errors
 }

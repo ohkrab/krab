@@ -251,3 +251,40 @@ spec:
 	should.ErrContains("missing migration", errs.Errors[0],
 		"io error: Migration(up) `CreateAnimals` cannot load file `"+dir+"/src/animals/up.sql`")
 }
+
+func TestParser_MigrationSetValidation(t *testing.T) {
+	_, dir, cleanup := expecto.TempFS(
+		"src/a/b/c/animals.fyml",
+		`
+apiVersion: migrations/v1
+kind: Migration
+metadata:
+  name: CreateAnimals
+spec:
+  version: "v1"
+  run:
+    up:
+      sql: "CREATE TABLE animals(name varchar PRIMARY KEY)"
+    down:
+      sql: "DROP TABLE animals"
+---
+apiVersion: migrations/v1
+kind: MigrationSet
+spec:
+  migrations:
+    - CreateAnimals
+`)
+	defer cleanup()
+
+	should := expecto.New(t)
+
+	parser := New(config.NewFilesystem(dir))
+	parsed, err := parser.LoadAndParse()
+	should.NoErr("parsing config", err)
+
+	_, errs := parsed.BuildConfig()
+	should.NotNil("build errors", errs)
+	should.Eq("number of errors", len(errs.Errors), 1)
+
+	should.ErrContains("migration set validation", errs.Errors[0], "invalid spec: MigrationSet must have a name")
+}
