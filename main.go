@@ -36,61 +36,10 @@ var (
 
 	//go:embed tpls/embed/set.fyml.tpl
 	tplSet []byte
+
+	//go:embed tpls/embed/driver.fyml.tpl
+	tplDriver []byte
 )
-
-// func main() {
-// 	ui := cli.DefaultUI()
-
-// 	configDir, err := config.Dir()
-// 	if err != nil {
-// 		ui.Error(fmt.Errorf("can't read config dir: %w", err).Error())
-// 		os.Exit(1)
-// 	}
-
-// 	preconfig, err := parser.New(configDir).LoadConfigDir(configDir)
-// 	if err != nil {
-// 		ui.Error(fmt.Errorf("parsing error: %w", err).Error())
-// 		os.Exit(1)
-// 	}
-// 	cfg, err := preconfig.BuildConfig()
-// 	if err != nil {
-// 		ui.Error(fmt.Errorf("config: %w", err).Error())
-// 		os.Exit(1)
-// 	}
-
-// 	for _, migrationSet := range cfg.MigrationSets {
-// 		ui.Info(fmt.Sprintf("MigrationSet: %s", migrationSet.Metadata.Name))
-// 	}
-
-// 	// conn := &krabdb.DefaultConnection{}
-// 	// switchableConn := &krabdb.SwitchableDatabaseConnection{}
-
-// 	// srv := &web.Server{
-// 	// 	Config:     config,
-// 	// 	Connection: switchableConn,
-// 	// 	EmbeddableResources: web.EmbeddableResources{
-// 	// 		Favicon:   favicon,
-// 	// 		WhiteLogo: whiteLogo,
-// 	// 		Logo:      logo,
-// 	// 	},
-// 	// }
-
-// 	// registry := &krab.CmdRegistry{
-// 	// 	Commands:         []krab.Cmd{},
-// 	// 	FS:               parser.FS,
-// 	// 	VersionGenerator: &krab.TimestampVersionGenerator{},
-// 	// }
-// 	// registry.RegisterAll(config, conn)
-
-// 	// c := krabcli.New(ui, os.Args[1:], config, registry, conn, srv)
-
-// 	// exitStatus, err := c.Run()
-// 	// if err != nil {
-// 	// 	ui.Error(err.Error())
-// 	// }
-
-// 	// os.Exit(exitStatus)
-// }
 
 func init() {
 	cli.VersionPrinter = func(cmd *cli.Command) {
@@ -98,19 +47,8 @@ func init() {
 	}
 }
 
-func main() {
-	templates := tpls.New(template.FuncMap{})
-	templates.AddEmbedded("migration", tplMigration)
-	templates.AddEmbedded("set", tplSet)
-
-	dir, err := config.Dir()
-	if err != nil {
-		fmtx.WriteError("can't read config dir: %w", err)
-		os.Exit(1)
-	}
-
-	filesystem := config.NewFilesystem(dir)
-	parser := parser.New(filesystem)
+func mustConfig(fs *config.Filesystem) *config.Config {
+	parser := parser.New(fs)
 	parsed, err := parser.LoadAndParse()
 	if err != nil {
 		fmtx.WriteError(err.Error())
@@ -125,6 +63,23 @@ func main() {
 		os.Exit(1)
 	}
 
+	return cfg
+}
+
+func main() {
+	templates := tpls.New(template.FuncMap{})
+	templates.AddEmbedded("migration", tplMigration)
+	templates.AddEmbedded("set", tplSet)
+	templates.AddEmbedded("driver", tplDriver)
+
+	dir, err := config.Dir()
+	if err != nil {
+		fmtx.WriteError("can't read config dir: %w", err)
+		os.Exit(1)
+	}
+
+	filesystem := config.NewFilesystem(dir)
+
 	// runners
 	generator := run.NewGenerator(filesystem, templates, &generators.TimestampVersionGenerator{})
 	migrator := run.NewMigrator(filesystem)
@@ -135,6 +90,17 @@ func main() {
 		Usage: "Initialize default files structure",
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			return generator.GenInit(ctx, run.GenerateInitOptions{})
+		},
+	}
+
+	// validate commands
+	validateCmd := &cli.Command{
+		Name:  "validate",
+		Usage: "Validate the config",
+		Action: func(ctx context.Context, cmd *cli.Command) error {
+			mustConfig(filesystem)
+			fmtx.WriteSuccess("Config is valid")
+			return nil
 		},
 	}
 
@@ -150,6 +116,7 @@ func main() {
 		Name:  "audit",
 		Usage: "Show the audit logs",
 		Action: func(ctx context.Context, cmd *cli.Command) error {
+			cfg := mustConfig(filesystem)
 			return migrator.MigrateAudit(ctx, cfg, run.MigrateAuditOptions{})
 		},
 	}
@@ -157,6 +124,7 @@ func main() {
 		Name:  "up",
 		Usage: "Apply all pending migrations",
 		Action: func(ctx context.Context, cmd *cli.Command) error {
+			cfg := mustConfig(filesystem)
 			return migrator.MigrateUp(ctx, cfg, run.MigrateUpOptions{})
 		},
 	}
@@ -164,6 +132,7 @@ func main() {
 		Name:  "down",
 		Usage: "Rollback single migration",
 		Action: func(ctx context.Context, cmd *cli.Command) error {
+			cfg := mustConfig(filesystem)
 			return migrator.MigrateDown(ctx, cfg, run.MigrateDownOptions{})
 		},
 	}
@@ -171,6 +140,8 @@ func main() {
 		Name:  "status",
 		Usage: "Show the current status of migrations",
 		Action: func(ctx context.Context, cmd *cli.Command) error {
+			cfg := mustConfig(filesystem)
+
 			return migrator.MigrateStatus(ctx, cfg, run.MigrateStatusOptions{})
 		},
 	}
@@ -195,6 +166,7 @@ func main() {
 	}
 	root.Commands = []*cli.Command{
 		initCmd,
+		validateCmd,
 		migrateGroup,
 	}
 

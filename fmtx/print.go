@@ -14,3 +14,7 @@ func WriteError(format string, a ...any) {
 func WriteSuccess(format string, a ...any) {
 	fmt.Fprintf(os.Stdout, fmt.Sprint(ctc.ForegroundGreen, format, ctc.Reset, "\n"), a...)
 }
+
+func WriteInfo(format string, a ...any) {
+	fmt.Fprintf(os.Stdout, fmt.Sprint(ctc.ForegroundBlue, format, ctc.Reset, "\n"), a...)
+}

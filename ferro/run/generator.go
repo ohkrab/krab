@@ -33,8 +33,6 @@ func (g *Generator) GenInit(ctx context.Context, opts GenerateInitOptions) error
 		return err
 	}
 
-	prefix := filepath.Join(".ferro", "migrations")
-
 	now := g.timestampGenerator.Next()
 
 	renderedSet, err := g.tpls.RenderEmbedded("set", map[string]any{
@@ -44,7 +42,7 @@ func (g *Generator) GenInit(ctx context.Context, opts GenerateInitOptions) error
 		return err
 	}
 
-	err = g.fs.TouchFile(filepath.Join(prefix, "public.fyml"), renderedSet)
+	err = g.fs.TouchFile(filepath.Join(".ferro", "migrations", "public.fyml"), renderedSet)
 	if err != nil {
 		return err
 	}
@@ -59,7 +57,17 @@ func (g *Generator) GenInit(ctx context.Context, opts GenerateInitOptions) error
 		return err
 	}
 
-	err = g.fs.TouchFile(filepath.Join(prefix, "public", fmt.Sprintf("%s_create_hello_world.fyml", now)), renderedMigration)
+	err = g.fs.TouchFile(filepath.Join(".ferro", "migrations", "public", fmt.Sprintf("%s_create_hello_world.fyml", now)), renderedMigration)
+	if err != nil {
+		return err
+	}
+
+	renderedDriver, err := g.tpls.RenderEmbedded("driver", map[string]any{})
+	if err != nil {
+		return err
+	}
+
+	err = g.fs.TouchFile(filepath.Join(".ferro", "dev.fyml"), renderedDriver)
 	if err != nil {
 		return err
 	}

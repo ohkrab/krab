@@ -53,5 +53,20 @@ type MigrateStatusOptions struct {
 }
 
 func (m *Migrator) MigrateStatus(ctx context.Context, config *config.Config, opts MigrateStatusOptions) error {
-	return nil
+	nav := NewNavigator(opts.Driver)
+	conn, close, err := nav.Open(ctx)
+	if err != nil {
+		return err
+	}
+	defer close()
+
+	err = nav.Ready(ctx, conn)
+	if err != nil {
+		return err
+	}
+
+	err = nav.Drive(ctx, conn, func() error {
+		return nil
+	})
+	return err
 }
