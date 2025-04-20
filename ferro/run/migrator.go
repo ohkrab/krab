@@ -18,13 +18,6 @@ func NewMigrator(fs *config.Filesystem) *Migrator {
 	}
 }
 
-type MigrateInitOptions struct {
-}
-
-func (m *Migrator) MigrateInit(ctx context.Context, config *config.Config, opts MigrateInitOptions) error {
-	return nil
-}
-
 type MigrateAuditOptions struct {
 	Driver     plugin.Driver
 	Output     io.Writer

@@ -1,48 +1,55 @@
 package tpls
 
 import (
-	"strings"
+	"bytes"
+	"fmt"
 	"text/template"
 )
 
 // Templates is used for templates rendering.
 type Templates struct {
-	values   map[string]any
 	template *template.Template
-}
-
-type root struct {
-	Args map[string]any
+	embedded map[string][]byte
 }
 
 // New created template renderer with values to replace.
-func New(values map[string]any, funcMap template.FuncMap) *Templates {
+func New(funcMap template.FuncMap) *Templates {
 	t := &Templates{
-		values:   values,
 		template: template.New("").Funcs(funcMap),
+		embedded: make(map[string][]byte),
 	}
 	return t
 }
 
+func (t *Templates) AddEmbedded(name string, b []byte) {
+	t.embedded[name] = b
+}
+
 // Validate verifies if template is correct.
-func (t *Templates) Validate(s string) error {
-	_, err := t.template.Parse(s)
+func (t *Templates) Validate(b []byte) error {
+	_, err := t.template.Parse(string(b))
 	return err
 }
 
 // Render applies values and renders final output.
-func (t *Templates) Render(s string) string {
-	sb := strings.Builder{}
-	template, err := t.template.Parse(s)
+func (t *Templates) Render(b []byte, data any) ([]byte, error) {
+	var rendered bytes.Buffer
+	template, err := t.template.Parse(string(b))
 	if err != nil {
-		//TODO: handle error
-		panic(err)
+		return nil, fmt.Errorf("failed to parse template: %w", err)
 	}
 
-	err = template.Execute(&sb, root{Args: t.values})
+	err = template.Execute(&rendered, data)
 	if err != nil {
-		//TODO: handle error
-		panic(err)
+		return nil, fmt.Errorf("failed to render template: %w", err)
 	}
-	return sb.String()
+	return rendered.Bytes(), nil
+}
+
+func (t *Templates) RenderEmbedded(name string, data any) ([]byte, error) {
+	b, ok := t.embedded[name]
+	if !ok {
+		return nil, fmt.Errorf("embedded template %s not found", name)
+	}
+	return t.Render(b, data)
 }

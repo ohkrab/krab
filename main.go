@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"text/template"
 
 	_ "embed"
 
@@ -14,6 +15,7 @@ import (
 	"github.com/ohkrab/krab/ferro/run"
 	"github.com/ohkrab/krab/ferro/run/generators"
 	"github.com/ohkrab/krab/fmtx"
+	"github.com/ohkrab/krab/tpls"
 
 	// "github.com/ohkrab/krab/cli"
 	"github.com/urfave/cli/v3"
@@ -28,6 +30,12 @@ var (
 
 	//go:embed res/crab-final-pure.svg
 	logo []byte
+
+	//go:embed tpls/embed/migration.fyml.tpl
+	tplMigration []byte
+
+	//go:embed tpls/embed/set.fyml.tpl
+	tplSet []byte
 )
 
 // func main() {
@@ -91,6 +99,10 @@ func init() {
 }
 
 func main() {
+	templates := tpls.New(template.FuncMap{})
+	templates.AddEmbedded("migration", tplMigration)
+	templates.AddEmbedded("set", tplSet)
+
 	dir, err := config.Dir()
 	if err != nil {
 		fmtx.WriteError("can't read config dir: %w", err)
@@ -114,15 +126,15 @@ func main() {
 	}
 
 	// runners
-	initializer := run.NewInitializer(filesystem, &generators.TimestampVersionGenerator{})
+	generator := run.NewGenerator(filesystem, templates, &generators.TimestampVersionGenerator{})
 	migrator := run.NewMigrator(filesystem)
 
 	// init commands
 	initCmd := &cli.Command{
 		Name:  "init",
-		Usage: "Initialize FerroDB default files structure",
+		Usage: "Initialize default files structure",
 		Action: func(ctx context.Context, cmd *cli.Command) error {
-			return initializer.Initialize(ctx, run.InitializeOptions{})
+			return generator.GenInit(ctx, run.GenerateInitOptions{})
 		},
 	}
 
@@ -131,7 +143,7 @@ func main() {
 		Name:  "init",
 		Usage: "Initialize a single timestamped migration",
 		Action: func(ctx context.Context, cmd *cli.Command) error {
-			return migrator.MigrateInit(ctx, cfg, run.MigrateInitOptions{})
+			return generator.GenMigration(ctx, run.GenerateMigrationOptions{})
 		},
 	}
 	migrateAuditCmd := &cli.Command{
@@ -163,7 +175,8 @@ func main() {
 		},
 	}
 	migrateGroup := &cli.Command{
-		Name: "migrate",
+		Name:  "migrate",
+		Usage: "Manage your migrations",
 		Commands: []*cli.Command{
 			migrateInitCmd,
 			migrateAuditCmd,
@@ -187,6 +200,7 @@ func main() {
 
 	err = root.Run(context.Background(), os.Args)
 	if err != nil {
+		fmtx.WriteError(err.Error())
 		os.Exit(1)
 	}
 }

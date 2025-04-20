@@ -38,6 +38,11 @@ func (f *Filesystem) MkdirAll(paths []string) error {
 	return nil
 }
 
+func (f *Filesystem) Exists(path string) bool {
+	_, err := os.Stat(filepath.Join(f.Dir, path))
+	return !os.IsNotExist(err)
+}
+
 func (f *Filesystem) TouchFile(path string, data []byte) error {
 	if _, err := os.Stat(filepath.Join(f.Dir, path)); os.IsNotExist(err) {
 		if err := os.WriteFile(filepath.Join(f.Dir, path), data, 0644); err != nil {
