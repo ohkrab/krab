@@ -130,8 +130,7 @@ func (f *Filesystem) fileExt(path string) string {
 
 func (f *Filesystem) isIgnoredFile(name string) bool {
 	// ignore dotfiles and emacs/vim backups
-	return strings.HasPrefix(name, ".") ||
-		strings.HasSuffix(name, "~") ||
+	return strings.HasSuffix(name, "~") ||
 		strings.HasPrefix(name, "#") && strings.HasSuffix(name, "#")
 }
 

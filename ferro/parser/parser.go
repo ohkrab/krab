@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 
 	"github.com/ohkrab/krab/ferro/config"
+	"github.com/ohkrab/krab/fmtx"
 	"gopkg.in/yaml.v3"
 )
 
@@ -29,6 +30,10 @@ func (p *Parser) LoadAndParse() (*config.ParsedConfig, error) {
 	parsedFiles, err := p.fs.LoadFiles(paths)
 	if err != nil {
 		return nil, err
+	}
+
+	for _, file := range parsedFiles {
+		fmtx.WriteInfo("  using file: %s", file.Path)
 	}
 
 	if err := p.parse(parsedFiles); err != nil {
