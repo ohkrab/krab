@@ -1,0 +1,28 @@
+# EditorConfig is supported by many editors including VS Code with the EditorConfig extension
+# https://editorconfig.org/
+
+# top-most EditorConfig file
+root = true
+
+# Default settings for all files
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.go]
+indent_style = space
+indent_size = 4
+
+[*.{yml,yaml,fyml}]
+indent_style = space
+indent_size = 2
+
+[*.sql]
+indent_style = space
+indent_size = 2
+
+[*.{html,js,css,json,ts,jsx,tsx}]
+indent_style = space
+indent_size = 2
