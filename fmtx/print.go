@@ -16,5 +16,5 @@ func WriteSuccess(format string, a ...any) {
 }
 
 func WriteInfo(format string, a ...any) {
-	fmt.Fprintf(os.Stdout, fmt.Sprint(ctc.ForegroundBlue, format, ctc.Reset, "\n"), a...)
+	fmt.Fprintf(os.Stdout, fmt.Sprint(ctc.ForegroundCyan, format, ctc.Reset, "\n"), a...)
 }

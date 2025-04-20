@@ -15,6 +15,7 @@ import (
 	"github.com/ohkrab/krab/ferro/run"
 	"github.com/ohkrab/krab/ferro/run/generators"
 	"github.com/ohkrab/krab/fmtx"
+	"github.com/ohkrab/krab/plugins"
 	"github.com/ohkrab/krab/tpls"
 
 	// "github.com/ohkrab/krab/cli"
@@ -117,7 +118,9 @@ func main() {
 		Usage: "Show the audit logs",
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			cfg := mustConfig(filesystem)
-			return migrator.MigrateAudit(ctx, cfg, run.MigrateAuditOptions{})
+			return migrator.MigrateAudit(ctx, cfg, run.MigrateAuditOptions{
+				Driver: plugins.NewNullDriver(),
+			})
 		},
 	}
 	migrateUpCmd := &cli.Command{
@@ -125,7 +128,9 @@ func main() {
 		Usage: "Apply all pending migrations",
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			cfg := mustConfig(filesystem)
-			return migrator.MigrateUp(ctx, cfg, run.MigrateUpOptions{})
+			return migrator.MigrateUp(ctx, cfg, run.MigrateUpOptions{
+				Driver: plugins.NewNullDriver(),
+			})
 		},
 	}
 	migrateDownCmd := &cli.Command{
@@ -133,7 +138,9 @@ func main() {
 		Usage: "Rollback single migration",
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			cfg := mustConfig(filesystem)
-			return migrator.MigrateDown(ctx, cfg, run.MigrateDownOptions{})
+			return migrator.MigrateDown(ctx, cfg, run.MigrateDownOptions{
+				Driver: plugins.NewNullDriver(),
+			})
 		},
 	}
 	migrateStatusCmd := &cli.Command{
@@ -141,8 +148,11 @@ func main() {
 		Usage: "Show the current status of migrations",
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			cfg := mustConfig(filesystem)
+			fmtx.WriteInfo("selected driver: %s", "none")
 
-			return migrator.MigrateStatus(ctx, cfg, run.MigrateStatusOptions{})
+			return migrator.MigrateStatus(ctx, cfg, run.MigrateStatusOptions{
+				Driver: plugins.NewNullDriver(),
+			})
 		},
 	}
 	migrateGroup := &cli.Command{
