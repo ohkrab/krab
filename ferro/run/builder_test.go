@@ -34,25 +34,23 @@ spec:
 `)
 	defer cleanup()
 
-	should := expecto.New(t)
-
 	fs := config.NewFilesystem(dir)
 	parser := config.NewParser(fs)
 	parsed, err := parser.LoadAndParse()
-	should.NoErr("parsing config", err)
+	expecto.NoErr(t, "parsing config", err)
 
 	builder := NewBuilder(fs, parsed, plugins.New())
 	cfg, errs := builder.BuildConfig()
-	should.NotNil("build errors", errs)
-	should.Eq("number of errors", len(errs.Errors), 0)
+	expecto.NotNil(t, "build errors", errs)
+	expecto.Eq(t, "number of errors", len(errs.Errors), 0)
 
-	should.Eq("number of files",
+	expecto.Eq(t, "number of files",
 		len(parsed.Files), 1)
-	should.Eq("number of chunks",
+	expecto.Eq(t, "number of chunks",
 		len(parsed.Files[0].Chunks), 2)
-	should.Eq("number of migrations",
+	expecto.Eq(t, "number of migrations",
 		len(parsed.Files[0].Migrations), 1)
-	should.Eq("number of migration sets",
+	expecto.Eq(t, "number of migration sets",
 		len(parsed.Files[0].MigrationSets), 1)
 
 	migrations := expecto.Map(t, cfg.Migrations)
@@ -62,28 +60,28 @@ spec:
 	sets.HasKey("has public", "public")
 
 	// migration
-	should.Eq("migration name",
+	expecto.Eq(t, "migration name",
 		cfg.Migrations["CreateAnimals"].Metadata.Name,
 		"CreateAnimals")
-	should.Eq("migration version",
+	expecto.Eq(t, "migration version",
 		cfg.Migrations["CreateAnimals"].Spec.Version,
 		"v1")
-	should.NotNil("migration transaction",
+	expecto.NotNil(t, "migration transaction",
 		cfg.Migrations["CreateAnimals"].Spec.Transaction)
-	should.True("deafult is true",
+	expecto.True(t, "deafult is true",
 		*cfg.Migrations["CreateAnimals"].Spec.Transaction)
-	should.Eq("migration up",
+	expecto.Eq(t, "migration up",
 		cfg.Migrations["CreateAnimals"].Spec.Run.Up.Sql,
 		"CREATE TABLE animals(name varchar PRIMARY KEY)")
-	should.Eq("migration down",
+	expecto.Eq(t, "migration down",
 		cfg.Migrations["CreateAnimals"].Spec.Run.Down.Sql,
 		"DROP TABLE animals")
 
 	// migration set
-	should.Eq("migration set name",
+	expecto.Eq(t, "migration set name",
 		cfg.MigrationSets["public"].Metadata.Name,
 		"public")
-	should.Eq("migration set migrations",
+	expecto.Eq(t, "migration set migrations",
 		cfg.MigrationSets["public"].Spec.Migrations,
 		[]string{"CreateAnimals"})
 }
@@ -118,19 +116,17 @@ spec:
 `)
 	defer cleanup()
 
-	should := expecto.New(t)
 	fs := config.NewFilesystem(dir)
 	parser := config.NewParser(fs)
 	parsed, err := parser.LoadAndParse()
-
-	should.NoErr("parsing config", err)
+	expecto.NoErr(t, "parsing config", err)
 
 	builder := NewBuilder(fs, parsed, plugins.New())
 	_, errs := builder.BuildConfig()
-	should.NotNil("build errors", errs)
-	should.Eq("number of errors",
+	expecto.NotNil(t, "build errors", errs)
+	expecto.Eq(t, "number of errors",
 		len(errs.Errors), 1)
-	should.ErrContains("duplicate migration", errs.Errors[0], "adding Migration: migration `CreateAnimals` already exists")
+	expecto.ErrContains(t, "duplicate migration", errs.Errors[0], "adding Migration: migration `CreateAnimals` already exists")
 }
 
 func TestParser_MigrationSetWithDuplicatedRefName(t *testing.T) {
@@ -153,24 +149,21 @@ spec:
 `)
 	defer cleanup()
 
-	should := expecto.New(t)
 	fs := config.NewFilesystem(dir)
 	parser := config.NewParser(fs)
 	parsed, err := parser.LoadAndParse()
 
-	should.NoErr("parsing config", err)
+	expecto.NoErr(t, "parsing config", err)
 
 	builder := NewBuilder(fs, parsed, plugins.New())
 	_, errs := builder.BuildConfig()
-	should.NotNil("build errors", errs)
-	should.Eq("number of errors",
+	expecto.NotNil(t, "build errors", errs)
+	expecto.Eq(t, "number of errors",
 		len(errs.Errors), 1)
-	should.ErrContains("duplicate migration set", errs.Errors[0], "adding MigrationSet: migration set `public` already exists")
+	expecto.ErrContains(t, "duplicate migration set", errs.Errors[0], "adding MigrationSet: migration set `public` already exists")
 }
 
 func TestParser_MigrationSetWithMissingMigrationReference(t *testing.T) {
-	should := expecto.New(t)
-
 	_, dir, cleanup := expecto.TempFS(
 		"src/sets.fyml",
 		`
@@ -186,14 +179,14 @@ spec:
 	fs := config.NewFilesystem(dir)
 	parser := config.NewParser(fs)
 	parsed, err := parser.LoadAndParse()
-	should.NoErr("parsing config", err)
+	expecto.NoErr(t, "parsing config", err)
 
 	builder := NewBuilder(fs, parsed, plugins.New())
 	_, errs := builder.BuildConfig()
-	should.NotNil("build errors", errs)
-	should.Eq("number of errors",
+	expecto.NotNil(t, "build errors", errs)
+	expecto.Eq(t, "number of errors",
 		len(errs.Errors), 1)
-	should.ErrContains("missing migration", errs.Errors[0],
+	expecto.ErrContains(t, "missing migration", errs.Errors[0],
 		"invalid reference: Migration `DoesNotExist` (referenced by MigrationSet `public`) does not exist")
 }
 
@@ -220,16 +213,15 @@ spec:
 	)
 	defer cleanup()
 
-	should := expecto.New(t)
 	fs := config.NewFilesystem(dir)
 	parser := config.NewParser(fs)
 	parsed, err := parser.LoadAndParse()
 
-	should.NoErr("parsing config", err)
+	expecto.NoErr(t, "parsing config", err)
 	builder := NewBuilder(fs, parsed, plugins.New())
 	_, errs := builder.BuildConfig()
-	should.NotNil("build errors", errs)
-	should.Eq("number of errors", len(errs.Errors), 0)
+	expecto.NotNil(t, "build errors", errs)
+	expecto.Eq(t, "number of errors", len(errs.Errors), 0)
 }
 
 func TestParser_MigrationsDefinedInSQLFilesThatAreMissing(t *testing.T) {
@@ -250,18 +242,17 @@ spec:
 `)
 	defer cleanup()
 
-	should := expecto.New(t)
 	fs := config.NewFilesystem(dir)
 	parser := config.NewParser(fs)
 	parsed, err := parser.LoadAndParse()
 
-	should.NoErr("parsing config", err)
+	expecto.NoErr(t, "parsing config", err)
 	builder := NewBuilder(fs, parsed, plugins.New())
 	_, errs := builder.BuildConfig()
-	should.NotNil("build errors", errs)
-	should.Eq("number of errors",
+	expecto.NotNil(t, "build errors", errs)
+	expecto.Eq(t, "number of errors",
 		len(errs.Errors), 1)
-	should.ErrContains("missing migration", errs.Errors[0],
+	expecto.ErrContains(t, "missing migration", errs.Errors[0],
 		"io error: Migration(up) `CreateAnimals` cannot load file `"+dir+"/src/animals/up.sql`")
 }
 
@@ -292,17 +283,15 @@ spec:
 `)
 	defer cleanup()
 
-	should := expecto.New(t)
-
 	fs := config.NewFilesystem(dir)
 	parser := config.NewParser(fs)
 	parsed, err := parser.LoadAndParse()
-	should.NoErr("parsing config", err)
+	expecto.NoErr(t, "parsing config", err)
 
 	builder := NewBuilder(fs, parsed, plugins.New())
 	_, errs := builder.BuildConfig()
-	should.NotNil("build errors", errs)
-	should.Eq("number of errors", len(errs.Errors), 1)
+	expecto.NotNil(t, "build errors", errs)
+	expecto.Eq(t, "number of errors", len(errs.Errors), 1)
 
-	should.ErrContains("migration set validation", errs.Errors[0], "invalid spec: MigrationSet must have a name")
+	expecto.ErrContains(t, "migration set validation", errs.Errors[0], "invalid spec: MigrationSet must have a name")
 }
