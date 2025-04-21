@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/ohkrab/krab/ferro/config"
 	"github.com/ohkrab/krab/ferro/plugin"
 )
 
@@ -19,7 +20,7 @@ func NewSQLiteDriver() *SQLiteDriver {
 	return &SQLiteDriver{}
 }
 
-func (d *SQLiteDriver) Connect(ctx context.Context) (plugin.DriverConnection, error) {
+func (d *SQLiteDriver) Connect(ctx context.Context, config config.DriverConfig) (plugin.DriverConnection, error) {
 	return &SQLiteDriverConnection{}, fmt.Errorf("not implemented")
 }
 

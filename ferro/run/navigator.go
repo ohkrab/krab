@@ -24,7 +24,7 @@ func NewNavigator(driver plugin.DriverInstance, config *config.Config) *Navigato
 }
 
 func (n *Navigator) Open(ctx context.Context) (plugin.DriverConnection, func(), error) {
-	conn, err := n.driver.Driver.Connect(ctx)
+	conn, err := n.driver.Driver.Connect(ctx, n.driver.Config.Spec.Config)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to connect to database: %w", err)
 	}

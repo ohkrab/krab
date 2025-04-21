@@ -1,0 +1,14 @@
+apiVersion: drivers/v1
+kind: Driver
+metadata:
+  name: SQLite
+spec:
+  instances:
+    - name: prod
+      driver: postgres
+      config:
+        port: 5432
+        host: localhost
+        database: migrations
+        user: {{ .env.DB_USER }}
+        password: {{ .env.DB_PASSWORD }}

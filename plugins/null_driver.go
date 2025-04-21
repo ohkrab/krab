@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 
+	"github.com/ohkrab/krab/ferro/config"
 	"github.com/ohkrab/krab/ferro/plugin"
 )
 
@@ -17,7 +18,7 @@ func NewNullDriver() *NullDriver {
 	return &NullDriver{}
 }
 
-func (d *NullDriver) Connect(ctx context.Context) (plugin.DriverConnection, error) {
+func (d *NullDriver) Connect(ctx context.Context, config config.DriverConfig) (plugin.DriverConnection, error) {
 	return &NullDriverConnection{}, ErrDriverNotSelected
 }
 

@@ -1,8 +1,12 @@
 apiVersion: drivers/v1
 kind: Driver
 metadata:
-  name: dev
+  name: test
 spec:
-  driver: sqlite
+  driver: testcontainer/postgresql
   config:
-    path: dev.sqlite
+    version: 16.8
+    user: test
+    password: test
+    db: test
+    port: 5432

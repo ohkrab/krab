@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/ohkrab/krab/ferro/plugin"
+	"github.com/ohkrab/krab/plugins/testcontainers"
 )
 
 type Registry struct {
@@ -34,4 +35,5 @@ func (r *Registry) Get(name string) (plugin.Driver, error) {
 func (r *Registry) RegisterAll() {
 	r.Register("null", NewNullDriver())
 	r.Register("sqlite", NewSQLiteDriver())
+	r.Register("testcontainer/postgresql", testcontainers.NewTestContainerPostgreSQLDriver())
 }
