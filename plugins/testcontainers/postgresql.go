@@ -88,11 +88,12 @@ func (d *TestContainerPostgreSQLDriver) Disconnect(ctx context.Context, conn plu
 }
 
 func (c *TestContainerPostgreSQLDriverConnection) LockAuditLog(ctx context.Context, execCtx plugin.DriverExecutionContext) error {
-	// fullTableName := pgx.Identifier{execCtx.Prefix + plugin.DriverAuditLogTableName}
-	// if execCtx.Schema != "" {
-	// 	fullTableName = pgx.Identifier{execCtx.Schema, fullTableName[0]}
-	// }
-	// quotedTableName := fullTableName.Sanitize()
+	fullTableName := pgx.Identifier{execCtx.Prefix + plugin.DriverAuditLogTableName}
+	if execCtx.Schema != "" {
+		fullTableName = pgx.Identifier{execCtx.Schema, fullTableName[0]}
+	}
+	quotedTableName := fullTableName.Sanitize()
+	fmt.Println("quotedTableName", quotedTableName)
 	// _, err := c.Conn.Exec(ctx, fmt.Sprintf("LOCK TABLE %s IN ACCESS EXCLUSIVE MODE", quotedTableName))
 	// return err
 	return fmt.Errorf("not lock")
