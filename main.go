@@ -11,7 +11,6 @@ import (
 	_ "github.com/jackc/pgx/v5"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/ohkrab/krab/ferro/config"
-	"github.com/ohkrab/krab/ferro/parser"
 	"github.com/ohkrab/krab/ferro/plugin"
 	"github.com/ohkrab/krab/ferro/run"
 	"github.com/ohkrab/krab/ferro/run/generators"
@@ -49,7 +48,7 @@ func init() {
 }
 
 func mustConfig(fs *config.Filesystem, registry *plugins.Registry) *config.Config {
-	parser := parser.New(fs)
+	parser := config.NewParser(fs)
 	parsed, err := parser.LoadAndParse()
 	if err != nil {
 		fmtx.WriteError(err.Error())
