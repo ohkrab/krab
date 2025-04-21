@@ -48,7 +48,7 @@ func init() {
 	}
 }
 
-func mustConfig(fs *config.Filesystem) *config.Config {
+func mustConfig(fs *config.Filesystem, registry *plugins.Registry) *config.Config {
 	parser := parser.New(fs)
 	parsed, err := parser.LoadAndParse()
 	if err != nil {
@@ -56,7 +56,8 @@ func mustConfig(fs *config.Filesystem) *config.Config {
 		os.Exit(1)
 	}
 
-	cfg, errs := parsed.BuildConfig()
+	builder := run.NewBuilder(fs, parsed, registry)
+	cfg, errs := builder.BuildConfig()
 	if errs.HasErrors() {
 		for _, err := range errs.Errors {
 			fmtx.WriteError(err.Error())
@@ -131,7 +132,7 @@ func main() {
 		Name:  "validate",
 		Usage: "Validate the config",
 		Action: func(ctx context.Context, cmd *cli.Command) error {
-			mustConfig(filesystem)
+			mustConfig(filesystem, registry)
 			fmtx.WriteSuccess("Config is valid")
 			return nil
 		},
@@ -154,7 +155,7 @@ func main() {
 			&cli.UintFlag{Name: "n", Usage: "Last N events to show", Required: false, Aliases: []string{"n"}, DefaultText: "0"},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
-			cfg := mustConfig(filesystem)
+			cfg := mustConfig(filesystem, registry)
 			driver := mustDriver(registry, cfg, cmd.String("driver"))
 			set := mustMigrationSet(cfg, cmd.String("set"))
 
@@ -173,7 +174,7 @@ func main() {
 			&cli.StringFlag{Name: "set", Usage: "MigrationSet to use", Required: true, Aliases: []string{"s"}},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
-			cfg := mustConfig(filesystem)
+			cfg := mustConfig(filesystem, registry)
 			driver := mustDriver(registry, cfg, cmd.String("driver"))
 			set := mustMigrationSet(cfg, cmd.String("set"))
 
@@ -192,7 +193,7 @@ func main() {
 			&cli.StringFlag{Name: "version", Usage: "Version to rollback to", Required: true, Aliases: []string{"v"}},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
-			cfg := mustConfig(filesystem)
+			cfg := mustConfig(filesystem, registry)
 			driver := mustDriver(registry, cfg, cmd.String("driver"))
 			set := mustMigrationSet(cfg, cmd.String("set"))
 
@@ -211,7 +212,7 @@ func main() {
 			&cli.StringFlag{Name: "set", Usage: "MigrationSet to use", Required: true, Aliases: []string{"s"}},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
-			cfg := mustConfig(filesystem)
+			cfg := mustConfig(filesystem, registry)
 			driver := mustDriver(registry, cfg, cmd.String("driver"))
 			set := mustMigrationSet(cfg, cmd.String("set"))
 

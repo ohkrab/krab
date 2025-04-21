@@ -1,9 +1,10 @@
-package parser
+package run
 
 import (
 	"testing"
 
 	"github.com/ohkrab/krab/ferro/config"
+	"github.com/ohkrab/krab/plugins"
 	"github.com/qbart/expecto/expecto"
 )
 
@@ -35,11 +36,13 @@ spec:
 
 	should := expecto.New(t)
 
-	parser := New(config.NewFilesystem(dir))
+	fs := config.NewFilesystem(dir)
+	parser := config.NewParser(fs)
 	parsed, err := parser.LoadAndParse()
 	should.NoErr("parsing config", err)
 
-	cfg, errs := parsed.BuildConfig()
+	builder := NewBuilder(fs, parsed, plugins.New())
+	cfg, errs := builder.BuildConfig()
 	should.NotNil("build errors", errs)
 	should.Eq("number of errors", len(errs.Errors), 0)
 
@@ -116,12 +119,14 @@ spec:
 	defer cleanup()
 
 	should := expecto.New(t)
-	parser := New(config.NewFilesystem(dir))
+	fs := config.NewFilesystem(dir)
+	parser := config.NewParser(fs)
 	parsed, err := parser.LoadAndParse()
 
 	should.NoErr("parsing config", err)
 
-	_, errs := parsed.BuildConfig()
+	builder := NewBuilder(fs, parsed, plugins.New())
+	_, errs := builder.BuildConfig()
 	should.NotNil("build errors", errs)
 	should.Eq("number of errors",
 		len(errs.Errors), 1)
@@ -149,12 +154,14 @@ spec:
 	defer cleanup()
 
 	should := expecto.New(t)
-	parser := New(config.NewFilesystem(dir))
+	fs := config.NewFilesystem(dir)
+	parser := config.NewParser(fs)
 	parsed, err := parser.LoadAndParse()
 
 	should.NoErr("parsing config", err)
 
-	_, errs := parsed.BuildConfig()
+	builder := NewBuilder(fs, parsed, plugins.New())
+	_, errs := builder.BuildConfig()
 	should.NotNil("build errors", errs)
 	should.Eq("number of errors",
 		len(errs.Errors), 1)
@@ -176,11 +183,13 @@ spec:
 `)
 	defer cleanup()
 
-	parser := New(config.NewFilesystem(dir))
+	fs := config.NewFilesystem(dir)
+	parser := config.NewParser(fs)
 	parsed, err := parser.LoadAndParse()
 	should.NoErr("parsing config", err)
 
-	_, errs := parsed.BuildConfig()
+	builder := NewBuilder(fs, parsed, plugins.New())
+	_, errs := builder.BuildConfig()
 	should.NotNil("build errors", errs)
 	should.Eq("number of errors",
 		len(errs.Errors), 1)
@@ -212,11 +221,13 @@ spec:
 	defer cleanup()
 
 	should := expecto.New(t)
-	parser := New(config.NewFilesystem(dir))
+	fs := config.NewFilesystem(dir)
+	parser := config.NewParser(fs)
 	parsed, err := parser.LoadAndParse()
 
 	should.NoErr("parsing config", err)
-	_, errs := parsed.BuildConfig()
+	builder := NewBuilder(fs, parsed, plugins.New())
+	_, errs := builder.BuildConfig()
 	should.NotNil("build errors", errs)
 	should.Eq("number of errors", len(errs.Errors), 0)
 }
@@ -240,11 +251,13 @@ spec:
 	defer cleanup()
 
 	should := expecto.New(t)
-	parser := New(config.NewFilesystem(dir))
+	fs := config.NewFilesystem(dir)
+	parser := config.NewParser(fs)
 	parsed, err := parser.LoadAndParse()
 
 	should.NoErr("parsing config", err)
-	_, errs := parsed.BuildConfig()
+	builder := NewBuilder(fs, parsed, plugins.New())
+	_, errs := builder.BuildConfig()
 	should.NotNil("build errors", errs)
 	should.Eq("number of errors",
 		len(errs.Errors), 1)
@@ -281,11 +294,13 @@ spec:
 
 	should := expecto.New(t)
 
-	parser := New(config.NewFilesystem(dir))
+	fs := config.NewFilesystem(dir)
+	parser := config.NewParser(fs)
 	parsed, err := parser.LoadAndParse()
 	should.NoErr("parsing config", err)
 
-	_, errs := parsed.BuildConfig()
+	builder := NewBuilder(fs, parsed, plugins.New())
+	_, errs := builder.BuildConfig()
 	should.NotNil("build errors", errs)
 	should.Eq("number of errors", len(errs.Errors), 1)
 

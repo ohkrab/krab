@@ -129,7 +129,7 @@ func (f *Filesystem) fileExt(path string) string {
 }
 
 func (f *Filesystem) isIgnoredFile(name string) bool {
-	// ignore dotfiles and emacs/vim backups
+	// ignore emacs/vim backups
 	return strings.HasSuffix(name, "~") ||
 		strings.HasPrefix(name, "#") && strings.HasSuffix(name, "#")
 }
@@ -150,29 +150,4 @@ type ParsedFile struct {
 type ParsedChunk struct {
 	Header *Header
 	Raw    []byte
-}
-
-func (p *ParsedConfig) BuildConfig() (*Config, *Errors) {
-	cfg := New()
-
-	for _, file := range p.Files {
-		for _, migration := range file.Migrations {
-			if err := cfg.AddMigration(migration); err != nil {
-				return nil, Errorf("adding Migration: %w", err)
-			}
-		}
-		for _, migrationSet := range file.MigrationSets {
-			if err := cfg.AddMigrationSet(migrationSet); err != nil {
-				return nil, Errorf("adding MigrationSet: %w", err)
-			}
-		}
-		for _, driver := range file.Drivers {
-			if err := cfg.AddDriver(driver); err != nil {
-				return nil, Errorf("adding Driver: %w", err)
-			}
-		}
-	}
-
-	errors := cfg.Validate()
-	return cfg, errors
 }

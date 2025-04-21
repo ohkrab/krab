@@ -1,27 +1,26 @@
-package parser
+package config
 
 import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/ohkrab/krab/ferro/config"
 	"github.com/ohkrab/krab/fmtx"
 	"gopkg.in/yaml.v3"
 )
 
 type Parser struct {
-	fs *config.Filesystem
+	fs *Filesystem
 }
 
 // New initializes parser and default file system.
-func New(fs *config.Filesystem) *Parser {
+func NewParser(fs *Filesystem) *Parser {
 	return &Parser{
 		fs: fs,
 	}
 }
 
 // LoadAndParse parses files in a dir and returns ParsedConfig.
-func (p *Parser) LoadAndParse() (*config.ParsedConfig, error) {
+func (p *Parser) LoadAndParse() (*ParsedConfig, error) {
 	paths, err := p.fs.DirFiles()
 	if err != nil {
 		return nil, err
@@ -40,14 +39,14 @@ func (p *Parser) LoadAndParse() (*config.ParsedConfig, error) {
 		return nil, err
 	}
 
-	cfg := &config.ParsedConfig{
+	cfg := &ParsedConfig{
 		Files: parsedFiles,
 	}
 
 	return cfg, nil
 }
 
-func (p *Parser) parse(files []*config.ParsedFile) error {
+func (p *Parser) parse(files []*ParsedFile) error {
 	for _, file := range files {
 		for _, chunk := range file.Chunks {
 			var parseErr error
@@ -69,10 +68,10 @@ func (p *Parser) parse(files []*config.ParsedFile) error {
 	return nil
 }
 
-func (p *Parser) parseMigrationsV1(file *config.ParsedFile, chunk *config.ParsedChunk) error {
+func (p *Parser) parseMigrationsV1(file *ParsedFile, chunk *ParsedChunk) error {
 	switch chunk.Header.Kind {
 	case "Migration":
-		var migration config.Migration
+		var migration Migration
 		if err := yaml.Unmarshal(chunk.Raw, &migration); err != nil {
 			return fmt.Errorf("failed to parse Migration: %w\n%s", err, string(chunk.Raw))
 		}
@@ -80,7 +79,7 @@ func (p *Parser) parseMigrationsV1(file *config.ParsedFile, chunk *config.Parsed
 		file.Migrations = append(file.Migrations, &migration)
 
 	case "MigrationSet":
-		var migrationSet config.MigrationSet
+		var migrationSet MigrationSet
 		if err := yaml.Unmarshal(chunk.Raw, &migrationSet); err != nil {
 			return fmt.Errorf("failed to parse MigrationSet: %w\n%s", err, string(chunk.Raw))
 		}
@@ -94,10 +93,10 @@ func (p *Parser) parseMigrationsV1(file *config.ParsedFile, chunk *config.Parsed
 	return nil
 }
 
-func (p *Parser) parseDriversV1(file *config.ParsedFile, chunk *config.ParsedChunk) error {
+func (p *Parser) parseDriversV1(file *ParsedFile, chunk *ParsedChunk) error {
 	switch chunk.Header.Kind {
 	case "Driver":
-		var driver config.Driver
+		var driver Driver
 		if err := yaml.Unmarshal(chunk.Raw, &driver); err != nil {
 			return fmt.Errorf("failed to parse Driver: %w\n%s", err, string(chunk.Raw))
 		}
