@@ -5,28 +5,31 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/ohkrab/krab/ferro/config"
 	"github.com/ohkrab/krab/ferro/plugin"
 	"github.com/ohkrab/krab/fmtx"
 )
 
 // Navigator abstracts the flow of the driver.
 type Navigator struct {
-	Driver plugin.Driver
+	driver plugin.DriverInstance
+	config *config.Config
 }
 
-func NewNavigator(driver plugin.Driver) *Navigator {
+func NewNavigator(driver plugin.DriverInstance, config *config.Config) *Navigator {
 	return &Navigator{
-		Driver: driver,
+		driver: driver,
+		config: config,
 	}
 }
 
 func (n *Navigator) Open(ctx context.Context) (plugin.DriverConnection, func(), error) {
-	conn, err := n.Driver.Connect(ctx)
+	conn, err := n.driver.Driver.Connect(ctx)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to connect to database: %w", err)
 	}
 	disconnect := func() {
-		err := n.Driver.Disconnect(ctx, conn)
+		err := n.driver.Driver.Disconnect(ctx, conn)
 		if err != nil {
 			fmtx.WriteError(fmt.Sprintf("failed to disconnect from database: %s", err))
 			os.Exit(2)
@@ -51,7 +54,7 @@ func (n *Navigator) Drive(ctx context.Context, conn plugin.DriverConnection, run
 		err := conn.UnlockAuditLog(ctx, plugin.DriverExecutionContext{})
 		if err != nil {
 			fmtx.WriteError(fmt.Sprintf("failed to unlock audit log: %s", err))
-			if err := n.Driver.Disconnect(ctx, conn); err != nil {
+			if err := n.driver.Driver.Disconnect(ctx, conn); err != nil {
 				fmtx.WriteError(fmt.Sprintf("failed to disconnect from database: %s", err))
 			}
 			os.Exit(2)

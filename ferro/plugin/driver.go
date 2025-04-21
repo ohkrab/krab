@@ -3,6 +3,8 @@ package plugin
 import (
 	"context"
 	"time"
+
+	"github.com/ohkrab/krab/ferro/config"
 )
 
 const (
@@ -73,6 +75,11 @@ type DriverAuditLogColumn struct {
 	Unique bool
 	Name   string
 	Type   int
+}
+
+type DriverInstance struct {
+	Driver Driver
+	Config config.DriverConfig
 }
 
 type Driver interface {

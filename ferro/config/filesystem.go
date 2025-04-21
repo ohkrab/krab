@@ -144,6 +144,7 @@ type ParsedFile struct {
 
 	Migrations    []*Migration
 	MigrationSets []*MigrationSet
+	Drivers       []*Driver
 }
 
 type ParsedChunk struct {
@@ -163,6 +164,11 @@ func (p *ParsedConfig) BuildConfig() (*Config, *Errors) {
 		for _, migrationSet := range file.MigrationSets {
 			if err := cfg.AddMigrationSet(migrationSet); err != nil {
 				return nil, Errorf("adding MigrationSet: %w", err)
+			}
+		}
+		for _, driver := range file.Drivers {
+			if err := cfg.AddDriver(driver); err != nil {
+				return nil, Errorf("adding Driver: %w", err)
 			}
 		}
 	}

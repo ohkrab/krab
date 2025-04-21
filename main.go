@@ -12,6 +12,7 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/ohkrab/krab/ferro/config"
 	"github.com/ohkrab/krab/ferro/parser"
+	"github.com/ohkrab/krab/ferro/plugin"
 	"github.com/ohkrab/krab/ferro/run"
 	"github.com/ohkrab/krab/ferro/run/generators"
 	"github.com/ohkrab/krab/fmtx"
@@ -67,20 +68,43 @@ func mustConfig(fs *config.Filesystem) *config.Config {
 	return cfg
 }
 
-func main() {
-	templates := tpls.New(template.FuncMap{})
-	templates.AddEmbedded("migration", tplMigration)
-	templates.AddEmbedded("set", tplSet)
-	templates.AddEmbedded("driver", tplDriver)
+func mustDriver(registry *plugins.Registry, cfg *config.Config, name string) plugin.DriverInstance {
+	definedDriver, ok := cfg.Drivers[name]
+	if !ok {
+		fmtx.WriteError("driver not defined in config (metadata.name): %s", name)
+		os.Exit(1)
+	}
+	driver, err := registry.Get(definedDriver.Spec.Driver)
+	if err != nil {
+		fmtx.WriteError(err.Error())
+		os.Exit(1)
+	}
+	return plugin.DriverInstance{
+		Driver: driver,
+		Config: definedDriver.Spec.Config,
+	}
+}
 
+func main() {
+	// check config dir
 	dir, err := config.Dir()
 	if err != nil {
 		fmtx.WriteError("can't read config dir: %w", err)
 		os.Exit(1)
 	}
 
-	filesystem := config.NewFilesystem(dir)
+	// init templates
+	templates := tpls.New(template.FuncMap{})
+	templates.AddEmbedded("migration", tplMigration)
+	templates.AddEmbedded("set", tplSet)
+	templates.AddEmbedded("driver", tplDriver)
 
+	// init plugins
+	registry := plugins.New()
+	registry.RegisterAll()
+
+	// init internals
+	filesystem := config.NewFilesystem(dir)
 	// runners
 	generator := run.NewGenerator(filesystem, templates, &generators.TimestampVersionGenerator{})
 	migrator := run.NewMigrator(filesystem)
@@ -116,42 +140,71 @@ func main() {
 	migrateAuditCmd := &cli.Command{
 		Name:  "audit",
 		Usage: "Show the audit logs",
+		Flags: []cli.Flag{
+			&cli.StringFlag{Name: "driver", Usage: "The driver to use", Required: true, Aliases: []string{"d"}},
+			&cli.StringFlag{Name: "set", Usage: "MigrationSet to use", Required: true, Aliases: []string{"s"}},
+			&cli.UintFlag{Name: "n", Usage: "Last N events to show", Required: false, Aliases: []string{"n"}, DefaultText: "0"},
+		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			cfg := mustConfig(filesystem)
+			driver := mustDriver(registry, cfg, cmd.String("driver"))
+
 			return migrator.MigrateAudit(ctx, cfg, run.MigrateAuditOptions{
-				Driver: plugins.NewNullDriver(),
+				Driver:      driver,
+				Set:         cmd.String("set"),
+				FilterLastN: uint(cmd.Uint("n")),
 			})
 		},
 	}
 	migrateUpCmd := &cli.Command{
 		Name:  "up",
 		Usage: "Apply all pending migrations",
+		Flags: []cli.Flag{
+			&cli.StringFlag{Name: "driver", Usage: "The driver to use", Required: true, Aliases: []string{"d"}},
+			&cli.StringFlag{Name: "set", Usage: "MigrationSet to use", Required: true, Aliases: []string{"s"}},
+		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			cfg := mustConfig(filesystem)
+			driver := mustDriver(registry, cfg, cmd.String("driver"))
+
 			return migrator.MigrateUp(ctx, cfg, run.MigrateUpOptions{
-				Driver: plugins.NewNullDriver(),
+				Driver: driver,
 			})
 		},
 	}
 	migrateDownCmd := &cli.Command{
 		Name:  "down",
 		Usage: "Rollback single migration",
+		Flags: []cli.Flag{
+			&cli.StringFlag{Name: "driver", Usage: "The driver to use", Required: true, Aliases: []string{"d"}},
+			&cli.StringFlag{Name: "set", Usage: "MigrationSet to use", Required: true, Aliases: []string{"s"}},
+			&cli.StringFlag{Name: "version", Usage: "Version to rollback to", Required: true, Aliases: []string{"v"}},
+		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			cfg := mustConfig(filesystem)
+			driver := mustDriver(registry, cfg, cmd.String("driver"))
+
 			return migrator.MigrateDown(ctx, cfg, run.MigrateDownOptions{
-				Driver: plugins.NewNullDriver(),
+				Driver:  driver,
+				Set:     cmd.String("set"),
+				Version: cmd.String("version"),
 			})
 		},
 	}
 	migrateStatusCmd := &cli.Command{
 		Name:  "status",
 		Usage: "Show the current status of migrations",
+		Flags: []cli.Flag{
+			&cli.StringFlag{Name: "driver", Usage: "The driver to use", Required: true, Aliases: []string{"d"}},
+			&cli.StringFlag{Name: "set", Usage: "MigrationSet to use", Required: true, Aliases: []string{"s"}},
+		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			cfg := mustConfig(filesystem)
-			fmtx.WriteInfo("selected driver: %s", "none")
+			driver := mustDriver(registry, cfg, cmd.String("driver"))
 
 			return migrator.MigrateStatus(ctx, cfg, run.MigrateStatusOptions{
-				Driver: plugins.NewNullDriver(),
+				Driver: driver,
+				Set:    cmd.String("set"),
 			})
 		},
 	}

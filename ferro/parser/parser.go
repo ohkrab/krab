@@ -54,6 +54,8 @@ func (p *Parser) parse(files []*config.ParsedFile) error {
 			switch chunk.Header.ApiVersion {
 			case "migrations/v1":
 				parseErr = p.parseMigrationsV1(file, chunk)
+			case "drivers/v1":
+				parseErr = p.parseDriversV1(file, chunk)
 			default:
 				parseErr = fmt.Errorf("unsupported api version: %s (%s)", chunk.Header.ApiVersion, file.Path)
 			}
@@ -84,6 +86,23 @@ func (p *Parser) parseMigrationsV1(file *config.ParsedFile, chunk *config.Parsed
 		}
 		migrationSet.Path = filepath.Join(p.fs.Dir, file.Path)
 		file.MigrationSets = append(file.MigrationSets, &migrationSet)
+
+	default:
+		return fmt.Errorf("unsupported kind: %s (%s)", chunk.Header.Kind, file.Path)
+	}
+
+	return nil
+}
+
+func (p *Parser) parseDriversV1(file *config.ParsedFile, chunk *config.ParsedChunk) error {
+	switch chunk.Header.Kind {
+	case "Driver":
+		var driver config.Driver
+		if err := yaml.Unmarshal(chunk.Raw, &driver); err != nil {
+			return fmt.Errorf("failed to parse Driver: %w\n%s", err, string(chunk.Raw))
+		}
+		driver.Path = filepath.Join(p.fs.Dir, file.Path)
+		file.Drivers = append(file.Drivers, &driver)
 
 	default:
 		return fmt.Errorf("unsupported kind: %s (%s)", chunk.Header.Kind, file.Path)

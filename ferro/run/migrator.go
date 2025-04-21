@@ -2,7 +2,6 @@ package run
 
 import (
 	"context"
-	"io"
 
 	"github.com/ohkrab/krab/ferro/config"
 	"github.com/ohkrab/krab/ferro/plugin"
@@ -19,9 +18,9 @@ func NewMigrator(fs *config.Filesystem) *Migrator {
 }
 
 type MigrateAuditOptions struct {
-	Driver     plugin.Driver
-	Output     io.Writer
-	FilterLast int
+	Driver      plugin.DriverInstance
+	Set         string
+	FilterLastN uint
 }
 
 func (m *Migrator) MigrateAudit(ctx context.Context, config *config.Config, opts MigrateAuditOptions) error {
@@ -29,7 +28,7 @@ func (m *Migrator) MigrateAudit(ctx context.Context, config *config.Config, opts
 }
 
 type MigrateUpOptions struct {
-	Driver plugin.Driver
+	Driver plugin.DriverInstance
 	Set    string
 }
 
@@ -38,7 +37,7 @@ func (m *Migrator) MigrateUp(ctx context.Context, config *config.Config, opts Mi
 }
 
 type MigrateDownOptions struct {
-	Driver  plugin.Driver
+	Driver  plugin.DriverInstance
 	Set     string
 	Version string
 }
@@ -48,12 +47,12 @@ func (m *Migrator) MigrateDown(ctx context.Context, config *config.Config, opts 
 }
 
 type MigrateStatusOptions struct {
-	Driver plugin.Driver
+	Driver plugin.DriverInstance
 	Set    string
 }
 
 func (m *Migrator) MigrateStatus(ctx context.Context, config *config.Config, opts MigrateStatusOptions) error {
-	nav := NewNavigator(opts.Driver)
+	nav := NewNavigator(opts.Driver, config)
 	conn, close, err := nav.Open(ctx)
 	if err != nil {
 		return err

@@ -7,6 +7,7 @@ import (
 type Config struct {
 	MigrationSets map[string]*MigrationSet
 	Migrations    map[string]*Migration
+	Drivers       map[string]*Driver
 }
 
 type Resource interface {
@@ -18,6 +19,7 @@ func New() *Config {
 	return &Config{
 		MigrationSets: make(map[string]*MigrationSet),
 		Migrations:    make(map[string]*Migration),
+		Drivers:       make(map[string]*Driver),
 	}
 }
 
@@ -46,6 +48,16 @@ func (c *Config) AddMigration(migration *Migration) error {
 	return nil
 }
 
+func (c *Config) AddDriver(driver *Driver) error {
+	if _, ok := c.Drivers[driver.Metadata.Name]; ok {
+		return fmt.Errorf("driver `%s` already exists", driver.Metadata.Name)
+	}
+	c.Drivers[driver.Metadata.Name] = driver
+	driver.EnforceDefaults()
+
+	return nil
+}
+
 func (c *Config) Validate() *Errors {
 	errors := &Errors{
 		Errors: []error{},
@@ -69,8 +81,17 @@ func (c *Config) Validate() *Errors {
 			}
 		}
 	}
-	////
 
+	// Drivers
+	for _, resource := range c.Drivers {
+		if errs := resource.Validate(); errs != nil {
+			for _, err := range errs.Errors {
+				errors.Append(err)
+			}
+		}
+	}
+
+	//// post-validation when all resources are loaded
 	// check invalid references
 	for _, migrationSet := range c.MigrationSets {
 		for _, migrationName := range migrationSet.Spec.Migrations {
