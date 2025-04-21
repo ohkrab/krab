@@ -3,6 +3,7 @@ package testcontainers
 import (
 	"context"
 	"fmt"
+	"strconv"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/ohkrab/krab/ferro/config"
@@ -30,7 +31,7 @@ func (d *TestContainerPostgreSQLDriver) Connect(ctx context.Context, config conf
 	user := config.String("user")
 	password := config.String("password")
 	db := config.String("db")
-	port := config.String("port")
+	port := config.Int("port")
 
 	if version == "" {
 		return nil, fmt.Errorf("config.version is required")
@@ -44,14 +45,14 @@ func (d *TestContainerPostgreSQLDriver) Connect(ctx context.Context, config conf
 	if db == "" {
 		return nil, fmt.Errorf("config.db is required")
 	}
-	if port == "" {
+	if port == 0 {
 		return nil, fmt.Errorf("config.port is required")
 	}
 
 	image := fmt.Sprintf("postgres:%s-bookworm", version)
 	container := &Container{
 		Image: image,
-		Port:  port,
+		Port:  strconv.Itoa(port),
 		Env: map[string]string{
 			"POSTGRES_USER":     user,
 			"POSTGRES_PASSWORD": password,
@@ -87,7 +88,14 @@ func (d *TestContainerPostgreSQLDriver) Disconnect(ctx context.Context, conn plu
 }
 
 func (c *TestContainerPostgreSQLDriverConnection) LockAuditLog(ctx context.Context, execCtx plugin.DriverExecutionContext) error {
-	return fmt.Errorf("not implemented")
+	// fullTableName := pgx.Identifier{execCtx.Prefix + plugin.DriverAuditLogTableName}
+	// if execCtx.Schema != "" {
+	// 	fullTableName = pgx.Identifier{execCtx.Schema, fullTableName[0]}
+	// }
+	// quotedTableName := fullTableName.Sanitize()
+	// _, err := c.Conn.Exec(ctx, fmt.Sprintf("LOCK TABLE %s IN ACCESS EXCLUSIVE MODE", quotedTableName))
+	// return err
+	return fmt.Errorf("not lock")
 }
 
 func (c *TestContainerPostgreSQLDriverConnection) UpsertAuditLogTable(ctx context.Context, execCtx plugin.DriverExecutionContext) error {

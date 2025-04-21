@@ -67,7 +67,7 @@ func (g *Generator) GenInit(ctx context.Context, opts GenerateInitOptions) error
 		return err
 	}
 
-	err = g.fs.TouchFile(filepath.Join(".ferro", "dev.fyml"), renderedDriver)
+	err = g.fs.TouchFile(filepath.Join(".ferro", "test.fyml"), renderedDriver)
 	if err != nil {
 		return err
 	}

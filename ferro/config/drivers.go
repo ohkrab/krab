@@ -1,5 +1,7 @@
 package config
 
+import "strconv"
+
 // Driver
 
 type Driver struct {
@@ -36,9 +38,29 @@ func (c DriverConfig) Has(key string) bool {
 
 func (c DriverConfig) String(key string) string {
 	if v, ok := c[key]; ok {
-		return v.(string)
+		if s, ok := v.(string); ok {
+			return s
+		}
+		if i, ok := v.(int); ok {
+			return strconv.Itoa(i)
+		}
+		if f, ok := v.(float64); ok {
+			return strconv.FormatFloat(f, 'f', -1, 64)
+		}
+		if b, ok := v.(bool); ok {
+			return strconv.FormatBool(b)
+		}
 	}
 	return ""
+}
+
+func (c DriverConfig) Float(key string) float64 {
+	if v, ok := c[key]; ok {
+		if f, ok := v.(float64); ok {
+			return f
+		}
+	}
+	return 0
 }
 
 func (c DriverConfig) Int(key string) int {
