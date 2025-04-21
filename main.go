@@ -19,7 +19,6 @@ import (
 	"github.com/ohkrab/krab/plugins"
 	"github.com/ohkrab/krab/tpls"
 
-	// "github.com/ohkrab/krab/cli"
 	"github.com/urfave/cli/v3"
 )
 
@@ -71,7 +70,7 @@ func mustConfig(fs *config.Filesystem) *config.Config {
 func mustDriver(registry *plugins.Registry, cfg *config.Config, name string) plugin.DriverInstance {
 	definedDriver, ok := cfg.Drivers[name]
 	if !ok {
-		fmtx.WriteError("driver not defined in config (metadata.name): %s", name)
+		fmtx.WriteError("argument error: Driver not defined in config (metadata.name): %s", name)
 		os.Exit(1)
 	}
 	driver, err := registry.Get(definedDriver.Spec.Driver)
@@ -81,8 +80,17 @@ func mustDriver(registry *plugins.Registry, cfg *config.Config, name string) plu
 	}
 	return plugin.DriverInstance{
 		Driver: driver,
-		Config: definedDriver.Spec.Config,
+		Config: definedDriver,
 	}
+}
+
+func mustMigrationSet(cfg *config.Config, name string) *config.MigrationSet {
+	set, ok := cfg.MigrationSets[name]
+	if !ok {
+		fmtx.WriteError("argument error: MigrationSet not found: %s", name)
+		os.Exit(1)
+	}
+	return set
 }
 
 func main() {
@@ -148,10 +156,11 @@ func main() {
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			cfg := mustConfig(filesystem)
 			driver := mustDriver(registry, cfg, cmd.String("driver"))
+			set := mustMigrationSet(cfg, cmd.String("set"))
 
 			return migrator.MigrateAudit(ctx, cfg, run.MigrateAuditOptions{
 				Driver:      driver,
-				Set:         cmd.String("set"),
+				Set:         set,
 				FilterLastN: uint(cmd.Uint("n")),
 			})
 		},
@@ -166,9 +175,11 @@ func main() {
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			cfg := mustConfig(filesystem)
 			driver := mustDriver(registry, cfg, cmd.String("driver"))
+			set := mustMigrationSet(cfg, cmd.String("set"))
 
 			return migrator.MigrateUp(ctx, cfg, run.MigrateUpOptions{
 				Driver: driver,
+				Set:    set,
 			})
 		},
 	}
@@ -183,10 +194,11 @@ func main() {
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			cfg := mustConfig(filesystem)
 			driver := mustDriver(registry, cfg, cmd.String("driver"))
+			set := mustMigrationSet(cfg, cmd.String("set"))
 
 			return migrator.MigrateDown(ctx, cfg, run.MigrateDownOptions{
 				Driver:  driver,
-				Set:     cmd.String("set"),
+				Set:     set,
 				Version: cmd.String("version"),
 			})
 		},
@@ -201,10 +213,11 @@ func main() {
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			cfg := mustConfig(filesystem)
 			driver := mustDriver(registry, cfg, cmd.String("driver"))
+			set := mustMigrationSet(cfg, cmd.String("set"))
 
 			return migrator.MigrateStatus(ctx, cfg, run.MigrateStatusOptions{
 				Driver: driver,
-				Set:    cmd.String("set"),
+				Set:    set,
 			})
 		},
 	}

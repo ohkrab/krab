@@ -79,7 +79,7 @@ type DriverAuditLogColumn struct {
 
 type DriverInstance struct {
 	Driver Driver
-	Config config.DriverConfig
+	Config *config.Driver
 }
 
 type Driver interface {

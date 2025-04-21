@@ -30,11 +30,11 @@ spec:
 apiVersion: migrations/v1
 kind: MigrationSet
 metadata:
-  name: public
+  name: global
 spec:
   namespace:
-    name: public
-    prefix: "public_"
+    name: global
+    prefix: "global_"
   migrations:
     - add_tenants
     - create_users

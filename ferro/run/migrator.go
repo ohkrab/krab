@@ -2,9 +2,11 @@ package run
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/ohkrab/krab/ferro/config"
 	"github.com/ohkrab/krab/ferro/plugin"
+	"github.com/ohkrab/krab/fmtx"
 )
 
 type Migrator struct {
@@ -19,39 +21,47 @@ func NewMigrator(fs *config.Filesystem) *Migrator {
 
 type MigrateAuditOptions struct {
 	Driver      plugin.DriverInstance
-	Set         string
+	Set         *config.MigrationSet
 	FilterLastN uint
 }
 
 func (m *Migrator) MigrateAudit(ctx context.Context, config *config.Config, opts MigrateAuditOptions) error {
-	return nil
+	fmtx.WriteSuccess("Executing Migrate.Audit with Driver=%s, Set=%s", opts.Driver.Config.Metadata.Name, opts.Set.Metadata.Name)
+
+	return fmt.Errorf("not implemented")
 }
 
 type MigrateUpOptions struct {
 	Driver plugin.DriverInstance
-	Set    string
+	Set    *config.MigrationSet
 }
 
 func (m *Migrator) MigrateUp(ctx context.Context, config *config.Config, opts MigrateUpOptions) error {
-	return nil
+	fmtx.WriteSuccess("Executing Migrate.Up with Driver=%s, Set=%s", opts.Driver.Config.Metadata.Name, opts.Set.Metadata.Name)
+
+	return fmt.Errorf("not implemented")
 }
 
 type MigrateDownOptions struct {
 	Driver  plugin.DriverInstance
-	Set     string
+	Set     *config.MigrationSet
 	Version string
 }
 
 func (m *Migrator) MigrateDown(ctx context.Context, config *config.Config, opts MigrateDownOptions) error {
-	return nil
+	fmtx.WriteSuccess("Executing Migrate.Down with Driver=%s, Set=%s, Version=%s", opts.Driver.Config.Metadata.Name, opts.Set.Metadata.Name, opts.Version)
+
+	return fmt.Errorf("not implemented")
 }
 
 type MigrateStatusOptions struct {
 	Driver plugin.DriverInstance
-	Set    string
+	Set    *config.MigrationSet
 }
 
 func (m *Migrator) MigrateStatus(ctx context.Context, config *config.Config, opts MigrateStatusOptions) error {
+	fmtx.WriteSuccess("Executing Migrate.Status with Driver=%s, Set=%s", opts.Driver.Config.Metadata.Name, opts.Set.Metadata.Name)
+
 	nav := NewNavigator(opts.Driver, config)
 	conn, close, err := nav.Open(ctx)
 	if err != nil {
