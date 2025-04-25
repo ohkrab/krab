@@ -16,6 +16,20 @@ type Navigator struct {
 	config *config.Config
 }
 
+type Audited struct {
+	Sets map[string]*AuditedSet
+}
+
+type AuditedSet struct {
+	Migrations map[string]*AuditedMigration
+	Status     string
+}
+
+type AuditedMigration struct {
+	Version string
+	Status  string
+}
+
 func NewNavigator(driver plugin.DriverInstance, config *config.Config) *Navigator {
 	return &Navigator{
 		driver: driver,
@@ -66,3 +80,79 @@ func (n *Navigator) Drive(ctx context.Context, conn plugin.DriverConnection, run
 	}
 	return nil
 }
+
+func (n *Navigator) ComputeState(ctx context.Context, conn plugin.DriverConnection) (*Audited, error) {
+	logs, err := conn.ReadAuditLogs(ctx, plugin.DriverExecutionContext{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to read audit logs: %w", err)
+	}
+
+	audited := &Audited{
+		Sets: make(map[string]*AuditedSet),
+	}
+
+	set := ""
+
+	for _, log := range logs {
+		switch log.Event {
+		case "migration_sets.up.started":
+			set = log.GetMetadata("name")
+			_, exists := audited.Sets[set]
+			if !exists {
+				audited.Sets[set] = &AuditedSet{
+					Migrations: make(map[string]*AuditedMigration),
+					Status:     "started",
+				}
+			}
+
+		case "migration_sets.up.completed":
+			set = log.GetMetadata("name")
+			audited.Sets[set].Status = "completed"
+
+		case "migration_sets.up.failed":
+			set = log.GetMetadata("name")
+			audited.Sets[set].Status = "failed"
+
+		case "migrations.started":
+			if set == "" {
+				return nil, fmt.Errorf("FATAL: audit log is broken/out of order")
+			}
+			version := log.GetData("version")
+			audited.Sets[set].Migrations[version] = &AuditedMigration{
+				Version: version,
+				Status:  "started",
+			}
+
+		case "migrations.completed":
+			if set == "" {
+				return nil, fmt.Errorf("FATAL: audit log is broken/out of order")
+			}
+			version := log.GetData("version")
+			audited.Sets[set].Migrations[version].Status = "completed"
+
+		case "migrations.failed":
+			if set == "" {
+				return nil, fmt.Errorf("FATAL: audit log is broken/out of order")
+			}
+			version := log.GetData("version")
+			audited.Sets[set].Migrations[version].Status = "failed"
+		}
+	}
+
+	return audited, nil
+}
+
+// lock_id, api_version,kind,applied_at,event,data,metadata
+// 1, migrations/v1, MigrationSet, 20250505T1200Z, migration_sets.up.started, {}, {name: "public"}
+// 2, migrations/v1, Migration, 20250505T1200Z, migrations.started, {version: "202006_01"}, {name: "add_tenants"}
+// 3, migrations/v1, Migration, 20250505T1200Z, migrations.completed, {version: "202006_01"}, {name: "add_tenants"}
+// 4, migrations/v1, Migration, 20250505T1200Z, migrations.failed, {version: "202006_01"}, {name: "add_tenants"}
+// 5, migrations/v1, MigrationSet, 20250505T1200Z, migration_sets.up.completed, {}, {name: "public"}
+
+// 12, migrations/v1, MigrationSet, 20250505T1200Z, migration_sets.up.started, {args: {schema: "animals"}}, {name: "tenant"}
+// 13, migrations/v1, Migration, 20250505T1200Z, migrations.started, {version: "v1"}, {name: "create_kinds"}
+// 14, migrations/v1, Migration, 20250505T1200Z, migrations.completed, {version: "v1"}, {name: "create_kinds"}
+// 15, migrations/v1, Migration, 20250505T1200Z, migrations.started, {version: "v2"}, {name: "create_countries"}
+// 16, migrations/v1, Migration, 20250505T1200Z, migrations.completed, {version: "v2"}, {name: "create_countries"}
+// 17, migrations/v1, MigrationSet, 20250505T1200Z, migration_sets.up.completed, {args: {schema: "animals"}, {name: "tenant"}
+// 18, migrations/v1, MigrationSet, 20250505T1200Z, migration_sets.renamed, {from: "public", to: "brands"}, {}

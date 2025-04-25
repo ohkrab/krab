@@ -75,6 +75,11 @@ func (m *Migrator) MigrateStatus(ctx context.Context, config *config.Config, opt
 	}
 
 	err = nav.Drive(ctx, conn, func() error {
+		_, err := nav.ComputeState(ctx, conn)
+		if err != nil {
+			return err
+		}
+
 		return nil
 	})
 	return err

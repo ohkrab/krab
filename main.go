@@ -11,7 +11,6 @@ import (
 	_ "github.com/jackc/pgx/v5"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/ohkrab/krab/ferro/config"
-	"github.com/ohkrab/krab/ferro/plugin"
 	"github.com/ohkrab/krab/ferro/run"
 	"github.com/ohkrab/krab/ferro/run/generators"
 	"github.com/ohkrab/krab/fmtx"
@@ -22,13 +21,10 @@ import (
 )
 
 var (
-	//go:embed res/favicon/favicon.ico
+	//go:embed res/ferrodbicon.svg
 	favicon []byte
 
-	//go:embed res/crab-final-pure-white.svg
-	whiteLogo []byte
-
-	//go:embed res/crab-final-pure.svg
+	//go:embed res/ferrodb.svg
 	logo []byte
 
 	//go:embed tpls/embed/migration.fyml.tpl
@@ -45,52 +41,6 @@ func init() {
 	cli.VersionPrinter = func(cmd *cli.Command) {
 		fmt.Fprintf(cmd.Root().Writer, "%s\n", cmd.Root().Version)
 	}
-}
-
-func mustConfig(fs *config.Filesystem, registry *plugins.Registry) *config.Config {
-	parser := config.NewParser(fs)
-	parsed, err := parser.LoadAndParse()
-	if err != nil {
-		fmtx.WriteError(err.Error())
-		os.Exit(1)
-	}
-
-	builder := run.NewBuilder(fs, parsed, registry)
-	cfg, errs := builder.BuildConfig()
-	if errs.HasErrors() {
-		for _, err := range errs.Errors {
-			fmtx.WriteError(err.Error())
-		}
-		os.Exit(1)
-	}
-
-	return cfg
-}
-
-func mustDriver(registry *plugins.Registry, cfg *config.Config, name string) plugin.DriverInstance {
-	definedDriver, ok := cfg.Drivers[name]
-	if !ok {
-		fmtx.WriteError("argument error: Driver not defined in config (metadata.name): %s", name)
-		os.Exit(1)
-	}
-	driver, err := registry.Get(definedDriver.Spec.Driver)
-	if err != nil {
-		fmtx.WriteError(err.Error())
-		os.Exit(1)
-	}
-	return plugin.DriverInstance{
-		Driver: driver,
-		Config: definedDriver,
-	}
-}
-
-func mustMigrationSet(cfg *config.Config, name string) *config.MigrationSet {
-	set, ok := cfg.MigrationSets[name]
-	if !ok {
-		fmtx.WriteError("argument error: MigrationSet not found: %s", name)
-		os.Exit(1)
-	}
-	return set
 }
 
 func main() {
@@ -115,7 +65,7 @@ func main() {
 	filesystem := config.NewFilesystem(dir)
 	// runners
 	generator := run.NewGenerator(filesystem, templates, &generators.TimestampVersionGenerator{})
-	migrator := run.NewMigrator(filesystem)
+	runner := run.New(filesystem, templates, registry)
 
 	// init commands
 	initCmd := &cli.Command{
@@ -131,7 +81,7 @@ func main() {
 		Name:  "validate",
 		Usage: "Validate the config",
 		Action: func(ctx context.Context, cmd *cli.Command) error {
-			mustConfig(filesystem, registry)
+			runner.MustConfig()
 			fmtx.WriteSuccess("Config is valid")
 			return nil
 		},
@@ -154,15 +104,12 @@ func main() {
 			&cli.UintFlag{Name: "n", Usage: "Last N events to show", Required: false, Aliases: []string{"n"}, DefaultText: "0"},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
-			cfg := mustConfig(filesystem, registry)
-			driver := mustDriver(registry, cfg, cmd.String("driver"))
-			set := mustMigrationSet(cfg, cmd.String("set"))
-
-			return migrator.MigrateAudit(ctx, cfg, run.MigrateAuditOptions{
-				Driver:      driver,
-				Set:         set,
-				FilterLastN: uint(cmd.Uint("n")),
-			})
+			run := run.CommandMigrateAudit{
+				Driver: cmd.String("driver"),
+				Set:    cmd.String("set"),
+				N:      uint(cmd.Uint("n")),
+			}
+			return runner.Execute(ctx, &run)
 		},
 	}
 	migrateUpCmd := &cli.Command{
@@ -173,14 +120,11 @@ func main() {
 			&cli.StringFlag{Name: "set", Usage: "MigrationSet to use", Required: true, Aliases: []string{"s"}},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
-			cfg := mustConfig(filesystem, registry)
-			driver := mustDriver(registry, cfg, cmd.String("driver"))
-			set := mustMigrationSet(cfg, cmd.String("set"))
-
-			return migrator.MigrateUp(ctx, cfg, run.MigrateUpOptions{
-				Driver: driver,
-				Set:    set,
-			})
+			run := run.CommandMigrateUp{
+				Driver: cmd.String("driver"),
+				Set:    cmd.String("set"),
+			}
+			return runner.Execute(ctx, &run)
 		},
 	}
 	migrateDownCmd := &cli.Command{
@@ -192,15 +136,12 @@ func main() {
 			&cli.StringFlag{Name: "version", Usage: "Version to rollback to", Required: true, Aliases: []string{"v"}},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
-			cfg := mustConfig(filesystem, registry)
-			driver := mustDriver(registry, cfg, cmd.String("driver"))
-			set := mustMigrationSet(cfg, cmd.String("set"))
-
-			return migrator.MigrateDown(ctx, cfg, run.MigrateDownOptions{
-				Driver:  driver,
-				Set:     set,
+			run := run.CommandMigrateDown{
+				Driver:  cmd.String("driver"),
+				Set:     cmd.String("set"),
 				Version: cmd.String("version"),
-			})
+			}
+			return runner.Execute(ctx, &run)
 		},
 	}
 	migrateStatusCmd := &cli.Command{
@@ -211,14 +152,11 @@ func main() {
 			&cli.StringFlag{Name: "set", Usage: "MigrationSet to use", Required: true, Aliases: []string{"s"}},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
-			cfg := mustConfig(filesystem, registry)
-			driver := mustDriver(registry, cfg, cmd.String("driver"))
-			set := mustMigrationSet(cfg, cmd.String("set"))
-
-			return migrator.MigrateStatus(ctx, cfg, run.MigrateStatusOptions{
-				Driver: driver,
-				Set:    set,
-			})
+			run := run.CommandMigrateStatus{
+				Driver: cmd.String("driver"),
+				Set:    cmd.String("set"),
+			}
+			return runner.Execute(ctx, &run)
 		},
 	}
 	migrateGroup := &cli.Command{

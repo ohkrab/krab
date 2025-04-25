@@ -71,6 +71,30 @@ type DriverAuditLog struct {
 	Metadata   map[string]any
 }
 
+func (d *DriverAuditLog) GetMetadata(key string) string {
+	if d.Metadata == nil {
+		return ""
+	}
+	if val, ok := d.Metadata[key]; ok {
+		if str, ok := val.(string); ok {
+			return str
+		}
+	}
+	return ""
+}
+
+func (d *DriverAuditLog) GetData(key string) string {
+	if d.Data == nil {
+		return ""
+	}
+	if val, ok := d.Data[key]; ok {
+		if str, ok := val.(string); ok {
+			return str
+		}
+	}
+	return ""
+}
+
 type DriverAuditLogColumn struct {
 	Unique bool
 	Name   string

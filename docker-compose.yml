@@ -1,21 +1,18 @@
-version: '3'
-
 services:
-  pg:
-    image: postgres:12.3-alpine
+  ferrodb:
+    image: postgres:16.8
     ports:
       - 5432:5432
     environment:
-      POSTGRES_PASSWORD: secret
-      POSTGRES_USER: krab
-      POSTGRES_DB: krab
+      - POSTGRES_PASSWORD=ferro
+      - POSTGRES_USER=ferro
+      - POSTGRES_DB=ferro
 
-  pgweb:
-    container_name: pgweb
-    image: sosedoff/pgweb
+  ferrodb_test:
+    image: postgres:16.8
     ports:
-      - "8081:8081"
+      - 5433:5432
     environment:
-      - PGWEB_DATABASE_URL=postgres://krab:secret@pg:5432/krab?sslmode=disable
-    depends_on:
-      - pg
+      - POSTGRES_PASSWORD=test
+      - POSTGRES_USER=test
+      - POSTGRES_DB=test
