@@ -30,7 +30,7 @@ type NullDriverConnection struct {
 	plugin.DriverConnection
 }
 
-func (c *NullDriverConnection) LockAuditLog(ctx context.Context, execCtx plugin.DriverExecutionContext) error {
+func (c *NullDriverConnection) LockAuditLog(ctx context.Context, execCtx plugin.DriverExecutionContext, lock plugin.DriverAuditLock) error {
 	return ErrDriverNotSelected
 }
 
@@ -46,6 +46,6 @@ func (c *NullDriverConnection) ReadAuditLogs(ctx context.Context, execCtx plugin
 	return []plugin.DriverAuditLog{}, ErrDriverNotSelected
 }
 
-func (c *NullDriverConnection) UnlockAuditLog(ctx context.Context, execCtx plugin.DriverExecutionContext) error {
+func (c *NullDriverConnection) UnlockAuditLog(ctx context.Context, execCtx plugin.DriverExecutionContext, lock plugin.DriverAuditLock) error {
 	return ErrDriverNotSelected
 }

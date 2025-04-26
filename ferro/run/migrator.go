@@ -62,7 +62,10 @@ type MigrateStatusOptions struct {
 func (m *Migrator) MigrateStatus(ctx context.Context, config *config.Config, opts MigrateStatusOptions) error {
 	fmtx.WriteSuccess("Executing Migrate.Status with Driver=%s, Set=%s", opts.Driver.Config.Metadata.Name, opts.Set.Metadata.Name)
 
-	nav := NewNavigator(opts.Driver, config)
+	nav := NewNavigator(opts.Driver, config, plugin.DriverExecutionContext{
+		Prefix: opts.Set.Spec.Namespace.Prefix,
+		Schema: opts.Set.Spec.Namespace.Schema,
+	})
 	conn, close, err := nav.Open(ctx)
 	if err != nil {
 		return err

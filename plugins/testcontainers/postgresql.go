@@ -11,12 +11,9 @@ import (
 )
 
 type TestContainerPostgreSQLDriver struct {
-	plugin.Driver
 }
 
 type TestContainerPostgreSQLDriverConnection struct {
-	plugin.DriverConnection
-
 	Container *Container
 	Conn      *pgx.Conn
 	Close     func(ctx context.Context)
@@ -87,7 +84,7 @@ func (d *TestContainerPostgreSQLDriver) Disconnect(ctx context.Context, conn plu
 	return nil
 }
 
-func (c *TestContainerPostgreSQLDriverConnection) LockAuditLog(ctx context.Context, execCtx plugin.DriverExecutionContext) error {
+func (c *TestContainerPostgreSQLDriverConnection) LockAuditLog(ctx context.Context, execCtx plugin.DriverExecutionContext, lock plugin.DriverAuditLock) error {
 	fullTableName := pgx.Identifier{execCtx.Prefix + plugin.DriverAuditLogTableName}
 	if execCtx.Schema != "" {
 		fullTableName = pgx.Identifier{execCtx.Schema, fullTableName[0]}
@@ -103,6 +100,10 @@ func (c *TestContainerPostgreSQLDriverConnection) UpsertAuditLogTable(ctx contex
 	return fmt.Errorf("not implemented")
 }
 
+func (c *TestContainerPostgreSQLDriverConnection) UpsertAuditLockTable(ctx context.Context, execCtx plugin.DriverExecutionContext) error {
+	return fmt.Errorf("not implemented")
+}
+
 func (c *TestContainerPostgreSQLDriverConnection) AppendAuditLog(ctx context.Context, execCtx plugin.DriverExecutionContext, log plugin.DriverAuditLog) error {
 	return fmt.Errorf("not implemented")
 }
@@ -111,6 +112,6 @@ func (c *TestContainerPostgreSQLDriverConnection) ReadAuditLogs(ctx context.Cont
 	return nil, fmt.Errorf("not implemented")
 }
 
-func (c *TestContainerPostgreSQLDriverConnection) UnlockAuditLog(ctx context.Context, execCtx plugin.DriverExecutionContext) error {
+func (c *TestContainerPostgreSQLDriverConnection) UnlockAuditLog(ctx context.Context, execCtx plugin.DriverExecutionContext, lock plugin.DriverAuditLock) error {
 	return fmt.Errorf("not implemented")
 }

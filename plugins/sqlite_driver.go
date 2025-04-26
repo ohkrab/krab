@@ -9,11 +9,9 @@ import (
 )
 
 type SQLiteDriver struct {
-	plugin.Driver
 }
 
 type SQLiteDriverConnection struct {
-	plugin.DriverConnection
 }
 
 func NewSQLiteDriver() *SQLiteDriver {
@@ -28,11 +26,15 @@ func (d *SQLiteDriver) Disconnect(ctx context.Context, conn plugin.DriverConnect
 	return fmt.Errorf("not implemented")
 }
 
-func (c *SQLiteDriverConnection) LockAuditLog(ctx context.Context, execCtx plugin.DriverExecutionContext) error {
+func (c *SQLiteDriverConnection) LockAuditLog(ctx context.Context, execCtx plugin.DriverExecutionContext, lock plugin.DriverAuditLock) error {
 	return fmt.Errorf("not implemented")
 }
 
 func (c *SQLiteDriverConnection) UpsertAuditLogTable(ctx context.Context, execCtx plugin.DriverExecutionContext) error {
+	return fmt.Errorf("not implemented")
+}
+
+func (c *SQLiteDriverConnection) UpsertAuditLockTable(ctx context.Context, execCtx plugin.DriverExecutionContext) error {
 	return fmt.Errorf("not implemented")
 }
 
@@ -44,6 +46,6 @@ func (c *SQLiteDriverConnection) ReadAuditLogs(ctx context.Context, execCtx plug
 	return nil, fmt.Errorf("not implemented")
 }
 
-func (c *SQLiteDriverConnection) UnlockAuditLog(ctx context.Context, execCtx plugin.DriverExecutionContext) error {
+func (c *SQLiteDriverConnection) UnlockAuditLog(ctx context.Context, execCtx plugin.DriverExecutionContext, lock plugin.DriverAuditLock) error {
 	return fmt.Errorf("not implemented")
 }

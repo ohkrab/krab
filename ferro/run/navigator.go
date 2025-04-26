@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/ohkrab/krab/ferro/config"
 	"github.com/ohkrab/krab/ferro/plugin"
@@ -12,17 +13,18 @@ import (
 
 // Navigator abstracts the flow of the driver.
 type Navigator struct {
-	driver plugin.DriverInstance
-	config *config.Config
+	driver  plugin.DriverInstance
+	config  *config.Config
+	execCtx plugin.DriverExecutionContext
 }
 
 type Audited struct {
-	Sets map[string]*AuditedSet
+	Sets   map[string]*AuditedMigrationSet
+	LastID uint64
 }
 
-type AuditedSet struct {
+type AuditedMigrationSet struct {
 	Migrations map[string]*AuditedMigration
-	Status     string
 }
 
 type AuditedMigration struct {
@@ -30,10 +32,11 @@ type AuditedMigration struct {
 	Status  string
 }
 
-func NewNavigator(driver plugin.DriverInstance, config *config.Config) *Navigator {
+func NewNavigator(driver plugin.DriverInstance, config *config.Config, execCtx plugin.DriverExecutionContext) *Navigator {
 	return &Navigator{
-		driver: driver,
-		config: config,
+		driver:  driver,
+		config:  config,
+		execCtx: execCtx,
 	}
 }
 
@@ -53,19 +56,28 @@ func (n *Navigator) Open(ctx context.Context) (plugin.DriverConnection, func(), 
 }
 
 func (n *Navigator) Ready(ctx context.Context, conn plugin.DriverConnection) error {
-	if err := conn.UpsertAuditLogTable(ctx, plugin.DriverExecutionContext{}); err != nil {
+	if err := conn.UpsertAuditLogTable(ctx, n.execCtx); err != nil {
 		return fmt.Errorf("failed to upsert audit log table: %w", err)
+	}
+	if err := conn.UpsertAuditLockTable(ctx, n.execCtx); err != nil {
+		return fmt.Errorf("failed to upsert audit lock table: %w", err)
 	}
 	return nil
 }
 
 func (n *Navigator) Drive(ctx context.Context, conn plugin.DriverConnection, run func() error) error {
-	err := conn.LockAuditLog(ctx, plugin.DriverExecutionContext{})
+	lock := plugin.DriverAuditLock{
+		ID:       plugin.DriverAuditLockForMigrations,
+		LockedAt: time.Now().UTC(),
+		LockedBy: "cli",
+		Data:     make(map[string]any),
+	}
+	err := conn.LockAuditLog(ctx, n.execCtx, lock)
 	if err != nil {
 		return fmt.Errorf("failed to lock audit log: %w", err)
 	}
 	defer func() {
-		err := conn.UnlockAuditLog(ctx, plugin.DriverExecutionContext{})
+		err := conn.UnlockAuditLog(ctx, n.execCtx, lock)
 		if err != nil {
 			fmtx.WriteError(fmt.Sprintf("failed to unlock audit log: %s", err))
 			if err := n.driver.Driver.Disconnect(ctx, conn); err != nil {
@@ -82,77 +94,71 @@ func (n *Navigator) Drive(ctx context.Context, conn plugin.DriverConnection, run
 }
 
 func (n *Navigator) ComputeState(ctx context.Context, conn plugin.DriverConnection) (*Audited, error) {
-	logs, err := conn.ReadAuditLogs(ctx, plugin.DriverExecutionContext{})
+	logs, err := conn.ReadAuditLogs(ctx, n.execCtx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read audit logs: %w", err)
 	}
 
 	audited := &Audited{
-		Sets: make(map[string]*AuditedSet),
+		Sets: make(map[string]*AuditedMigrationSet),
 	}
-
-	set := ""
 
 	for _, log := range logs {
 		switch log.Event {
-		case "migration_sets.up.started":
-			set = log.GetMetadata("name")
-			_, exists := audited.Sets[set]
-			if !exists {
-				audited.Sets[set] = &AuditedSet{
-					Migrations: make(map[string]*AuditedMigration),
-					Status:     "started",
-				}
-			}
+		case "migration.up.started":
+			set := audited.EnsureMigrationSet(log.GetData("set"))
+			migration := set.EnsureMigration(log.GetData("version"))
+			migration.Status = "started"
 
-		case "migration_sets.up.completed":
-			set = log.GetMetadata("name")
-			audited.Sets[set].Status = "completed"
+		case "migration.up.completed":
+			set := audited.EnsureMigrationSet(log.GetData("set"))
+			migration := set.EnsureMigration(log.GetData("version"))
+			migration.Status = "completed"
 
-		case "migration_sets.up.failed":
-			set = log.GetMetadata("name")
-			audited.Sets[set].Status = "failed"
+		case "migration.up.failed":
+			set := audited.EnsureMigrationSet(log.GetData("set"))
+			migration := set.EnsureMigration(log.GetData("version"))
+			migration.Status = "failed"
 
-		case "migrations.started":
-			if set == "" {
-				return nil, fmt.Errorf("FATAL: audit log is broken/out of order")
-			}
-			version := log.GetData("version")
-			audited.Sets[set].Migrations[version] = &AuditedMigration{
-				Version: version,
-				Status:  "started",
-			}
+		case "migration.down.started":
+			set := audited.EnsureMigrationSet(log.GetData("set"))
+			migration := set.EnsureMigration(log.GetData("version"))
+			migration.Status = "started"
 
-		case "migrations.completed":
-			if set == "" {
-				return nil, fmt.Errorf("FATAL: audit log is broken/out of order")
-			}
-			version := log.GetData("version")
-			audited.Sets[set].Migrations[version].Status = "completed"
+		case "migration.down.completed":
+			set := audited.EnsureMigrationSet(log.GetData("set"))
+			set.DeleteMigration(log.GetData("version"))
 
-		case "migrations.failed":
-			if set == "" {
-				return nil, fmt.Errorf("FATAL: audit log is broken/out of order")
-			}
-			version := log.GetData("version")
-			audited.Sets[set].Migrations[version].Status = "failed"
+		case "migration.down.failed":
+			continue
 		}
 	}
 
 	return audited, nil
 }
 
-// lock_id, api_version,kind,applied_at,event,data,metadata
-// 1, migrations/v1, MigrationSet, 20250505T1200Z, migration_sets.up.started, {}, {name: "public"}
-// 2, migrations/v1, Migration, 20250505T1200Z, migrations.started, {version: "202006_01"}, {name: "add_tenants"}
-// 3, migrations/v1, Migration, 20250505T1200Z, migrations.completed, {version: "202006_01"}, {name: "add_tenants"}
-// 4, migrations/v1, Migration, 20250505T1200Z, migrations.failed, {version: "202006_01"}, {name: "add_tenants"}
-// 5, migrations/v1, MigrationSet, 20250505T1200Z, migration_sets.up.completed, {}, {name: "public"}
+func (a *Audited) EnsureMigrationSet(name string) *AuditedMigrationSet {
+	set, exists := a.Sets[name]
+	if !exists {
+		set = &AuditedMigrationSet{
+			Migrations: make(map[string]*AuditedMigration),
+		}
+		a.Sets[name] = set
+	}
+	return set
+}
 
-// 12, migrations/v1, MigrationSet, 20250505T1200Z, migration_sets.up.started, {args: {schema: "animals"}}, {name: "tenant"}
-// 13, migrations/v1, Migration, 20250505T1200Z, migrations.started, {version: "v1"}, {name: "create_kinds"}
-// 14, migrations/v1, Migration, 20250505T1200Z, migrations.completed, {version: "v1"}, {name: "create_kinds"}
-// 15, migrations/v1, Migration, 20250505T1200Z, migrations.started, {version: "v2"}, {name: "create_countries"}
-// 16, migrations/v1, Migration, 20250505T1200Z, migrations.completed, {version: "v2"}, {name: "create_countries"}
-// 17, migrations/v1, MigrationSet, 20250505T1200Z, migration_sets.up.completed, {args: {schema: "animals"}, {name: "tenant"}
-// 18, migrations/v1, MigrationSet, 20250505T1200Z, migration_sets.renamed, {from: "public", to: "brands"}, {}
+func (a *AuditedMigrationSet) DeleteMigration(version string) {
+	delete(a.Migrations, version)
+}
+
+func (a *AuditedMigrationSet) EnsureMigration(version string) *AuditedMigration {
+	migration, exists := a.Migrations[version]
+	if !exists {
+		migration = &AuditedMigration{
+			Version: version,
+		}
+		a.Migrations[version] = migration
+	}
+	return migration
+}
