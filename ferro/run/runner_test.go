@@ -10,7 +10,7 @@ import (
 
 func TestRunner_MigrationAuditLog(t *testing.T) {
 	db := createTestDB(t, context.Background())
-	defer db.cleanup()
+	defer db.clear()
 	_, dir, fsCleanup := expecto.TempFS(
 		db.fymlFileName,
         db.fymlFileContent,

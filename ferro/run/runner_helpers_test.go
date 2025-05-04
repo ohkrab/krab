@@ -12,13 +12,13 @@ import (
 )
 
 type TestDB struct {
-	driver          *plugins.PostgreSQLDriver
-	conn            *plugins.PostgreSQLDriverConnection
-	driverConfig    config.DriverConfig
-	name            string
-	cleanup         func()
-	fymlFileName    string
-	fymlFileContent string
+	driver             *plugins.PostgreSQLDriver
+	masterConn         *plugins.PostgreSQLDriverConnection
+	clientDriverConfig config.DriverConfig
+	clientDatabaseName string
+	clear              func()
+	fymlFileName       string
+	fymlFileContent    string
 }
 
 // createTestDB is using master connection to create test databases for each test case.
@@ -32,11 +32,11 @@ func createTestDB(t *testing.T, ctx context.Context) *TestDB {
 	id := uuid.Must(uuid.NewV7()).String()
 	dbname := fmt.Sprintf("ferro_test_%s", strings.ReplaceAll(id, "-", "_"))
 	db := TestDB{
-		driver:       &drv,
-		conn:         conn.(*plugins.PostgreSQLDriverConnection),
-		name:         dbname,
-		driverConfig: config.DriverConfig{"dsn": fmt.Sprintf("postgres://test:test@localhost:5433/%s", dbname)},
-		fymlFileName: ".ferro/test_driver.fyml",
+		driver:             &drv,
+		masterConn:         conn.(*plugins.PostgreSQLDriverConnection),
+		clientDatabaseName: dbname,
+		clientDriverConfig: config.DriverConfig{"dsn": fmt.Sprintf("postgres://test:test@localhost:5433/%s", dbname)},
+		fymlFileName:       ".ferro/test_driver.fyml",
 		fymlFileContent: fmt.Sprintf(`
 apiVersion: drivers/v1
 kind: Driver
@@ -53,16 +53,16 @@ spec:
 `, dbname),
 	}
 
-	_, err = db.conn.Conn.Exec(ctx, fmt.Sprintf("CREATE DATABASE %s", dbname))
+	_, err = db.masterConn.Conn.Exec(ctx, fmt.Sprintf("CREATE DATABASE %s", dbname))
 	if err != nil {
 		t.Error(fmt.Errorf("failed to create test db: %w", err))
 	}
-	db.cleanup = func() {
-		_, err := db.conn.Conn.Exec(ctx, fmt.Sprintf("DROP DATABASE %s", dbname))
+	db.clear = func() {
+		_, err := db.masterConn.Conn.Exec(ctx, fmt.Sprintf("DROP DATABASE %s", dbname))
 		if err != nil {
 			t.Error(fmt.Errorf("failed to drop test db: %w", err))
 		}
-		err = drv.Disconnect(ctx, db.conn)
+		err = drv.Disconnect(ctx, db.masterConn)
 		if err != nil {
 			t.Error(err)
 		}
