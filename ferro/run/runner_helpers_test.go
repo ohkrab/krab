@@ -16,6 +16,7 @@ type TestDB struct {
 	masterConn         *plugins.PostgreSQLDriverConnection
 	clientDriverConfig config.DriverConfig
 	clientDatabaseName string
+	clientDriverName   string
 	clear              func()
 	fymlFileName       string
 	fymlFileContent    string
@@ -36,12 +37,13 @@ func createTestDB(t *testing.T, ctx context.Context) *TestDB {
 		masterConn:         conn.(*plugins.PostgreSQLDriverConnection),
 		clientDatabaseName: dbname,
 		clientDriverConfig: config.DriverConfig{"dsn": fmt.Sprintf("postgres://test:test@localhost:5433/%s", dbname)},
+		clientDriverName:   "ferro_test",
 		fymlFileName:       ".ferro/test_driver.fyml",
 		fymlFileContent: fmt.Sprintf(`
 apiVersion: drivers/v1
 kind: Driver
 metadata:
-  name: test
+  name: ferro_test
 spec:
   driver: postgresql
   config:
