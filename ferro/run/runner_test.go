@@ -87,13 +87,21 @@ spec:
 		Driver: db.clientDriverName,
 		Set:    "public",
 	}
-	err := runner.Execute(ctx, cmd)
-	expecto.NoErr(t, "runner execution", err)
+	err := runner.Execute(ctx, cmd, nil)
+	expecto.NoErr(t, "[migrate.up] runner execution", err)
+
+    err = runner.Execute(ctx, &CommandMigrateAudit{
+        Driver: db.clientDriverName,
+        Set:    "public",
+        N: 0,
+    }, nil)
+    expecto.NoErr(t, "[audit] runner execution", err)
+
 
 	// Get driver connection to check audit log entries
 	driverInstance, err := runner.getDriverInstance(ctx, db.clientDriverName)
 	expecto.NoErr(t, "getting driver instance", err)
-	
+
 	conn, err := driverInstance.Driver.Connect(ctx, driverInstance.Config.Spec.Config)
 	expecto.NoErr(t, "connecting to database", err)
 	defer driverInstance.Driver.Disconnect(ctx, conn)
@@ -103,13 +111,13 @@ spec:
 		Schema: "public",
 		Prefix: "",
 	}
-	
+
 	logs, err := conn.ReadAuditLogs(ctx, execCtx)
 	expecto.NoErr(t, "reading audit logs", err)
-	
+
 	// Verify we have at least one audit log entry
 	expecto.True(t, "audit log has entries", len(logs) > 0)
-	
+
 	// Verify the migration version is in the audit log
 	found := false
 	for _, log := range logs {
@@ -119,10 +127,10 @@ spec:
 		}
 	}
 	expecto.True(t, "migration version found in audit log", found)
-	
+
 	// Verify the test_table was created
 	var tableExists bool
-	err = db.driver.(*plugins.PostgreSQLDriver).Conn.QueryRow(ctx, 
+	err = db.driver.(*plugins.PostgreSQLDriver).Conn.QueryRow(ctx,
 		"SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'test_table')").Scan(&tableExists)
 	expecto.NoErr(t, "checking if table exists", err)
 	expecto.True(t, "test_table exists", tableExists)

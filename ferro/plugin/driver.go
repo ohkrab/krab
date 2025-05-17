@@ -2,15 +2,16 @@ package plugin
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/ohkrab/krab/ferro/config"
 )
 
 const (
-	DriverAuditLogTableName      = "_ferro_audit_log"
-	DriverAuditLockTableName     = "_ferro_audit_lock"
-	DriverAuditLockForMigrations = 1
+	DriverAuditLogTableName        = "_ferro_audit_log"
+	DriverAuditLockTableName       = "_ferro_audit_lock"
+	DriverAuditLockIDForMigrations = "migrataion"
 )
 
 const (
@@ -29,10 +30,12 @@ var (
 	DriverAuditColumnMetadata  = DriverAuditColumn{PrimaryKey: false, Name: "metadata", Type: DriverAuditColumnJSON, Nullable: true}
 
 	// lock columns
-	DriverAuditLockColumnID       = DriverAuditColumn{PrimaryKey: true, Name: "id", Type: DriverAuditColumnInt64, Nullable: false}
+	DriverAuditLockColumnID       = DriverAuditColumn{PrimaryKey: true, Name: "id", Type: DriverAuditColumnString, Nullable: false}
 	DriverAuditLockColumnLockedAt = DriverAuditColumn{PrimaryKey: false, Name: "locked_at", Type: DriverAuditColumnTime, Nullable: false}
 	DriverAuditLockColumnLockedBy = DriverAuditColumn{PrimaryKey: false, Name: "locked_by", Type: DriverAuditColumnString, Nullable: false}
 	DriverAuditLockColumnData     = DriverAuditColumn{PrimaryKey: false, Name: "data", Type: DriverAuditColumnJSON, Nullable: false}
+
+	ErrAuditAlreadyLocked = fmt.Errorf("audit log is already locked")
 )
 
 type DriverExecutionContext struct {
@@ -49,7 +52,7 @@ type DriverAuditLog struct {
 }
 
 type DriverAuditLock struct {
-	ID       int64
+	ID       string
 	LockedAt time.Time
 	LockedBy string
 	Data     map[string]any

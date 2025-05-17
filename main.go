@@ -109,7 +109,16 @@ func main() {
 				Set:    cmd.String("set"),
 				N:      uint(cmd.Uint("n")),
 			}
-			return runner.Execute(ctx, &run)
+            audited, err := runner.ExecuteMigrateAudit(ctx, &run)
+            if err != nil {
+                return err
+            }
+            fmtx.WriteSuccess("Audit logs for %s/%s", run.Driver, run.Set)
+            for name, set := range audited.Sets {
+                fmtx.WriteSuccess("Set: %s, Migrations: %d", name, len(set.Migrations))
+            }
+
+            return nil
 		},
 	}
 	migrateUpCmd := &cli.Command{
@@ -124,7 +133,7 @@ func main() {
 				Driver: cmd.String("driver"),
 				Set:    cmd.String("set"),
 			}
-			return runner.Execute(ctx, &run)
+			return runner.ExecuteMigrateUp(ctx, &run)
 		},
 	}
 	migrateDownCmd := &cli.Command{
@@ -141,7 +150,7 @@ func main() {
 				Set:     cmd.String("set"),
 				Version: cmd.String("version"),
 			}
-			return runner.Execute(ctx, &run)
+			return runner.ExecuteMigrateDown(ctx, &run)
 		},
 	}
 	migrateStatusCmd := &cli.Command{
@@ -156,7 +165,7 @@ func main() {
 				Driver: cmd.String("driver"),
 				Set:    cmd.String("set"),
 			}
-			return runner.Execute(ctx, &run)
+			return runner.ExecuteMigrateStatus(ctx, &run)
 		},
 	}
 	migrateGroup := &cli.Command{

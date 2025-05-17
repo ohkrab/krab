@@ -2,7 +2,6 @@ package run
 
 import (
 	"context"
-	"fmt"
 	"os"
 
 	"github.com/ohkrab/krab/ferro/config"
@@ -20,6 +19,10 @@ type Runner struct {
 }
 
 type Command any
+
+// type CommandHandler interface {
+// 	HandleMigrateAudit(audited *Audited)
+// }
 
 type CommandMigrateStatus struct {
 	Command
@@ -112,20 +115,25 @@ func (r *Runner) MustMigrationSet(cfg *config.Config, name string) *config.Migra
 	return set
 }
 
-func (r *Runner) Execute(ctx context.Context, cmd Command) error {
-	switch cmd := cmd.(type) {
-	case *CommandMigrateUp:
-		return r.ExecuteMigrateUp(ctx, cmd)
-	case *CommandMigrateDown:
-		return r.ExecuteMigrateDown(ctx, cmd)
-	case *CommandMigrateStatus:
-		return r.ExecuteMigrateStatus(ctx, cmd)
-	case *CommandMigrateAudit:
-		return r.ExecuteMigrateAudit(ctx, cmd)
-	default:
-		return fmt.Errorf("unknown command: %T", cmd)
-	}
-}
+// func (r *Runner) Execute(ctx context.Context, cmd Command, handler CommandHandler) error {
+// 	switch cmd := cmd.(type) {
+// 	case *CommandMigrateUp:
+// 		return r.ExecuteMigrateUp(ctx, cmd)
+// 	case *CommandMigrateDown:
+// 		return r.ExecuteMigrateDown(ctx, cmd)
+// 	case *CommandMigrateStatus:
+// 		return r.ExecuteMigrateStatus(ctx, cmd)
+//
+// 	case *CommandMigrateAudit:
+// 		result, err := r.ExecuteMigrateAudit(ctx, cmd)
+// 		if err != nil {
+// 			return err
+// 		}
+// 		handler.HandleMigrateAudit(result)
+// 	}
+//
+// 	return fmt.Errorf("unknown command: %T", cmd)
+// }
 
 func (r *Runner) ExecuteMigrateUp(ctx context.Context, cmd *CommandMigrateUp) error {
 	cfg := r.MustConfig()
@@ -161,7 +169,7 @@ func (r *Runner) ExecuteMigrateStatus(ctx context.Context, cmd *CommandMigrateSt
 	})
 }
 
-func (r *Runner) ExecuteMigrateAudit(ctx context.Context, cmd *CommandMigrateAudit) error {
+func (r *Runner) ExecuteMigrateAudit(ctx context.Context, cmd *CommandMigrateAudit) (*Audited, error) {
 	cfg := r.MustConfig()
 	driver := r.MustDriver(r.registry, cfg, cmd.Driver)
 	set := r.MustMigrationSet(cfg, cmd.Set)

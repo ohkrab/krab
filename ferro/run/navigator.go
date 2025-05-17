@@ -67,7 +67,7 @@ func (n *Navigator) Ready(ctx context.Context, conn plugin.DriverConnection) err
 
 func (n *Navigator) Drive(ctx context.Context, conn plugin.DriverConnection, run func() error) error {
 	lock := plugin.DriverAuditLock{
-		ID:       plugin.DriverAuditLockForMigrations,
+		ID:       plugin.DriverAuditLockIDForMigrations,
 		LockedAt: time.Now().UTC(),
 		LockedBy: "cli",
 		Data:     make(map[string]any),

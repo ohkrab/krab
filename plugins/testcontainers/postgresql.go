@@ -2,10 +2,13 @@ package testcontainers
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/ohkrab/krab/ferro/config"
 	"github.com/ohkrab/krab/ferro/plugin"
 )
@@ -84,34 +87,184 @@ func (d *TestContainerPostgreSQLDriver) Disconnect(ctx context.Context, conn plu
 	return nil
 }
 
-func (c *TestContainerPostgreSQLDriverConnection) LockAuditLog(ctx context.Context, execCtx plugin.DriverExecutionContext, lock plugin.DriverAuditLock) error {
-	fullTableName := pgx.Identifier{execCtx.Prefix + plugin.DriverAuditLogTableName}
-	if execCtx.Schema != "" {
-		fullTableName = pgx.Identifier{execCtx.Schema, fullTableName[0]}
-	}
-	quotedTableName := fullTableName.Sanitize()
-	fmt.Println("quotedTableName", quotedTableName)
-	// _, err := c.Conn.Exec(ctx, fmt.Sprintf("LOCK TABLE %s IN ACCESS EXCLUSIVE MODE", quotedTableName))
-	// return err
-	return fmt.Errorf("not lock")
-}
-
 func (c *TestContainerPostgreSQLDriverConnection) UpsertAuditLogTable(ctx context.Context, execCtx plugin.DriverExecutionContext) error {
-	return fmt.Errorf("not implemented")
+	columns := []string{
+		c.sqlColumnDefinition(&plugin.DriverAuditColumnID),
+		c.sqlColumnDefinition(&plugin.DriverAuditColumnAppliedAt),
+		c.sqlColumnDefinition(&plugin.DriverAuditColumnEvent),
+		c.sqlColumnDefinition(&plugin.DriverAuditColumnData),
+		c.sqlColumnDefinition(&plugin.DriverAuditColumnMetadata),
+	}
+
+	_, err := c.Conn.Exec(ctx,
+		fmt.Sprintf(
+			`CREATE TABLE IF NOT EXISTS %s (%s)`,
+			c.sqlTableName(execCtx, plugin.DriverAuditLogTableName),
+			strings.Join(columns, ","),
+		),
+	)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (c *TestContainerPostgreSQLDriverConnection) UpsertAuditLockTable(ctx context.Context, execCtx plugin.DriverExecutionContext) error {
-	return fmt.Errorf("not implemented")
+	columns := []string{
+		c.sqlColumnDefinition(&plugin.DriverAuditLockColumnID),
+		c.sqlColumnDefinition(&plugin.DriverAuditLockColumnLockedAt),
+		c.sqlColumnDefinition(&plugin.DriverAuditLockColumnLockedBy),
+		c.sqlColumnDefinition(&plugin.DriverAuditLockColumnData),
+	}
+	_, err := c.Conn.Exec(ctx,
+		fmt.Sprintf(
+			`CREATE TABLE IF NOT EXISTS %s (%s)`,
+			c.sqlTableName(execCtx, plugin.DriverAuditLockTableName),
+			strings.Join(columns, ","),
+		),
+	)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (c *TestContainerPostgreSQLDriverConnection) AppendAuditLog(ctx context.Context, execCtx plugin.DriverExecutionContext, log plugin.DriverAuditLog) error {
-	return fmt.Errorf("not implemented")
+	columns := []string{
+		c.quoteIdentifier(plugin.DriverAuditColumnID.Name),
+		c.quoteIdentifier(plugin.DriverAuditColumnAppliedAt.Name),
+		c.quoteIdentifier(plugin.DriverAuditColumnEvent.Name),
+		c.quoteIdentifier(plugin.DriverAuditColumnData.Name),
+		c.quoteIdentifier(plugin.DriverAuditColumnMetadata.Name),
+	}
+	sql := `INSERT INTO %s (%s) VALUES (@id, @applied_at, @event, @data, @metadata)`
+	values := pgx.NamedArgs{
+		"id":         log.ID,
+		"applied_at": log.AppliedAt,
+		"event":      log.Event,
+		"data":       log.Data,
+		"metadata":   log.Metadata,
+	}
+	_, err := c.Conn.Exec(ctx,
+		fmt.Sprintf(sql, c.sqlTableName(execCtx, plugin.DriverAuditLogTableName), strings.Join(columns, ",")),
+		values,
+	)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (c *TestContainerPostgreSQLDriverConnection) ReadAuditLogs(ctx context.Context, execCtx plugin.DriverExecutionContext) ([]plugin.DriverAuditLog, error) {
-	return nil, fmt.Errorf("not implemented")
+	logs := make([]plugin.DriverAuditLog, 0)
+	sql := `SELECT %s FROM %s ORDER BY 1`
+	columns := []string{
+		c.quoteIdentifier(plugin.DriverAuditColumnID.Name),
+		c.quoteIdentifier(plugin.DriverAuditColumnAppliedAt.Name),
+		c.quoteIdentifier(plugin.DriverAuditColumnEvent.Name),
+		c.quoteIdentifier(plugin.DriverAuditColumnData.Name),
+		c.quoteIdentifier(plugin.DriverAuditColumnMetadata.Name),
+	}
+	rows, err := c.Conn.Query(ctx, fmt.Sprintf(sql, strings.Join(columns, ","), c.sqlTableName(execCtx, plugin.DriverAuditLogTableName)))
+	if err != nil {
+		return nil, fmt.Errorf("query: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var log plugin.DriverAuditLog
+		err := rows.Scan(
+			&log.ID,
+			&log.AppliedAt,
+			&log.Event,
+			&log.Data,
+			&log.Metadata,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("scan: %w", err)
+		}
+		logs = append(logs, log)
+	}
+	return logs, nil
+}
+
+func (c *TestContainerPostgreSQLDriverConnection) LockAuditLog(ctx context.Context, execCtx plugin.DriverExecutionContext, lock plugin.DriverAuditLock) error {
+	values := pgx.NamedArgs{
+		"id":        lock.ID,
+		"locked_at": lock.LockedAt,
+		"locked_by": lock.LockedBy,
+		"data":      lock.Data,
+	}
+	sql := fmt.Sprintf(
+		`INSERT INTO %s (%s, %s, %s, %s) VALUES (@id, @locked_at, @locked_by, @data)`,
+		c.sqlTableName(execCtx, plugin.DriverAuditLockTableName),
+		c.quoteIdentifier(plugin.DriverAuditLockColumnID.Name),
+		c.quoteIdentifier(plugin.DriverAuditLockColumnLockedAt.Name),
+		c.quoteIdentifier(plugin.DriverAuditLockColumnLockedBy.Name),
+		c.quoteIdentifier(plugin.DriverAuditLockColumnData.Name),
+	)
+
+    _, err := c.Conn.Exec(ctx, sql, values)
+    var pgErr *pgconn.PgError
+    if errors.As(err, &pgErr) {
+        if pgErr.Code == "23505" { // unique violation
+            return plugin.ErrAuditAlreadyLocked
+        }
+        return err
+    }
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (c *TestContainerPostgreSQLDriverConnection) UnlockAuditLog(ctx context.Context, execCtx plugin.DriverExecutionContext, lock plugin.DriverAuditLock) error {
-	return fmt.Errorf("not implemented")
+	_, err := c.Conn.Exec(ctx,
+		fmt.Sprintf(
+			`DELETE FROM %s WHERE %s = $1`,
+			c.sqlTableName(execCtx, plugin.DriverAuditLockTableName),
+			c.quoteIdentifier(plugin.DriverAuditLockColumnID.Name),
+		),
+		lock.ID,
+	)
+
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *TestContainerPostgreSQLDriverConnection) quoteIdentifier(ident string) string {
+	return pgx.Identifier{ident}.Sanitize()
+}
+
+func (c *TestContainerPostgreSQLDriverConnection) sqlColumnDefinition(column *plugin.DriverAuditColumn) string {
+	colDef := "UNKNOWN_TYPE"
+	switch column.Type {
+	case plugin.DriverAuditColumnTime:
+		colDef = "TIMESTAMPTZ"
+	case plugin.DriverAuditColumnString:
+		colDef = "VARCHAR"
+	case plugin.DriverAuditColumnInt64:
+		colDef = "BIGINT"
+	case plugin.DriverAuditColumnJSON:
+		colDef = "JSONB"
+	}
+	if column.PrimaryKey {
+		colDef = fmt.Sprintf("%s PRIMARY KEY", colDef)
+	} else if !column.Nullable {
+		colDef = fmt.Sprintf("%s NOT NULL", colDef)
+	}
+
+	return fmt.Sprintf("%s %s", pgx.Identifier{column.Name}.Sanitize(), colDef)
+}
+
+func (c *TestContainerPostgreSQLDriverConnection) sqlTableName(execCtx plugin.DriverExecutionContext, table string) string {
+	fullTableName := pgx.Identifier{execCtx.Prefix + table}
+	if execCtx.Schema != "" {
+		fullTableName = pgx.Identifier{execCtx.Schema, fullTableName[0]}
+	}
+	return fullTableName.Sanitize()
 }

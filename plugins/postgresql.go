@@ -2,9 +2,11 @@ package plugins
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5"
 	"github.com/ohkrab/krab/ferro/config"
 	"github.com/ohkrab/krab/ferro/plugin"
@@ -162,9 +164,15 @@ func (c *PostgreSQLDriverConnection) LockAuditLog(ctx context.Context, execCtx p
 		c.quoteIdentifier(plugin.DriverAuditLockColumnLockedBy.Name),
 		c.quoteIdentifier(plugin.DriverAuditLockColumnData.Name),
 	)
-	fmt.Println(sql)
 
-	_, err := c.Conn.Exec(ctx, sql, values)
+    _, err := c.Conn.Exec(ctx, sql, values)
+    var pgErr *pgconn.PgError
+    if errors.As(err, &pgErr) {
+        if pgErr.Code == "23505" { // unique violation
+            return plugin.ErrAuditAlreadyLocked
+        }
+        return err
+    }
 
 	if err != nil {
 		return err

@@ -25,10 +25,38 @@ type MigrateAuditOptions struct {
 	FilterLastN uint
 }
 
-func (m *Migrator) MigrateAudit(ctx context.Context, config *config.Config, opts MigrateAuditOptions) error {
+func (m *Migrator) MigrateAudit(ctx context.Context, config *config.Config, opts MigrateAuditOptions) (*Audited, error) {
 	fmtx.WriteSuccess("Executing Migrate.Audit with Driver=%s, Set=%s", opts.Driver.Config.Metadata.Name, opts.Set.Metadata.Name)
 
-	return fmt.Errorf("not implemented")
+	nav := NewNavigator(opts.Driver, config, plugin.DriverExecutionContext{
+		Prefix: opts.Set.Spec.Namespace.Prefix,
+		Schema: opts.Set.Spec.Namespace.Schema,
+	})
+	conn, close, err := nav.Open(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer close()
+
+	err = nav.Ready(ctx, conn)
+	if err != nil {
+		return nil, err
+	}
+
+    var audited *Audited
+	err = nav.Drive(ctx, conn, func() error {
+        audited, err = nav.ComputeState(ctx, conn)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+    if err != nil {
+        return nil, err
+    }
+
+	return audited, nil
 }
 
 type MigrateUpOptions struct {
