@@ -109,16 +109,13 @@ func main() {
 				Set:    cmd.String("set"),
 				N:      uint(cmd.Uint("n")),
 			}
-            audited, err := runner.ExecuteMigrateAudit(ctx, &run)
-            if err != nil {
-                return err
-            }
-            fmtx.WriteSuccess("Audit logs for %s/%s", run.Driver, run.Set)
-            for name, set := range audited.Sets {
-                fmtx.WriteSuccess("Set: %s, Migrations: %d", name, len(set.Migrations))
-            }
+			_, err := runner.ExecuteMigrateAudit(ctx, &run)
+			if err != nil {
+				return err
+			}
+			fmtx.WriteSuccess("Audit logs for %s/%s", run.Driver, run.Set)
 
-            return nil
+			return nil
 		},
 	}
 	migrateUpCmd := &cli.Command{
@@ -133,7 +130,11 @@ func main() {
 				Driver: cmd.String("driver"),
 				Set:    cmd.String("set"),
 			}
-			return runner.ExecuteMigrateUp(ctx, &run)
+			_, err := runner.ExecuteMigrateUp(ctx, &run)
+			if err != nil {
+				return err
+			}
+			return nil
 		},
 	}
 	migrateDownCmd := &cli.Command{
@@ -150,7 +151,12 @@ func main() {
 				Set:     cmd.String("set"),
 				Version: cmd.String("version"),
 			}
-			return runner.ExecuteMigrateDown(ctx, &run)
+			_, err := runner.ExecuteMigrateDown(ctx, &run)
+			if err != nil {
+				return err
+			}
+
+			return nil
 		},
 	}
 	migrateStatusCmd := &cli.Command{
@@ -165,7 +171,31 @@ func main() {
 				Driver: cmd.String("driver"),
 				Set:    cmd.String("set"),
 			}
-			return runner.ExecuteMigrateStatus(ctx, &run)
+			out, err := runner.ExecuteMigrateStatus(ctx, &run)
+			if err != nil {
+				return err
+			}
+
+			fmtx.WriteInfo("Migrations status for %s/%s", run.Driver, run.Set)
+
+			for _, row := range out.Rows {
+				status := ""
+				switch row.Status {
+				case "pending":
+					status = fmtx.ColoredBlockWarning(" %s ", row.Status)
+                case "completed":
+                    status = fmtx.ColoredBlockSuccess(" %s ", row.Status)
+                case "failed":
+                    status = fmtx.ColoredBlockDanger(" %s ", row.Status)
+				}
+				fmtx.WriteLine(
+					"%s %-30s %s",
+					status,
+					row.Version,
+					row.Migration,
+				)
+			}
+			return nil
 		},
 	}
 	migrateGroup := &cli.Command{

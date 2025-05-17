@@ -25,7 +25,10 @@ type MigrateAuditOptions struct {
 	FilterLastN uint
 }
 
-func (m *Migrator) MigrateAudit(ctx context.Context, config *config.Config, opts MigrateAuditOptions) (*Audited, error) {
+type MigrateAuditResult struct {
+}
+
+func (m *Migrator) MigrateAudit(ctx context.Context, config *config.Config, opts MigrateAuditOptions) (*MigrateAuditResult, error) {
 	fmtx.WriteSuccess("Executing Migrate.Audit with Driver=%s, Set=%s", opts.Driver.Config.Metadata.Name, opts.Set.Metadata.Name)
 
 	nav := NewNavigator(opts.Driver, config, plugin.DriverExecutionContext{
@@ -43,68 +46,6 @@ func (m *Migrator) MigrateAudit(ctx context.Context, config *config.Config, opts
 		return nil, err
 	}
 
-    var audited *Audited
-	err = nav.Drive(ctx, conn, func() error {
-        audited, err = nav.ComputeState(ctx, conn)
-		if err != nil {
-			return err
-		}
-
-		return nil
-	})
-    if err != nil {
-        return nil, err
-    }
-
-	return audited, nil
-}
-
-type MigrateUpOptions struct {
-	Driver plugin.DriverInstance
-	Set    *config.MigrationSet
-}
-
-func (m *Migrator) MigrateUp(ctx context.Context, config *config.Config, opts MigrateUpOptions) error {
-	fmtx.WriteSuccess("Executing Migrate.Up with Driver=%s, Set=%s", opts.Driver.Config.Metadata.Name, opts.Set.Metadata.Name)
-
-	return fmt.Errorf("not implemented")
-}
-
-type MigrateDownOptions struct {
-	Driver  plugin.DriverInstance
-	Set     *config.MigrationSet
-	Version string
-}
-
-func (m *Migrator) MigrateDown(ctx context.Context, config *config.Config, opts MigrateDownOptions) error {
-	fmtx.WriteSuccess("Executing Migrate.Down with Driver=%s, Set=%s, Version=%s", opts.Driver.Config.Metadata.Name, opts.Set.Metadata.Name, opts.Version)
-
-	return fmt.Errorf("not implemented")
-}
-
-type MigrateStatusOptions struct {
-	Driver plugin.DriverInstance
-	Set    *config.MigrationSet
-}
-
-func (m *Migrator) MigrateStatus(ctx context.Context, config *config.Config, opts MigrateStatusOptions) error {
-	fmtx.WriteSuccess("Executing Migrate.Status with Driver=%s, Set=%s", opts.Driver.Config.Metadata.Name, opts.Set.Metadata.Name)
-
-	nav := NewNavigator(opts.Driver, config, plugin.DriverExecutionContext{
-		Prefix: opts.Set.Spec.Namespace.Prefix,
-		Schema: opts.Set.Spec.Namespace.Schema,
-	})
-	conn, close, err := nav.Open(ctx)
-	if err != nil {
-		return err
-	}
-	defer close()
-
-	err = nav.Ready(ctx, conn)
-	if err != nil {
-		return err
-	}
-
 	err = nav.Drive(ctx, conn, func() error {
 		_, err := nav.ComputeState(ctx, conn)
 		if err != nil {
@@ -113,5 +54,111 @@ func (m *Migrator) MigrateStatus(ctx context.Context, config *config.Config, opt
 
 		return nil
 	})
-	return err
+	if err != nil {
+		return nil, err
+	}
+
+	return &MigrateAuditResult{}, nil
+}
+
+type MigrateUpOptions struct {
+	Driver plugin.DriverInstance
+	Set    *config.MigrationSet
+}
+
+type MigrateUpResult struct {
+}
+
+func (m *Migrator) MigrateUp(ctx context.Context, config *config.Config, opts MigrateUpOptions) (*MigrateUpResult, error) {
+	fmtx.WriteSuccess("Executing Migrate.Up with Driver=%s, Set=%s", opts.Driver.Config.Metadata.Name, opts.Set.Metadata.Name)
+
+	return nil, fmt.Errorf("not implemented")
+}
+
+type MigrateDownOptions struct {
+	Driver  plugin.DriverInstance
+	Set     *config.MigrationSet
+	Version string
+}
+
+type MigrateDownResult struct {
+}
+
+func (m *Migrator) MigrateDown(ctx context.Context, config *config.Config, opts MigrateDownOptions) (*MigrateDownResult, error) {
+	fmtx.WriteSuccess("Executing Migrate.Down with Driver=%s, Set=%s, Version=%s", opts.Driver.Config.Metadata.Name, opts.Set.Metadata.Name, opts.Version)
+
+	return nil, fmt.Errorf("not implemented")
+}
+
+type MigrateStatusOptions struct {
+	Driver plugin.DriverInstance
+	Set    *config.MigrationSet
+}
+
+type MigrateStatusResult struct {
+	Rows []MigrationStatusResultSingle
+}
+
+type MigrationStatusResultSingle struct {
+	Migration string
+	Status    string
+	Version   string
+}
+
+func (m *Migrator) MigrateStatus(ctx context.Context, config *config.Config, opts MigrateStatusOptions) (*MigrateStatusResult, error) {
+	fmtx.WriteSuccess("Executing Migrate.Status with Driver=%s, Set=%s", opts.Driver.Config.Metadata.Name, opts.Set.Metadata.Name)
+
+	nav := NewNavigator(opts.Driver, config, plugin.DriverExecutionContext{
+		Prefix: opts.Set.Spec.Namespace.Prefix,
+		Schema: opts.Set.Spec.Namespace.Schema,
+	})
+	conn, close, err := nav.Open(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer close()
+
+	err = nav.Ready(ctx, conn)
+	if err != nil {
+		return nil, err
+	}
+
+	var audited *Audited
+	err = nav.Drive(ctx, conn, func() error {
+		audited, err = nav.ComputeState(ctx, conn)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	rows := make([]MigrationStatusResultSingle, 0)
+    auditedSet := audited.EnsureMigrationSet(opts.Set.Metadata.Name)
+    for _, name := range opts.Set.Spec.Migrations {
+        row := MigrationStatusResultSingle{
+            Migration: name,
+            Status:    "unknown",
+            Version:  "",
+        }
+        specMigration, ok := config.Migrations[name]
+        if ok {
+            row.Version = specMigration.Spec.Version
+            row.Status = "pending"
+        } else {
+            row.Version = "<missing>"
+            row.Status = "<missing>"
+        }
+        auditedMigration, ok := auditedSet.Migrations[name]
+        if ok {
+            row.Status = auditedMigration.Status
+        }
+        rows = append(rows, row)
+    }
+
+	return &MigrateStatusResult{Rows: rows}, nil
 }

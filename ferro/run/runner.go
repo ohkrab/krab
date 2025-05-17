@@ -135,7 +135,7 @@ func (r *Runner) MustMigrationSet(cfg *config.Config, name string) *config.Migra
 // 	return fmt.Errorf("unknown command: %T", cmd)
 // }
 
-func (r *Runner) ExecuteMigrateUp(ctx context.Context, cmd *CommandMigrateUp) error {
+func (r *Runner) ExecuteMigrateUp(ctx context.Context, cmd *CommandMigrateUp) (*MigrateUpResult, error) {
 	cfg := r.MustConfig()
 	driver := r.MustDriver(r.registry, cfg, cmd.Driver)
 	set := r.MustMigrationSet(cfg, cmd.Set)
@@ -146,7 +146,7 @@ func (r *Runner) ExecuteMigrateUp(ctx context.Context, cmd *CommandMigrateUp) er
 	})
 }
 
-func (r *Runner) ExecuteMigrateDown(ctx context.Context, cmd *CommandMigrateDown) error {
+func (r *Runner) ExecuteMigrateDown(ctx context.Context, cmd *CommandMigrateDown) (*MigrateDownResult, error) {
 	cfg := r.MustConfig()
 	driver := r.MustDriver(r.registry, cfg, cmd.Driver)
 	set := r.MustMigrationSet(cfg, cmd.Set)
@@ -158,7 +158,7 @@ func (r *Runner) ExecuteMigrateDown(ctx context.Context, cmd *CommandMigrateDown
 	})
 }
 
-func (r *Runner) ExecuteMigrateStatus(ctx context.Context, cmd *CommandMigrateStatus) error {
+func (r *Runner) ExecuteMigrateStatus(ctx context.Context, cmd *CommandMigrateStatus) (*MigrateStatusResult, error) {
 	cfg := r.MustConfig()
 	driver := r.MustDriver(r.registry, cfg, cmd.Driver)
 	set := r.MustMigrationSet(cfg, cmd.Set)
@@ -169,7 +169,7 @@ func (r *Runner) ExecuteMigrateStatus(ctx context.Context, cmd *CommandMigrateSt
 	})
 }
 
-func (r *Runner) ExecuteMigrateAudit(ctx context.Context, cmd *CommandMigrateAudit) (*Audited, error) {
+func (r *Runner) ExecuteMigrateAudit(ctx context.Context, cmd *CommandMigrateAudit) (*MigrateAuditResult, error) {
 	cfg := r.MustConfig()
 	driver := r.MustDriver(r.registry, cfg, cmd.Driver)
 	set := r.MustMigrationSet(cfg, cmd.Set)
