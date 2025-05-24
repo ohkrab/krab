@@ -19,3 +19,8 @@ node_modules/
 views/*_templ.go
 /dist/
 .aider*
+
+# this is normally included in vcs, but the ferro project alone
+# ignores it for the purpose of development and testing
+.ferro/
+#
