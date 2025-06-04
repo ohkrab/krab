@@ -32,6 +32,12 @@ type AuditedMigration struct {
 	Status  string
 }
 
+const (
+    AuditStatusStarted   = "started"
+    AuditStatusCompleted = "completed"
+    AuditStatusFailed    = "failed"
+)
+
 func NewNavigator(driver plugin.DriverInstance, config *config.Config, execCtx plugin.DriverExecutionContext) *Navigator {
 	return &Navigator{
 		driver:  driver,
@@ -108,22 +114,22 @@ func (n *Navigator) ComputeState(ctx context.Context, conn plugin.DriverConnecti
 		case "migration.up.started":
 			set := audited.EnsureMigrationSet(log.GetData("set"))
 			migration := set.EnsureMigration(log.GetData("version"))
-			migration.Status = "started"
+			migration.Status = AuditStatusStarted
 
 		case "migration.up.completed":
 			set := audited.EnsureMigrationSet(log.GetData("set"))
 			migration := set.EnsureMigration(log.GetData("version"))
-			migration.Status = "completed"
+			migration.Status = AuditStatusCompleted
 
 		case "migration.up.failed":
 			set := audited.EnsureMigrationSet(log.GetData("set"))
 			migration := set.EnsureMigration(log.GetData("version"))
-			migration.Status = "failed"
+			migration.Status = AuditStatusFailed
 
 		case "migration.down.started":
 			set := audited.EnsureMigrationSet(log.GetData("set"))
 			migration := set.EnsureMigration(log.GetData("version"))
-			migration.Status = "started"
+			migration.Status = AuditStatusStarted
 
 		case "migration.down.completed":
 			set := audited.EnsureMigrationSet(log.GetData("set"))
