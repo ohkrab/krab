@@ -31,7 +31,7 @@ func TestRunner_MigrationAuditLog(t *testing.T) {
 		Set:    "public",
 	}
 
-    err := runner.Execute(context.Background(), cmd)
+    _, err := runner.ExecuteMigrateUp(context.Background(), cmd)
     expecto.NoErr(t, "runner execution", err)
 
 	// builder := NewBuilder(fs, parsed, plugins.New())
@@ -87,16 +87,15 @@ spec:
 		Driver: db.clientDriverName,
 		Set:    "public",
 	}
-	err := runner.Execute(ctx, cmd, nil)
+	_, err := runner.ExecuteMigrateUp(ctx, cmd, nil)
 	expecto.NoErr(t, "[migrate.up] runner execution", err)
 
-    err = runner.Execute(ctx, &CommandMigrateAudit{
+    _, err = runner.ExecuteMigrateAudit(ctx, &CommandMigrateAudit{
         Driver: db.clientDriverName,
         Set:    "public",
         N: 0,
     }, nil)
     expecto.NoErr(t, "[audit] runner execution", err)
-
 
 	// Get driver connection to check audit log entries
 	driverInstance, err := runner.getDriverInstance(ctx, db.clientDriverName)

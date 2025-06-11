@@ -115,26 +115,6 @@ func (r *Runner) MustMigrationSet(cfg *config.Config, name string) *config.Migra
 	return set
 }
 
-// func (r *Runner) Execute(ctx context.Context, cmd Command, handler CommandHandler) error {
-// 	switch cmd := cmd.(type) {
-// 	case *CommandMigrateUp:
-// 		return r.ExecuteMigrateUp(ctx, cmd)
-// 	case *CommandMigrateDown:
-// 		return r.ExecuteMigrateDown(ctx, cmd)
-// 	case *CommandMigrateStatus:
-// 		return r.ExecuteMigrateStatus(ctx, cmd)
-//
-// 	case *CommandMigrateAudit:
-// 		result, err := r.ExecuteMigrateAudit(ctx, cmd)
-// 		if err != nil {
-// 			return err
-// 		}
-// 		handler.HandleMigrateAudit(result)
-// 	}
-//
-// 	return fmt.Errorf("unknown command: %T", cmd)
-// }
-
 func (r *Runner) ExecuteMigrateUp(ctx context.Context, cmd *CommandMigrateUp) (*MigrateUpResult, error) {
 	cfg := r.MustConfig()
 	driver := r.MustDriver(r.registry, cfg, cmd.Driver)

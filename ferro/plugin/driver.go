@@ -106,4 +106,12 @@ type DriverConnection interface {
 	UnlockAuditLog(ctx context.Context, execCtx DriverExecutionContext, lock DriverAuditLock) error
 	AppendAuditLog(ctx context.Context, execCtx DriverExecutionContext, log DriverAuditLog) error
 	ReadAuditLogs(ctx context.Context, execCtx DriverExecutionContext) ([]DriverAuditLog, error)
+	Query(execCtx DriverExecutionContext) DriverQuery
+}
+
+type DriverQuery interface {
+	Begin(ctx context.Context) (DriverQuery, error)
+	Commit(ctx context.Context) error
+	Rollback(ctx context.Context) error
+	Exec(ctx context.Context, query string, args ...any) error
 }

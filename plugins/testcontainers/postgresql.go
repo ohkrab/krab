@@ -204,14 +204,14 @@ func (c *TestContainerPostgreSQLDriverConnection) LockAuditLog(ctx context.Conte
 		c.quoteIdentifier(plugin.DriverAuditLockColumnData.Name),
 	)
 
-    _, err := c.Conn.Exec(ctx, sql, values)
-    var pgErr *pgconn.PgError
-    if errors.As(err, &pgErr) {
-        if pgErr.Code == "23505" { // unique violation
-            return plugin.ErrAuditAlreadyLocked
-        }
-        return err
-    }
+	_, err := c.Conn.Exec(ctx, sql, values)
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) {
+		if pgErr.Code == "23505" { // unique violation
+			return plugin.ErrAuditAlreadyLocked
+		}
+		return err
+	}
 
 	if err != nil {
 		return err
@@ -234,6 +234,10 @@ func (c *TestContainerPostgreSQLDriverConnection) UnlockAuditLog(ctx context.Con
 		return err
 	}
 	return nil
+}
+
+func (c *TestContainerPostgreSQLDriverConnection) Query(execCtx plugin.DriverExecutionContext) plugin.DriverQuery {
+	return &TestContainerPostgreSQLQuery{conn: c, tx: nil}
 }
 
 func (c *TestContainerPostgreSQLDriverConnection) quoteIdentifier(ident string) string {
@@ -267,4 +271,60 @@ func (c *TestContainerPostgreSQLDriverConnection) sqlTableName(execCtx plugin.Dr
 		fullTableName = pgx.Identifier{execCtx.Schema, fullTableName[0]}
 	}
 	return fullTableName.Sanitize()
+}
+
+type TestContainerPostgreSQLQuery struct {
+	conn *TestContainerPostgreSQLDriverConnection
+	tx   pgx.Tx
+}
+
+func (q *TestContainerPostgreSQLQuery) Exec(ctx context.Context, query string, args ...any) error {
+	if q.tx != nil {
+		_, err := q.tx.Exec(ctx, query, args...)
+		if err != nil {
+			return fmt.Errorf("failed to execute query: %w", err)
+		}
+	} else {
+		_, err := q.conn.Conn.Exec(ctx, query, args...)
+		if err != nil {
+		}
+		return fmt.Errorf("failed to execute query: %w", err)
+	}
+
+	return nil
+}
+
+func (q *TestContainerPostgreSQLQuery) Begin(ctx context.Context) (plugin.DriverQuery, error) {
+	tx, err := q.conn.Conn.BeginTx(ctx, pgx.TxOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	return &TestContainerPostgreSQLQuery{
+		conn: q.conn,
+		tx:   tx,
+	}, nil
+}
+
+func (q *TestContainerPostgreSQLQuery) Commit(ctx context.Context) error {
+	if q.tx == nil {
+		return errors.New("no transaction to commit")
+	}
+	err := q.tx.Commit(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+	q.tx = nil // reset tx after Commit
+	return nil
+}
+
+func (q *TestContainerPostgreSQLQuery) Rollback(ctx context.Context) error {
+	if q.tx == nil {
+		return errors.New("no transaction to rollback")
+	}
+	err := q.tx.Rollback(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to rollback transaction: %w", err)
+	}
+	q.tx = nil // reset tx after Rollback
+	return nil
 }

@@ -49,3 +49,26 @@ func (c *SQLiteDriverConnection) ReadAuditLogs(ctx context.Context, execCtx plug
 func (c *SQLiteDriverConnection) UnlockAuditLog(ctx context.Context, execCtx plugin.DriverExecutionContext, lock plugin.DriverAuditLock) error {
 	return fmt.Errorf("not implemented")
 }
+
+func (c *SQLiteDriverConnection) Query(execCtx plugin.DriverExecutionContext) plugin.DriverQuery {
+    return &SQLiteDriverQuery{}
+}
+
+type SQLiteDriverQuery struct {}
+
+func (q *SQLiteDriverQuery) Exec(ctx context.Context, query string, args ...any) error {
+    return fmt.Errorf("not implemented")
+}
+
+func (q *SQLiteDriverQuery) Begin(ctx context.Context) (plugin.DriverQuery, error) {
+    return nil, fmt.Errorf("not implemented")
+}
+
+func (q *SQLiteDriverQuery) Commit(ctx context.Context) error {
+    return fmt.Errorf("not implemented")
+}
+
+func (q *SQLiteDriverQuery) Rollback(ctx context.Context) error {
+    return fmt.Errorf("not implemented")
+}
+

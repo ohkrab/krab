@@ -3,6 +3,7 @@ package run
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/ohkrab/krab/ferro/config"
 	"github.com/ohkrab/krab/ferro/plugin"
@@ -101,7 +102,7 @@ func (m *Migrator) MigrateUp(ctx context.Context, cfg *config.Config, opts Migra
 				auditedMigration, ok := auditedSet.Migrations[name]
 				if ok {
 					if auditedMigration.Status == AuditStatusFailed {
-                        return fmt.Errorf("exec: Migration %s is in a failed state, please fix the migration before proceeding", name)
+						return fmt.Errorf("exec: Migration %s is in a failed state, please fix the migration before proceeding", name)
 					}
 				} else {
 					pendingMigrations = append(pendingMigrations, specMigration)
@@ -112,10 +113,48 @@ func (m *Migrator) MigrateUp(ctx context.Context, cfg *config.Config, opts Migra
 		}
 
 		for _, migration := range pendingMigrations {
+			started := plugin.DriverAuditLog{
+				ID:        0,
+				AppliedAt: time.Now().UTC(),
+				Event:     MigrationUpStartedEvent,
+				Data: map[string]any{
+					"set":       opts.Set.Metadata.Name,
+					"migration": migration.Metadata.Name,
+					"version":   migration.Spec.Version,
+				},
+				Metadata: map[string]any{},
+			}
+			err := nav.Mark(ctx, conn, started)
+			if err != nil {
+				return fmt.Errorf("exec: Failed to mark migration `%s` as started: %w", migration.Metadata.Name, err)
+			}
 			fmtx.WriteInfo("Executing migration: %s", migration.Metadata.Name)
-            // mark as started
-            // execute the SQL migration
-            // mark as completed or failed
+
+            nav.WithTx(ctx, conn, true, func(query plugin.DriverQuery) error {
+                return query.Exec(ctx, "x")
+            })
+
+			stopped := plugin.DriverAuditLog{
+				ID:        0,
+				AppliedAt: time.Now().UTC(),
+				Event:     "",
+				Data: map[string]any{
+					"set":       opts.Set.Metadata.Name,
+					"migration": migration.Metadata.Name,
+					"version":   migration.Spec.Version,
+				},
+				Metadata: map[string]any{},
+			}
+            if err != nil {
+                stopped.Event = MigrationUpFailedEvent
+                stopped.Metadata["error"] = err.Error()
+            } else {
+                stopped.Event = MigrationUpCompletedEvent
+            }
+            err = nav.Mark(ctx, conn, stopped)
+            if err != nil {
+                return fmt.Errorf("exec: Failed to mark migration `%s` as completed: %w", migration.Metadata.Name, err)
+            }
 		}
 
 		return nil

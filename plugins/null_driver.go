@@ -38,6 +38,10 @@ func (c *NullDriverConnection) UpsertAuditLogTable(ctx context.Context, execCtx 
 	return ErrDriverNotSelected
 }
 
+func (c *NullDriverConnection) UpsertAuditLockTable(ctx context.Context, execCtx plugin.DriverExecutionContext) error {
+    return ErrDriverNotSelected
+}
+
 func (c *NullDriverConnection) AppendAuditLog(ctx context.Context, execCtx plugin.DriverExecutionContext, log plugin.DriverAuditLog) error {
 	return ErrDriverNotSelected
 }
@@ -49,3 +53,26 @@ func (c *NullDriverConnection) ReadAuditLogs(ctx context.Context, execCtx plugin
 func (c *NullDriverConnection) UnlockAuditLog(ctx context.Context, execCtx plugin.DriverExecutionContext, lock plugin.DriverAuditLock) error {
 	return ErrDriverNotSelected
 }
+
+func (c *NullDriverConnection) Query(execCtx plugin.DriverExecutionContext) plugin.DriverQuery {
+    return &NullDriverQuery{}
+}
+
+type NullDriverQuery struct {}
+
+func (q *NullDriverQuery) Exec(ctx context.Context, query string, args ...any) error {
+    return ErrDriverNotSelected
+}
+
+func (q *NullDriverQuery) Begin(ctx context.Context) (plugin.DriverQuery, error) {
+    return nil, ErrDriverNotSelected
+}
+
+func (q *NullDriverQuery) Commit(ctx context.Context) error {
+    return ErrDriverNotSelected
+}
+
+func (q *NullDriverQuery) Rollback(ctx context.Context) error {
+    return ErrDriverNotSelected
+}
+

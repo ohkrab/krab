@@ -33,9 +33,16 @@ type AuditedMigration struct {
 }
 
 const (
-    AuditStatusStarted   = "started"
-    AuditStatusCompleted = "completed"
-    AuditStatusFailed    = "failed"
+	AuditStatusStarted   = "started"
+	AuditStatusCompleted = "completed"
+	AuditStatusFailed    = "failed"
+
+	MigrationUpStartedEvent     = "migration.up.started"
+	MigrationUpCompletedEvent   = "migration.up.completed"
+	MigrationUpFailedEvent      = "migration.up.failed"
+	MigrationDownStartedEvent   = "migration.down.started"
+	MigrationDownCompletedEvent = "migration.down.completed"
+	MigrationDownFailedEvent    = "migration.down.failed"
 )
 
 func NewNavigator(driver plugin.DriverInstance, config *config.Config, execCtx plugin.DriverExecutionContext) *Navigator {
@@ -99,6 +106,48 @@ func (n *Navigator) Drive(ctx context.Context, conn plugin.DriverConnection, run
 	return nil
 }
 
+func (n *Navigator) Mark(ctx context.Context, conn plugin.DriverConnection, log plugin.DriverAuditLog) error {
+    if log.Event == "" {
+        return fmt.Errorf("fatal: audit log .Event cannot be empty (this is a bug that should be reported)")
+    }
+	if err := conn.AppendAuditLog(ctx, n.execCtx, log); err != nil {
+		return fmt.Errorf("fatal: failed to append audit log: %w", err)
+	}
+	return nil
+}
+
+func (n *Navigator) WithTx(ctx context.Context, conn plugin.DriverConnection, withTx bool, yield func(query plugin.DriverQuery) error) error {
+	tx := conn.Query(n.execCtx)
+
+	if withTx {
+		newTx, err := tx.Begin(ctx)
+        tx = newTx
+		if err != nil {
+			return fmt.Errorf("failed to begin transaction: %w", err)
+		}
+	}
+
+	err := yield(tx)
+
+	if withTx {
+		if err == nil {
+			if err := tx.Commit(ctx); err != nil {
+				return fmt.Errorf("failed to commit transaction: %w", err)
+			}
+		} else {
+			if rollbackErr := tx.Rollback(ctx); rollbackErr != nil {
+				return fmt.Errorf("failed to rollback transaction: %w", rollbackErr)
+			}
+		}
+	}
+
+    if err != nil {
+        return fmt.Errorf("exec: %w", err)
+    }
+
+	return nil
+}
+
 func (n *Navigator) ComputeState(ctx context.Context, conn plugin.DriverConnection) (*Audited, error) {
 	logs, err := conn.ReadAuditLogs(ctx, n.execCtx)
 	if err != nil {
@@ -111,31 +160,31 @@ func (n *Navigator) ComputeState(ctx context.Context, conn plugin.DriverConnecti
 
 	for _, log := range logs {
 		switch log.Event {
-		case "migration.up.started":
+		case MigrationUpStartedEvent:
 			set := audited.EnsureMigrationSet(log.GetData("set"))
 			migration := set.EnsureMigration(log.GetData("version"))
 			migration.Status = AuditStatusStarted
 
-		case "migration.up.completed":
+		case MigrationUpCompletedEvent:
 			set := audited.EnsureMigrationSet(log.GetData("set"))
 			migration := set.EnsureMigration(log.GetData("version"))
 			migration.Status = AuditStatusCompleted
 
-		case "migration.up.failed":
+		case MigrationUpFailedEvent:
 			set := audited.EnsureMigrationSet(log.GetData("set"))
 			migration := set.EnsureMigration(log.GetData("version"))
 			migration.Status = AuditStatusFailed
 
-		case "migration.down.started":
+		case MigrationDownStartedEvent:
 			set := audited.EnsureMigrationSet(log.GetData("set"))
 			migration := set.EnsureMigration(log.GetData("version"))
 			migration.Status = AuditStatusStarted
 
-		case "migration.down.completed":
+		case MigrationDownCompletedEvent:
 			set := audited.EnsureMigrationSet(log.GetData("set"))
 			set.DeleteMigration(log.GetData("version"))
 
-		case "migration.down.failed":
+		case MigrationDownFailedEvent:
 			continue
 		}
 	}
