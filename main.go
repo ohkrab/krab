@@ -120,15 +120,18 @@ func main() {
 					event := log.Event
 					switch log.Event {
 					case run.MigrationUpCompletedEvent, run.MigrationDownCompletedEvent:
-						event = fmtx.Success("%s", log.Event)
+						event = fmtx.Success("%-24s", log.Event)
 
 					case run.MigrationUpFailedEvent, run.MigrationDownFailedEvent:
-                        event = fmtx.Danger("%s", log.Event)
+						event = fmtx.Danger("%-24s", log.Event)
+
+					default:
+						event = fmt.Sprintf("%-24s", log.Event)
 					}
 
 					fmtx.WriteLine(
-						"%d %s %-22s %s %s",
-                        log.ID,
+						"%d %s %s %s %s",
+						log.ID,
 						log.AppliedAt.Format("2006-01-02 15:04:05"),
 						event,
 						log.GetData("migration"),
@@ -181,6 +184,7 @@ func main() {
 			if err != nil {
 				return err
 			}
+			fmtx.WriteSuccess("Migration %s rolled back successfully", runCmd.Version)
 
 			return nil
 		},

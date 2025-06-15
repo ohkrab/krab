@@ -102,6 +102,8 @@ func (n *Navigator) Drive(ctx context.Context, conn plugin.DriverConnection, run
 			os.Exit(2)
 		}
 	}()
+    // TODO: handle the case where the lock is already held by another process
+    // TODO: should we always release the lock, or only if the run function succeeds?
 	err = run()
 	if err != nil {
 		return fmt.Errorf("driver failed to run: %w", err)

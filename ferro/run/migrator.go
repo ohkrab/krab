@@ -114,6 +114,7 @@ func (m *Migrator) MigrateUp(ctx context.Context, cfg *config.Config, opts Migra
 		pendingMigrations := make([]*config.Migration, 0)
 		for _, name := range opts.Set.Spec.Migrations {
 			specMigration, ok := cfg.Migrations[name]
+            // TODO: verify other states
 			if ok {
 				auditedMigration, ok := auditedSet.Migrations[MigrationVersion(specMigration.Spec.Version)]
 				if ok {
@@ -144,7 +145,7 @@ func (m *Migrator) MigrateUp(ctx context.Context, cfg *config.Config, opts Migra
 			}
 			err := nav.Mark(ctx, conn, started)
 			if err != nil {
-				return fmt.Errorf("exec: Failed to mark migration `%s` as started: %w", pending.Metadata.Name, err)
+				return fmt.Errorf("exec: Failed to mark migration(up) `%s` as started: %w", pending.Metadata.Name, err)
 			}
 			fmtx.WriteInfo("Executing migration: %s", pending.Metadata.Name)
 
@@ -171,7 +172,7 @@ func (m *Migrator) MigrateUp(ctx context.Context, cfg *config.Config, opts Migra
 			}
 			err = nav.Mark(ctx, conn, stopped)
 			if err != nil {
-				return fmt.Errorf("critical(inconsistent state): Failed to mark migration `%s` as completed/failed: %w", pending.Metadata.Name, err)
+				return fmt.Errorf("critical(inconsistent state): Failed to mark migration(up) `%s` as completed/failed: %w", pending.Metadata.Name, err)
 			}
 		}
 
@@ -196,7 +197,106 @@ type MigrateDownResult struct {
 func (m *Migrator) MigrateDown(ctx context.Context, cfg *config.Config, opts MigrateDownOptions) (*MigrateDownResult, error) {
 	fmtx.WriteSuccess("Executing Migrate.Down with Driver=%s, Set=%s, Version=%s", opts.Driver.Config.Metadata.Name, opts.Set.Metadata.Name, opts.Version)
 
-	return nil, fmt.Errorf("not implemented")
+	nav := NewNavigator(opts.Driver, cfg, plugin.DriverExecutionContext{
+		Prefix: opts.Set.Spec.Namespace.Prefix,
+		Schema: opts.Set.Spec.Namespace.Schema,
+	})
+	conn, close, err := nav.Open(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer close()
+
+	err = nav.Ready(ctx, conn)
+	if err != nil {
+		return nil, err
+	}
+
+	var result MigrateDownResult
+	err = nav.Drive(ctx, conn, func() error {
+		audited, err := nav.ComputeState(ctx, conn)
+		if err != nil {
+			return err
+		}
+		auditedSet := audited.EnsureMigrationSet(opts.Set.Metadata.Name)
+		appliedMigrations := make([]*config.Migration, 0)
+        // TODO: verify other states
+		for _, name := range opts.Set.Spec.Migrations {
+			specMigration, ok := cfg.Migrations[name]
+			if ok {
+				auditedMigration, ok := auditedSet.Migrations[MigrationVersion(specMigration.Spec.Version)]
+				if ok {
+					if auditedMigration.Status == AuditStatusFailed {
+						return fmt.Errorf("exec: Migration %s is in a failed state, please fix the migration before proceeding", name)
+					} else {
+                        appliedMigrations = append(appliedMigrations, specMigration)
+                    }
+				}
+			} else {
+				return fmt.Errorf("exec: Migration %s not found in config", name)
+			}
+		}
+
+        var downMigration *config.Migration
+		for _, applied := range appliedMigrations {
+            if applied.Spec.Version == opts.Version {
+                downMigration = applied
+                break
+            }
+        }
+        if downMigration == nil {
+            return fmt.Errorf("exec: Migration with version %s not found in applied migrations", opts.Version)
+        }
+
+        started := plugin.DriverAuditLog{
+            ID:        audited.LastID + 1,
+            AppliedAt: time.Now().UTC(),
+            Event:     MigrationDownStartedEvent,
+            Data: map[string]any{
+                "set":       opts.Set.Metadata.Name,
+                "migration": downMigration.Metadata.Name,
+                "version":   downMigration.Spec.Version,
+            },
+            Metadata: map[string]any{},
+        }
+        err = nav.Mark(ctx, conn, started)
+        if err != nil {
+            return fmt.Errorf("exec: Failed to mark migration(down) `%s` as started: %w", downMigration.Metadata.Name, err)
+        }
+
+        err = nav.WithTx(ctx, conn, true, func(query plugin.DriverQuery) error {
+            return query.Exec(ctx, downMigration.Spec.Run.Down.Sql)
+        })
+
+        stopped := plugin.DriverAuditLog{
+            ID:        started.ID + 1,
+            AppliedAt: time.Now().UTC(),
+            Event:     "",
+            Data: map[string]any{
+                "set":       opts.Set.Metadata.Name,
+                "migration": downMigration.Metadata.Name,
+                "version":   downMigration.Spec.Version,
+            },
+            Metadata: map[string]any{},
+        }
+        if err != nil {
+            stopped.Event = MigrationDownFailedEvent
+            stopped.Metadata["error"] = err.Error()
+        } else {
+            stopped.Event = MigrationDownCompletedEvent
+        }
+        err = nav.Mark(ctx, conn, stopped)
+        if err != nil {
+            return fmt.Errorf("critical(inconsistent state): Failed to mark migration(down) `%s` as completed/failed: %w", downMigration.Metadata.Name, err)
+        }
+
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &result, nil
 }
 
 type MigrateStatusOptions struct {
