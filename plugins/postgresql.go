@@ -126,7 +126,10 @@ func (c *PostgreSQLDriverConnection) ReadAuditLogs(ctx context.Context, execCtx 
 		c.quoteIdentifier(plugin.DriverAuditColumnData.Name),
 		c.quoteIdentifier(plugin.DriverAuditColumnMetadata.Name),
 	}
-	rows, err := c.Conn.Query(ctx, fmt.Sprintf(sql, strings.Join(columns, ","), c.sqlTableName(execCtx, plugin.DriverAuditLogTableName)))
+	rows, err := c.Conn.Query(
+		ctx,
+		fmt.Sprintf(sql, strings.Join(columns, ","), c.sqlTableName(execCtx, plugin.DriverAuditLogTableName)),
+	)
 	if err != nil {
 		return nil, fmt.Errorf("query: %w", err)
 	}

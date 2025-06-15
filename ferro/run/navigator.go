@@ -18,17 +18,20 @@ type Navigator struct {
 	execCtx plugin.DriverExecutionContext
 }
 
+type MigrationVersion string
+
 type Audited struct {
+	Raw    []plugin.DriverAuditLog
 	Sets   map[string]*AuditedMigrationSet
-	LastID uint64
+	LastID int64
 }
 
 type AuditedMigrationSet struct {
-	Migrations map[string]*AuditedMigration
+	Migrations map[MigrationVersion]*AuditedMigration
 }
 
 type AuditedMigration struct {
-	Version string
+	Version MigrationVersion
 	Status  string
 }
 
@@ -107,9 +110,9 @@ func (n *Navigator) Drive(ctx context.Context, conn plugin.DriverConnection, run
 }
 
 func (n *Navigator) Mark(ctx context.Context, conn plugin.DriverConnection, log plugin.DriverAuditLog) error {
-    if log.Event == "" {
-        return fmt.Errorf("fatal: audit log .Event cannot be empty (this is a bug that should be reported)")
-    }
+	if log.Event == "" {
+		return fmt.Errorf("fatal: audit log .Event cannot be empty (this is a bug that should be reported)")
+	}
 	if err := conn.AppendAuditLog(ctx, n.execCtx, log); err != nil {
 		return fmt.Errorf("fatal: failed to append audit log: %w", err)
 	}
@@ -121,7 +124,7 @@ func (n *Navigator) WithTx(ctx context.Context, conn plugin.DriverConnection, wi
 
 	if withTx {
 		newTx, err := tx.Begin(ctx)
-        tx = newTx
+		tx = newTx
 		if err != nil {
 			return fmt.Errorf("failed to begin transaction: %w", err)
 		}
@@ -141,9 +144,9 @@ func (n *Navigator) WithTx(ctx context.Context, conn plugin.DriverConnection, wi
 		}
 	}
 
-    if err != nil {
-        return fmt.Errorf("exec: %w", err)
-    }
+	if err != nil {
+		return fmt.Errorf("exec: %w", err)
+	}
 
 	return nil
 }
@@ -155,34 +158,38 @@ func (n *Navigator) ComputeState(ctx context.Context, conn plugin.DriverConnecti
 	}
 
 	audited := &Audited{
-		Sets: make(map[string]*AuditedMigrationSet),
+		Sets:   make(map[string]*AuditedMigrationSet),
+		Raw:    logs,
+		LastID: 0,
 	}
 
 	for _, log := range logs {
+		audited.LastID = log.ID
+
 		switch log.Event {
 		case MigrationUpStartedEvent:
 			set := audited.EnsureMigrationSet(log.GetData("set"))
-			migration := set.EnsureMigration(log.GetData("version"))
+			migration := set.EnsureMigration(MigrationVersion(log.GetData("version")))
 			migration.Status = AuditStatusStarted
 
 		case MigrationUpCompletedEvent:
 			set := audited.EnsureMigrationSet(log.GetData("set"))
-			migration := set.EnsureMigration(log.GetData("version"))
+			migration := set.EnsureMigration(MigrationVersion(log.GetData("version")))
 			migration.Status = AuditStatusCompleted
 
 		case MigrationUpFailedEvent:
 			set := audited.EnsureMigrationSet(log.GetData("set"))
-			migration := set.EnsureMigration(log.GetData("version"))
+			migration := set.EnsureMigration(MigrationVersion(log.GetData("version")))
 			migration.Status = AuditStatusFailed
 
 		case MigrationDownStartedEvent:
 			set := audited.EnsureMigrationSet(log.GetData("set"))
-			migration := set.EnsureMigration(log.GetData("version"))
+			migration := set.EnsureMigration(MigrationVersion(log.GetData("version")))
 			migration.Status = AuditStatusStarted
 
 		case MigrationDownCompletedEvent:
 			set := audited.EnsureMigrationSet(log.GetData("set"))
-			set.DeleteMigration(log.GetData("version"))
+			set.DeleteMigration(MigrationVersion(log.GetData("version")))
 
 		case MigrationDownFailedEvent:
 			continue
@@ -196,18 +203,18 @@ func (a *Audited) EnsureMigrationSet(name string) *AuditedMigrationSet {
 	set, exists := a.Sets[name]
 	if !exists {
 		set = &AuditedMigrationSet{
-			Migrations: make(map[string]*AuditedMigration),
+			Migrations: make(map[MigrationVersion]*AuditedMigration),
 		}
 		a.Sets[name] = set
 	}
 	return set
 }
 
-func (a *AuditedMigrationSet) DeleteMigration(version string) {
+func (a *AuditedMigrationSet) DeleteMigration(version MigrationVersion) {
 	delete(a.Migrations, version)
 }
 
-func (a *AuditedMigrationSet) EnsureMigration(version string) *AuditedMigration {
+func (a *AuditedMigrationSet) EnsureMigration(version MigrationVersion) *AuditedMigration {
 	migration, exists := a.Migrations[version]
 	if !exists {
 		migration = &AuditedMigration{

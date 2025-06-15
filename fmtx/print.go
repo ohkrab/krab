@@ -55,3 +55,25 @@ func ColoredBlockWarning(format string, a ...any) string {
 		a...,
 	)
 }
+
+func Danger(format string, a ...any) string {
+    return fmt.Sprintf(
+        fmt.Sprint(ctc.ForegroundRed, format, ctc.Reset),
+        a...,
+    )
+}
+
+func Success(format string, a ...any) string {
+    return fmt.Sprintf(
+        fmt.Sprint(ctc.ForegroundGreen, format, ctc.Reset),
+        a...,
+    )
+}
+
+func Warning(format string, a ...any) string {
+    return fmt.Sprintf(
+        fmt.Sprint(ctc.ForegroundYellow, format, ctc.Reset),
+        a...,
+    )
+}
+

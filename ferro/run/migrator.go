@@ -27,6 +27,7 @@ type MigrateAuditOptions struct {
 }
 
 type MigrateAuditResult struct {
+	Logs []plugin.DriverAuditLog
 }
 
 func (m *Migrator) MigrateAudit(ctx context.Context, cfg *config.Config, opts MigrateAuditOptions) (*MigrateAuditResult, error) {
@@ -47,11 +48,25 @@ func (m *Migrator) MigrateAudit(ctx context.Context, cfg *config.Config, opts Mi
 		return nil, err
 	}
 
+	result := &MigrateAuditResult{
+		Logs: make([]plugin.DriverAuditLog, 0),
+	}
+
 	err = nav.Drive(ctx, conn, func() error {
-		_, err := nav.ComputeState(ctx, conn)
+		audited, err := nav.ComputeState(ctx, conn)
 		if err != nil {
 			return err
 		}
+
+		for _, log := range audited.Raw {
+			if log.Data["set"] == opts.Set.Metadata.Name {
+				result.Logs = append(result.Logs, log)
+			}
+		}
+
+        if opts.FilterLastN > 0 {
+            result.Logs = result.Logs[len(result.Logs)-int(opts.FilterLastN):]
+        }
 
 		return nil
 	})
@@ -59,7 +74,7 @@ func (m *Migrator) MigrateAudit(ctx context.Context, cfg *config.Config, opts Mi
 		return nil, err
 	}
 
-	return &MigrateAuditResult{}, nil
+	return result, nil
 }
 
 type MigrateUpOptions struct {
@@ -68,6 +83,7 @@ type MigrateUpOptions struct {
 }
 
 type MigrateUpResult struct {
+	WasPending int
 }
 
 func (m *Migrator) MigrateUp(ctx context.Context, cfg *config.Config, opts MigrateUpOptions) (*MigrateUpResult, error) {
@@ -99,7 +115,7 @@ func (m *Migrator) MigrateUp(ctx context.Context, cfg *config.Config, opts Migra
 		for _, name := range opts.Set.Spec.Migrations {
 			specMigration, ok := cfg.Migrations[name]
 			if ok {
-				auditedMigration, ok := auditedSet.Migrations[name]
+				auditedMigration, ok := auditedSet.Migrations[MigrationVersion(specMigration.Spec.Version)]
 				if ok {
 					if auditedMigration.Status == AuditStatusFailed {
 						return fmt.Errorf("exec: Migration %s is in a failed state, please fix the migration before proceeding", name)
@@ -112,49 +128,51 @@ func (m *Migrator) MigrateUp(ctx context.Context, cfg *config.Config, opts Migra
 			}
 		}
 
-		for _, migration := range pendingMigrations {
+		result.WasPending = len(pendingMigrations)
+
+		for _, pending := range pendingMigrations {
 			started := plugin.DriverAuditLog{
-				ID:        0,
+				ID:        audited.LastID + 1,
 				AppliedAt: time.Now().UTC(),
 				Event:     MigrationUpStartedEvent,
 				Data: map[string]any{
 					"set":       opts.Set.Metadata.Name,
-					"migration": migration.Metadata.Name,
-					"version":   migration.Spec.Version,
+					"migration": pending.Metadata.Name,
+					"version":   pending.Spec.Version,
 				},
 				Metadata: map[string]any{},
 			}
 			err := nav.Mark(ctx, conn, started)
 			if err != nil {
-				return fmt.Errorf("exec: Failed to mark migration `%s` as started: %w", migration.Metadata.Name, err)
+				return fmt.Errorf("exec: Failed to mark migration `%s` as started: %w", pending.Metadata.Name, err)
 			}
-			fmtx.WriteInfo("Executing migration: %s", migration.Metadata.Name)
+			fmtx.WriteInfo("Executing migration: %s", pending.Metadata.Name)
 
-            nav.WithTx(ctx, conn, true, func(query plugin.DriverQuery) error {
-                return query.Exec(ctx, "x")
-            })
+			err = nav.WithTx(ctx, conn, true, func(query plugin.DriverQuery) error {
+				return query.Exec(ctx, pending.Spec.Run.Up.Sql)
+			})
 
 			stopped := plugin.DriverAuditLog{
-				ID:        0,
+				ID:        started.ID + 1,
 				AppliedAt: time.Now().UTC(),
 				Event:     "",
 				Data: map[string]any{
 					"set":       opts.Set.Metadata.Name,
-					"migration": migration.Metadata.Name,
-					"version":   migration.Spec.Version,
+					"migration": pending.Metadata.Name,
+					"version":   pending.Spec.Version,
 				},
 				Metadata: map[string]any{},
 			}
-            if err != nil {
-                stopped.Event = MigrationUpFailedEvent
-                stopped.Metadata["error"] = err.Error()
-            } else {
-                stopped.Event = MigrationUpCompletedEvent
-            }
-            err = nav.Mark(ctx, conn, stopped)
-            if err != nil {
-                return fmt.Errorf("exec: Failed to mark migration `%s` as completed: %w", migration.Metadata.Name, err)
-            }
+			if err != nil {
+				stopped.Event = MigrationUpFailedEvent
+				stopped.Metadata["error"] = err.Error()
+			} else {
+				stopped.Event = MigrationUpCompletedEvent
+			}
+			err = nav.Mark(ctx, conn, stopped)
+			if err != nil {
+				return fmt.Errorf("critical(inconsistent state): Failed to mark migration `%s` as completed/failed: %w", pending.Metadata.Name, err)
+			}
 		}
 
 		return nil
@@ -216,10 +234,11 @@ func (m *Migrator) MigrateStatus(ctx context.Context, cfg *config.Config, opts M
 
 	var audited *Audited
 	err = nav.Drive(ctx, conn, func() error {
-		audited, err = nav.ComputeState(ctx, conn)
+		res, err := nav.ComputeState(ctx, conn)
 		if err != nil {
 			return err
 		}
+		audited = res
 
 		return nil
 	})
@@ -244,7 +263,7 @@ func (m *Migrator) MigrateStatus(ctx context.Context, cfg *config.Config, opts M
 			row.Version = "<missing>"
 			row.Status = "<missing>"
 		}
-		auditedMigration, ok := auditedSet.Migrations[name]
+		auditedMigration, ok := auditedSet.Migrations[MigrationVersion(specMigration.Spec.Version)]
 		if ok {
 			row.Status = auditedMigration.Status
 		}

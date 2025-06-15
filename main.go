@@ -104,16 +104,38 @@ func main() {
 			&cli.UintFlag{Name: "n", Usage: "Last N events to show", Required: false, Aliases: []string{"n"}, DefaultText: "0"},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
-			run := run.CommandMigrateAudit{
+			runCmd := run.CommandMigrateAudit{
 				Driver: cmd.String("driver"),
 				Set:    cmd.String("set"),
 				N:      uint(cmd.Uint("n")),
 			}
-			_, err := runner.ExecuteMigrateAudit(ctx, &run)
+			out, err := runner.ExecuteMigrateAudit(ctx, &runCmd)
 			if err != nil {
 				return err
 			}
-			fmtx.WriteSuccess("Audit logs for %s/%s", run.Driver, run.Set)
+			if len(out.Logs) == 0 {
+				fmtx.WriteSuccess("No audit logs so far")
+			} else {
+				for _, log := range out.Logs {
+					event := log.Event
+					switch log.Event {
+					case run.MigrationUpCompletedEvent, run.MigrationDownCompletedEvent:
+						event = fmtx.Success("%s", log.Event)
+
+					case run.MigrationUpFailedEvent, run.MigrationDownFailedEvent:
+                        event = fmtx.Danger("%s", log.Event)
+					}
+
+					fmtx.WriteLine(
+						"%d %s %-22s %s %s",
+                        log.ID,
+						log.AppliedAt.Format("2006-01-02 15:04:05"),
+						event,
+						log.GetData("migration"),
+						log.GetData("version"),
+					)
+				}
+			}
 
 			return nil
 		},
@@ -126,14 +148,18 @@ func main() {
 			&cli.StringFlag{Name: "set", Usage: "MigrationSet to use", Required: true, Aliases: []string{"s"}},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
-			run := run.CommandMigrateUp{
+			runCmd := run.CommandMigrateUp{
 				Driver: cmd.String("driver"),
 				Set:    cmd.String("set"),
 			}
-			_, err := runner.ExecuteMigrateUp(ctx, &run)
+			out, err := runner.ExecuteMigrateUp(ctx, &runCmd)
 			if err != nil {
 				return err
 			}
+			if out.WasPending == 0 {
+				fmtx.WriteSuccess("No pending migrations")
+			}
+
 			return nil
 		},
 	}
@@ -146,12 +172,12 @@ func main() {
 			&cli.StringFlag{Name: "version", Usage: "Version to rollback to", Required: true, Aliases: []string{"v"}},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
-			run := run.CommandMigrateDown{
+			runCmd := run.CommandMigrateDown{
 				Driver:  cmd.String("driver"),
 				Set:     cmd.String("set"),
 				Version: cmd.String("version"),
 			}
-			_, err := runner.ExecuteMigrateDown(ctx, &run)
+			_, err := runner.ExecuteMigrateDown(ctx, &runCmd)
 			if err != nil {
 				return err
 			}
@@ -167,26 +193,26 @@ func main() {
 			&cli.StringFlag{Name: "set", Usage: "MigrationSet to use", Required: true, Aliases: []string{"s"}},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
-			run := run.CommandMigrateStatus{
+			runCmd := run.CommandMigrateStatus{
 				Driver: cmd.String("driver"),
 				Set:    cmd.String("set"),
 			}
-			out, err := runner.ExecuteMigrateStatus(ctx, &run)
+			out, err := runner.ExecuteMigrateStatus(ctx, &runCmd)
 			if err != nil {
 				return err
 			}
 
-			fmtx.WriteInfo("Migrations status for %s/%s", run.Driver, run.Set)
+			fmtx.WriteInfo("Migrations status for %s/%s", runCmd.Driver, runCmd.Set)
 
 			for _, row := range out.Rows {
 				status := ""
 				switch row.Status {
 				case "pending":
-					status = fmtx.ColoredBlockWarning(" %s ", row.Status)
-                case "completed":
-                    status = fmtx.ColoredBlockSuccess(" %s ", row.Status)
-                case "failed":
-                    status = fmtx.ColoredBlockDanger(" %s ", row.Status)
+					status = fmtx.ColoredBlockWarning(" %9s ", row.Status)
+				case "completed":
+					status = fmtx.ColoredBlockSuccess(" %s ", row.Status)
+				case "failed":
+					status = fmtx.ColoredBlockDanger(" %9s ", row.Status)
 				}
 				fmtx.WriteLine(
 					"%s %-30s %s",
