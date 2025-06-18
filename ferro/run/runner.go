@@ -24,6 +24,24 @@ type Command any
 // 	HandleMigrateAudit(audited *Audited)
 // }
 
+type CommandMigrateFixUp struct {
+	Command
+
+	Driver  string
+	Set     string
+	Version string
+	Comment string
+}
+
+type CommandMigrateFixDown struct {
+	Command
+
+	Driver  string
+	Set     string
+	Version string
+    Comment string
+}
+
 type CommandMigrateStatus struct {
 	Command
 
@@ -49,9 +67,10 @@ type CommandMigrateDown struct {
 type CommandMigrateAudit struct {
 	Command
 
-	Driver string
-	Set    string
-	N      uint
+	Driver   string
+	Set      string
+	N        uint
+	FullView bool
 }
 
 func New(
@@ -113,6 +132,19 @@ func (r *Runner) MustMigrationSet(cfg *config.Config, name string) *config.Migra
 		os.Exit(1)
 	}
 	return set
+}
+
+func (r *Runner) ExecuteMigrateFixUp(ctx context.Context, cmd *CommandMigrateFixUp) (*MigrateFixUpResult, error) {
+	cfg := r.MustConfig()
+	driver := r.MustDriver(r.registry, cfg, cmd.Driver)
+	set := r.MustMigrationSet(cfg, cmd.Set)
+
+	return r.migrator.MigrateFixUp(ctx, cfg, MigrateFixUpOptions{
+		Driver:  driver,
+		Set:     set,
+		Version: cmd.Version,
+        Comment: cmd.Comment,
+	})
 }
 
 func (r *Runner) ExecuteMigrateUp(ctx context.Context, cmd *CommandMigrateUp) (*MigrateUpResult, error) {

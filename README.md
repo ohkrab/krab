@@ -9,4 +9,14 @@
 - [Examples repository](https://github.com/ohkrab/examples)
 - [GitHub packages](https://github.com/orgs/ohkrab/packages)
 - [Docker hub](https://hub.docker.com/orgs/ohkrab/repositories)
-- [Documentation](https://ohkrab.dev)
+- [Documentation](https://ferrodb.dev)
+
+## Roadmap
+
+
+todo:
+- Add checksum
+- handle failed/repairs
+- add more tests
+-
+

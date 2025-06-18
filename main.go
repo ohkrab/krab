@@ -95,19 +95,60 @@ func main() {
 			return generator.GenMigration(ctx, run.GenerateMigrationOptions{})
 		},
 	}
+
+	fixMigrationUp := &cli.Command{
+		Name:  "up",
+		Usage: "Mark UP migration as fixed",
+		Flags: []cli.Flag{
+			&cli.StringFlag{Name: "driver", Usage: "The driver to use", Required: true, Aliases: []string{"d"}},
+			&cli.StringFlag{Name: "set", Usage: "MigrationSet to use", Required: true, Aliases: []string{"s"}},
+			&cli.StringFlag{Name: "version", Usage: "Version to fix", Required: true, Aliases: []string{"v"}},
+			&cli.StringFlag{Name: "comment", Usage: "Comment for the fix", Required: false, Aliases: []string{"C"}, DefaultText: "Manually fixed", Value: "Manually fixed"},
+		},
+		Action: func(ctx context.Context, cmd *cli.Command) error {
+			runCmd := run.CommandMigrateFixUp{
+				Driver:  cmd.String("driver"),
+				Set:     cmd.String("set"),
+				Version: cmd.String("version"),
+				Comment: cmd.String("comment"),
+			}
+			_, err := runner.ExecuteMigrateFixUp(ctx, &runCmd)
+			if err != nil {
+				return err
+			}
+			fmtx.WriteSuccess("Marked as fixed successfully")
+
+			return nil
+		},
+	}
+	migrateFixGroup := &cli.Command{
+		Name:  "fix",
+		Usage: "Apply fixes to migrations",
+		Commands: []*cli.Command{
+			fixMigrationUp,
+		},
+	}
+
 	migrateAuditCmd := &cli.Command{
 		Name:  "audit",
 		Usage: "Show the audit logs",
 		Flags: []cli.Flag{
 			&cli.StringFlag{Name: "driver", Usage: "The driver to use", Required: true, Aliases: []string{"d"}},
 			&cli.StringFlag{Name: "set", Usage: "MigrationSet to use", Required: true, Aliases: []string{"s"}},
-			&cli.UintFlag{Name: "n", Usage: "Last N events to show", Required: false, Aliases: []string{"n"}, DefaultText: "0"},
+			&cli.UintFlag{Name: "n", Usage: "Last N events to show", Required: false, Aliases: []string{"n"}, DefaultText: "0", Value: 0},
+			&cli.StringFlag{Name: "f", Usage: "Format", Required: false, Aliases: []string{"f"}, DefaultText: "short", Value: "short", Validator: func(s string) error {
+				if s != "short" && s != "long" {
+					return fmt.Errorf("invalid format: %s, must be 'short' or 'long'", s)
+				}
+				return nil
+			}},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			runCmd := run.CommandMigrateAudit{
-				Driver: cmd.String("driver"),
-				Set:    cmd.String("set"),
-				N:      uint(cmd.Uint("n")),
+				Driver:   cmd.String("driver"),
+				Set:      cmd.String("set"),
+				N:        uint(cmd.Uint("n")),
+				FullView: cmd.String("f") == "long",
 			}
 			out, err := runner.ExecuteMigrateAudit(ctx, &runCmd)
 			if err != nil {
@@ -125,18 +166,47 @@ func main() {
 					case run.MigrationUpFailedEvent, run.MigrationDownFailedEvent:
 						event = fmtx.Danger("%-24s", log.Event)
 
+					case run.MigrationFixUpEvent, run.MigrationFixDownEvent:
+						event = fmtx.Warning("%-24s", log.Event)
+
 					default:
 						event = fmt.Sprintf("%-24s", log.Event)
 					}
 
+					sign := "  "
+					if log.Event == run.MigrationUpCompletedEvent {
+						sign = fmtx.Success("%-2s", "+")
+					} else if log.Event == run.MigrationDownCompletedEvent {
+						sign = fmtx.Danger("%-2s", "-")
+					} else if log.Event == run.MigrationUpFailedEvent || log.Event == run.MigrationDownFailedEvent {
+						sign = fmtx.Danger("%-2s", "!")
+					} else if log.Event == run.MigrationFixUpEvent || log.Event == run.MigrationFixDownEvent {
+						sign = fmtx.Warning("%-2s", "~")
+					}
+
 					fmtx.WriteLine(
-						"%d %s %s %s %s",
+						"%s %3d %s %s %s %s",
+						sign,
 						log.ID,
 						log.AppliedAt.Format("2006-01-02 15:04:05"),
 						event,
 						log.GetData("migration"),
 						log.GetData("version"),
 					)
+					if runCmd.FullView {
+						switch log.Event {
+						case run.MigrationUpFailedEvent, run.MigrationDownFailedEvent:
+							fmtx.WriteLine(
+								"    %s",
+								fmtx.Danger("%s", log.GetMetadata("error")),
+							)
+						case run.MigrationFixUpEvent, run.MigrationFixDownEvent:
+							fmtx.WriteLine(
+								"    %s",
+								fmtx.Warning("%s", log.GetMetadata("comment")),
+							)
+						}
+					}
 				}
 			}
 
@@ -212,11 +282,11 @@ func main() {
 				status := ""
 				switch row.Status {
 				case "pending":
-					status = fmtx.ColoredBlockWarning(" %9s ", row.Status)
+					status = fmtx.Warning(" %9s ", row.Status)
 				case "completed":
-					status = fmtx.ColoredBlockSuccess(" %s ", row.Status)
+					status = fmtx.Success(" %s ", row.Status)
 				case "failed":
-					status = fmtx.ColoredBlockDanger(" %9s ", row.Status)
+					status = fmtx.Danger(" %9s ", row.Status)
 				}
 				fmtx.WriteLine(
 					"%s %-30s %s",
@@ -237,6 +307,7 @@ func main() {
 			migrateStatusCmd,
 			migrateUpCmd,
 			migrateDownCmd,
+			migrateFixGroup,
 		},
 	}
 

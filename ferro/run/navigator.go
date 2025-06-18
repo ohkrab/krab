@@ -31,6 +31,7 @@ type AuditedMigrationSet struct {
 }
 
 type AuditedMigration struct {
+	Name    string
 	Version MigrationVersion
 	Status  string
 }
@@ -43,9 +44,11 @@ const (
 	MigrationUpStartedEvent     = "migration.up.started"
 	MigrationUpCompletedEvent   = "migration.up.completed"
 	MigrationUpFailedEvent      = "migration.up.failed"
+	MigrationFixUpEvent         = "migration.up.fixed"
 	MigrationDownStartedEvent   = "migration.down.started"
 	MigrationDownCompletedEvent = "migration.down.completed"
 	MigrationDownFailedEvent    = "migration.down.failed"
+	MigrationFixDownEvent       = "migration.down.fixed"
 )
 
 func NewNavigator(driver plugin.DriverInstance, config *config.Config, execCtx plugin.DriverExecutionContext) *Navigator {
@@ -102,8 +105,8 @@ func (n *Navigator) Drive(ctx context.Context, conn plugin.DriverConnection, run
 			os.Exit(2)
 		}
 	}()
-    // TODO: handle the case where the lock is already held by another process
-    // TODO: should we always release the lock, or only if the run function succeeds?
+	// TODO: handle the case where the lock is already held by another process
+	// TODO: should we always release the lock, or only if the run function succeeds?
 	err = run()
 	if err != nil {
 		return fmt.Errorf("driver failed to run: %w", err)
@@ -171,22 +174,22 @@ func (n *Navigator) ComputeState(ctx context.Context, conn plugin.DriverConnecti
 		switch log.Event {
 		case MigrationUpStartedEvent:
 			set := audited.EnsureMigrationSet(log.GetData("set"))
-			migration := set.EnsureMigration(MigrationVersion(log.GetData("version")))
+			migration := set.EnsureMigration(MigrationVersion(log.GetData("version")), log.GetData("migration"))
 			migration.Status = AuditStatusStarted
 
 		case MigrationUpCompletedEvent:
 			set := audited.EnsureMigrationSet(log.GetData("set"))
-			migration := set.EnsureMigration(MigrationVersion(log.GetData("version")))
+			migration := set.EnsureMigration(MigrationVersion(log.GetData("version")), log.GetData("migration"))
 			migration.Status = AuditStatusCompleted
 
 		case MigrationUpFailedEvent:
 			set := audited.EnsureMigrationSet(log.GetData("set"))
-			migration := set.EnsureMigration(MigrationVersion(log.GetData("version")))
+			migration := set.EnsureMigration(MigrationVersion(log.GetData("version")), log.GetData("migration"))
 			migration.Status = AuditStatusFailed
 
 		case MigrationDownStartedEvent:
 			set := audited.EnsureMigrationSet(log.GetData("set"))
-			migration := set.EnsureMigration(MigrationVersion(log.GetData("version")))
+			migration := set.EnsureMigration(MigrationVersion(log.GetData("version")), log.GetData("migration"))
 			migration.Status = AuditStatusStarted
 
 		case MigrationDownCompletedEvent:
@@ -194,7 +197,15 @@ func (n *Navigator) ComputeState(ctx context.Context, conn plugin.DriverConnecti
 			set.DeleteMigration(MigrationVersion(log.GetData("version")))
 
 		case MigrationDownFailedEvent:
-			continue
+			set := audited.EnsureMigrationSet(log.GetData("set"))
+			migration := set.EnsureMigration(MigrationVersion(log.GetData("version")), log.GetData("migration"))
+			migration.Status = AuditStatusFailed
+
+		case MigrationFixUpEvent:
+            // INFO: migration wanted to be UP but failed, so it is not completed and should be retried
+            // so remove it from the computed state like it was never applied (aka pending migration)
+			set := audited.EnsureMigrationSet(log.GetData("set"))
+            set.DeleteMigration(MigrationVersion(log.GetData("version")))
 		}
 	}
 
@@ -216,11 +227,12 @@ func (a *AuditedMigrationSet) DeleteMigration(version MigrationVersion) {
 	delete(a.Migrations, version)
 }
 
-func (a *AuditedMigrationSet) EnsureMigration(version MigrationVersion) *AuditedMigration {
+func (a *AuditedMigrationSet) EnsureMigration(version MigrationVersion, name string) *AuditedMigration {
 	migration, exists := a.Migrations[version]
 	if !exists {
 		migration = &AuditedMigration{
 			Version: version,
+			Name:    name,
 		}
 		a.Migrations[version] = migration
 	}
