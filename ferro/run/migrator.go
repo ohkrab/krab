@@ -323,15 +323,17 @@ func (m *Migrator) MigrateDown(ctx context.Context, cfg *config.Config, opts Mig
 		}
 		auditedSet := audited.EnsureMigrationSet(opts.Set.Metadata.Name)
 		appliedMigrations := make([]*config.Migration, 0)
-		// TODO: verify other states
 		for _, name := range opts.Set.Spec.Migrations {
 			specMigration, ok := cfg.Migrations[name]
 			if ok {
 				auditedMigration, ok := auditedSet.Migrations[MigrationVersion(specMigration.Spec.Version)]
 				if ok {
-					if auditedMigration.Status == AuditStatusFailed {
+					switch auditedMigration.Status {
+					case AuditStatusFailed:
 						return fmt.Errorf("exec: Migration %s is in a failed state, please fix the migration before proceeding", name)
-					} else {
+					case AuditStatusStarted:
+						return fmt.Errorf("exec: Migration %s is in a started state, is audit log/lock corrupted?", name)
+					case AuditStatusCompleted:
 						appliedMigrations = append(appliedMigrations, specMigration)
 					}
 				}
@@ -367,7 +369,7 @@ func (m *Migrator) MigrateDown(ctx context.Context, cfg *config.Config, opts Mig
 			return fmt.Errorf("exec: Failed to mark migration(down) `%s` as started: %w", downMigration.Metadata.Name, err)
 		}
 
-		err = nav.WithTx(ctx, conn, true, func(query plugin.DriverQuery) error {
+        execErr := nav.WithTx(ctx, conn, true, func(query plugin.DriverQuery) error {
 			return query.Exec(ctx, downMigration.Spec.Run.Down.Sql)
 		})
 
@@ -382,9 +384,9 @@ func (m *Migrator) MigrateDown(ctx context.Context, cfg *config.Config, opts Mig
 			},
 			Metadata: map[string]any{},
 		}
-		if err != nil {
+		if execErr != nil {
 			stopped.Event = MigrationDownFailedEvent
-			stopped.Metadata["error"] = err.Error()
+			stopped.Metadata["error"] = execErr.Error()
 		} else {
 			stopped.Event = MigrationDownCompletedEvent
 		}
@@ -393,8 +395,15 @@ func (m *Migrator) MigrateDown(ctx context.Context, cfg *config.Config, opts Mig
 			return fmt.Errorf("critical(inconsistent state): Failed to mark migration(down) `%s` as completed/failed: %w", downMigration.Metadata.Name, err)
 		}
 
+        // if migration failed, we faile the whole operation
+        // but showing failed audit log is WAY more important to show first
+        if execErr != nil {
+            return execErr
+        }
+
 		return nil
 	})
+
 	if err != nil {
 		return nil, err
 	}
