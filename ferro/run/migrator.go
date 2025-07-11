@@ -151,6 +151,21 @@ func (m *Migrator) MigrateFixUp(ctx context.Context, cfg *config.Config, opts Mi
 	return &result, nil
 }
 
+type MigrateFixDownOptions struct {
+	Driver  plugin.DriverInstance
+	Set     *config.MigrationSet
+	Version string
+	Comment string
+}
+
+type MigrateFixDownResult struct {
+}
+
+func (m *Migrator) MigrateFixDown(ctx context.Context, cfg *config.Config, opts MigrateFixDownOptions) (*MigrateFixDownResult, error) {
+	var result MigrateFixDownResult
+	return &result, nil
+}
+
 type MigrateUpOptions struct {
 	Driver plugin.DriverInstance
 	Set    *config.MigrationSet
@@ -209,7 +224,7 @@ func (m *Migrator) MigrateUp(ctx context.Context, cfg *config.Config, opts Migra
 
 		result.WasPending = len(pendingMigrations)
 
-        lastLogID := audited.LastID
+		lastLogID := audited.LastID
 
 		for _, pending := range pendingMigrations {
 			started := plugin.DriverAuditLog{
@@ -229,7 +244,7 @@ func (m *Migrator) MigrateUp(ctx context.Context, cfg *config.Config, opts Migra
 			}
 			fmtx.WriteInfo("Executing migration: %s", pending.Metadata.Name)
 
-            execErr := nav.WithTx(ctx, conn, true, func(query plugin.DriverQuery) error {
+			execErr := nav.WithTx(ctx, conn, true, func(query plugin.DriverQuery) error {
 				return query.Exec(ctx, pending.Spec.Run.Up.Sql)
 			})
 
@@ -254,14 +269,14 @@ func (m *Migrator) MigrateUp(ctx context.Context, cfg *config.Config, opts Migra
 			if err != nil {
 				return fmt.Errorf("critical(inconsistent state): Failed to mark migration(up) `%s` as completed/failed: %w", pending.Metadata.Name, err)
 			}
-            // if migration failed, we stop processing further migrations
-            // but showing failed audit log is WAY more important to show first
-            if execErr != nil {
-                return execErr
-            }
+			// if migration failed, we stop processing further migrations
+			// but showing failed audit log is WAY more important to show first
+			if execErr != nil {
+				return execErr
+			}
 
-            // maintain the last log ID for the next iteration
-            lastLogID = stopped.ID
+			// maintain the last log ID for the next iteration
+			lastLogID = stopped.ID
 		}
 
 		return nil

@@ -121,11 +121,37 @@ func main() {
 			return nil
 		},
 	}
+	fixMigrationDown := &cli.Command{
+		Name:  "down",
+		Usage: "Mark DOWN migration as fixed",
+		Flags: []cli.Flag{
+			&cli.StringFlag{Name: "driver", Usage: "The driver to use", Required: true, Aliases: []string{"d"}},
+			&cli.StringFlag{Name: "set", Usage: "MigrationSet to use", Required: true, Aliases: []string{"s"}},
+			&cli.StringFlag{Name: "version", Usage: "Version to fix", Required: true, Aliases: []string{"v"}},
+			&cli.StringFlag{Name: "comment", Usage: "Comment for the fix", Required: false, Aliases: []string{"C"}, DefaultText: "Manually fixed", Value: "Manually fixed"},
+		},
+		Action: func(ctx context.Context, cmd *cli.Command) error {
+			runCmd := run.CommandMigrateFixDown{
+				Driver:  cmd.String("driver"),
+				Set:     cmd.String("set"),
+				Version: cmd.String("version"),
+				Comment: cmd.String("comment"),
+			}
+			_, err := runner.ExecuteMigrateFixDown(ctx, &runCmd)
+			if err != nil {
+				return err
+			}
+			fmtx.WriteSuccess("Marked as fixed successfully")
+
+			return nil
+		},
+	}
 	migrateFixGroup := &cli.Command{
 		Name:  "fix",
 		Usage: "Apply fixes to migrations",
 		Commands: []*cli.Command{
 			fixMigrationUp,
+            fixMigrationDown,
 		},
 	}
 

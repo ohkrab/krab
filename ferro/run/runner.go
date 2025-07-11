@@ -147,6 +147,19 @@ func (r *Runner) ExecuteMigrateFixUp(ctx context.Context, cmd *CommandMigrateFix
 	})
 }
 
+func (r *Runner) ExecuteMigrateFixDown(ctx context.Context, cmd *CommandMigrateFixDown) (*MigrateFixDownResult, error) {
+	cfg := r.MustConfig()
+	driver := r.MustDriver(r.registry, cfg, cmd.Driver)
+	set := r.MustMigrationSet(cfg, cmd.Set)
+
+	return r.migrator.MigrateFixDown(ctx, cfg, MigrateFixDownOptions{
+		Driver:  driver,
+		Set:     set,
+		Version: cmd.Version,
+        Comment: cmd.Comment,
+	})
+}
+
 func (r *Runner) ExecuteMigrateUp(ctx context.Context, cmd *CommandMigrateUp) (*MigrateUpResult, error) {
 	cfg := r.MustConfig()
 	driver := r.MustDriver(r.registry, cfg, cmd.Driver)
