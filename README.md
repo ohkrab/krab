@@ -18,5 +18,5 @@ todo:
 - Add checksum
 - handle failed/repairs
 - add more tests
--
+- fix fix up/down when down/up failed
 
