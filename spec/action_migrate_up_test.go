@@ -5,6 +5,29 @@ import (
 )
 
 func TestActionMigrateUp(t *testing.T) {
+    cli := NewTestCLI(t)
+    defer cli.Teardown()
+
+    cli.DefaultDatabase()
+    cli.Set(
+        "animals.fyml",
+        `
+apiVersion: migrations/v1
+kind: MigrationSet
+metadata:
+  name: public
+spec:
+  namespace:
+    name: public
+  migrations:
+    - create_animals
+        `,
+    )
+    cli.AssertRun("migrate", "up", "--set", "public", "-d", "test")
+    cli.AssertOutputContains()
+    cli.AssertSchemaMigrate
+
+
 	c := mockCli(mockConfig(`
 migration "do_nothing" {
   version = "v1"
@@ -18,7 +41,7 @@ migration_set "public" {
 }
 `))
 	defer c.Teardown()
-	c.AssertSuccessfulRun(t, []string{"migrate", "up", "public"})
+	c.AssertSuccessfulRun(t, []string{"migrate", "up", "--set", "public", "-d", "test"})
 	c.AssertOutputContains(t, "\x1b[0;32mOK  \x1b[0mv1 do_nothing")
 	c.AssertSchemaMigrationTable(t, "public", "v1")
 }

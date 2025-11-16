@@ -8,11 +8,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/uuid"
 	_ "github.com/jackc/pgx/v5"
 	_ "github.com/jackc/pgx/v5/stdlib"
-	"github.com/ohkrab/krab/cli"
 	"github.com/ohkrab/krab/krab"
-	"github.com/ohkrab/krab/krabcli"
 	"github.com/ohkrab/krab/krabdb"
 	"github.com/ohkrab/krab/web"
 	"github.com/spf13/afero"
@@ -21,9 +20,9 @@ import (
 )
 
 type cliMock struct {
-	connection    *mockDBConnection
-	config        *krab.Config
-	app           *krabcli.App
+	connection *mockDBConnection
+	// config        *krab.Config
+	// app           *krabcli.App
 	exitCode      int
 	err           error
 	uiWriter      bytes.Buffer
@@ -31,6 +30,45 @@ type cliMock struct {
 	helpWriter    bytes.Buffer
 	errorWriter   bytes.Buffer
 	fs            afero.Afero
+	id            string
+}
+
+func NewTestCLI(t *testing.T) *cliMock {
+	memfs := afero.NewMemMapFs()
+
+	return &cliMock{
+		id: uuid.Must(uuid.NewV7()).String(),
+		fs: afero.Afero{Fs: memfs},
+	}
+}
+
+func (c *cliMock) DefaultDatabase() {
+	c.Files(
+		"config.fyml",
+		`
+apiVersion: drivers/v1
+kind: Driver
+metadata:
+  name: test
+spec:
+  driver: postgresql
+  config:
+    dsn: postgres://test:test@localhost:5433/test
+        `,
+	)
+}
+
+func (c *cliMock) Files(pathContentPair ...string) {
+	for i := 1; i < len(pathContentPair); i += 2 {
+		path := pathContentPair[i-1]
+		content := pathContentPair[i]
+		afero.WriteFile(
+			c.fs,
+			path,
+			[]byte(content),
+			0644,
+		)
+	}
 }
 
 func (m *cliMock) setup(args []string) {
