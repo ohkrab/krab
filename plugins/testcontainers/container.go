@@ -16,6 +16,7 @@ type Container struct {
 	Port      string
 	Env       map[string]string
 	container testcontainers.Container
+	logger    *fmtx.Logger
 }
 
 func (c *Container) Start(ctx context.Context) (string, func(ctx context.Context), error) {
@@ -39,7 +40,7 @@ func (c *Container) Start(ctx context.Context) (string, func(ctx context.Context
 	stop := func(ctx context.Context) {
 		err := c.Stop(ctx)
 		if err != nil {
-			fmtx.WriteError("failed to stop testcontainer: %s", err)
+			c.logger.WriteError("failed to stop testcontainer: %s", err)
 		}
 	}
 

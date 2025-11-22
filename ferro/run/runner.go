@@ -16,6 +16,7 @@ type Runner struct {
 	tpls     *tpls.Templates
 	registry *plugins.Registry
 	migrator *Migrator
+	logger   *fmtx.Logger
 }
 
 type Command any
@@ -39,7 +40,7 @@ type CommandMigrateFixDown struct {
 	Driver  string
 	Set     string
 	Version string
-    Comment string
+	Comment string
 }
 
 type CommandMigrateStatus struct {
@@ -77,22 +78,24 @@ func New(
 	fs *config.Filesystem,
 	tpls *tpls.Templates,
 	registry *plugins.Registry,
+	logger *fmtx.Logger,
 ) *Runner {
-	migrator := NewMigrator(fs)
+	migrator := NewMigrator(fs, logger)
 
 	return &Runner{
 		fs:       fs,
 		tpls:     tpls,
 		registry: registry,
 		migrator: migrator,
+		logger:   logger,
 	}
 }
 
 func (r *Runner) MustConfig() *config.Config {
-	parser := config.NewParser(r.fs)
+	parser := config.NewParser(r.fs, r.logger)
 	parsed, err := parser.LoadAndParse()
 	if err != nil {
-		fmtx.WriteError(err.Error())
+		r.logger.WriteError(err.Error())
 		os.Exit(1)
 	}
 
@@ -100,7 +103,7 @@ func (r *Runner) MustConfig() *config.Config {
 	cfg, errs := builder.BuildConfig()
 	if errs.HasErrors() {
 		for _, err := range errs.Errors {
-			fmtx.WriteError(err.Error())
+			r.logger.WriteError(err.Error())
 		}
 		os.Exit(1)
 	}
@@ -111,12 +114,12 @@ func (r *Runner) MustConfig() *config.Config {
 func (r *Runner) MustDriver(registry *plugins.Registry, cfg *config.Config, name string) plugin.DriverInstance {
 	definedDriver, ok := cfg.Drivers[name]
 	if !ok {
-		fmtx.WriteError("argument error: Driver not defined in config (metadata.name): %s", name)
+		r.logger.WriteError("argument error: Driver not defined in config (metadata.name): %s", name)
 		os.Exit(1)
 	}
 	driver, err := registry.Get(definedDriver.Spec.Driver)
 	if err != nil {
-		fmtx.WriteError(err.Error())
+		r.logger.WriteError(err.Error())
 		os.Exit(1)
 	}
 	return plugin.DriverInstance{
@@ -128,7 +131,7 @@ func (r *Runner) MustDriver(registry *plugins.Registry, cfg *config.Config, name
 func (r *Runner) MustMigrationSet(cfg *config.Config, name string) *config.MigrationSet {
 	set, ok := cfg.MigrationSets[name]
 	if !ok {
-		fmtx.WriteError("argument error: MigrationSet not found: %s", name)
+		r.logger.WriteError("argument error: MigrationSet not found: %s", name)
 		os.Exit(1)
 	}
 	return set
@@ -143,7 +146,7 @@ func (r *Runner) ExecuteMigrateFixUp(ctx context.Context, cmd *CommandMigrateFix
 		Driver:  driver,
 		Set:     set,
 		Version: cmd.Version,
-        Comment: cmd.Comment,
+		Comment: cmd.Comment,
 	})
 }
 
@@ -156,7 +159,7 @@ func (r *Runner) ExecuteMigrateFixDown(ctx context.Context, cmd *CommandMigrateF
 		Driver:  driver,
 		Set:     set,
 		Version: cmd.Version,
-        Comment: cmd.Comment,
+		Comment: cmd.Comment,
 	})
 }
 

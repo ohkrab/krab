@@ -11,12 +11,14 @@ import (
 )
 
 type Migrator struct {
-	fs *config.Filesystem
+	fs     *config.Filesystem
+	logger *fmtx.Logger
 }
 
-func NewMigrator(fs *config.Filesystem) *Migrator {
+func NewMigrator(fs *config.Filesystem, logger *fmtx.Logger) *Migrator {
 	return &Migrator{
-		fs: fs,
+		fs:     fs,
+		logger: logger,
 	}
 }
 
@@ -31,7 +33,7 @@ type MigrateAuditResult struct {
 }
 
 func (m *Migrator) MigrateAudit(ctx context.Context, cfg *config.Config, opts MigrateAuditOptions) (*MigrateAuditResult, error) {
-	fmtx.WriteSuccess("Executing Migrate.Audit with Driver=%s, Set=%s", opts.Driver.Config.Metadata.Name, opts.Set.Metadata.Name)
+	m.logger.WriteSuccess("Executing Migrate.Audit with Driver=%s, Set=%s", opts.Driver.Config.Metadata.Name, opts.Set.Metadata.Name)
 
 	nav := NewNavigator(opts.Driver, cfg, plugin.DriverExecutionContext{
 		Prefix: opts.Set.Spec.Namespace.Prefix,
@@ -88,7 +90,7 @@ type MigrateFixUpResult struct {
 }
 
 func (m *Migrator) MigrateFixUp(ctx context.Context, cfg *config.Config, opts MigrateFixUpOptions) (*MigrateFixUpResult, error) {
-	fmtx.WriteSuccess("Executing Migrate.Fix with Driver=%s, Set=%s, Version=%s", opts.Driver.Config.Metadata.Name, opts.Set.Metadata.Name, opts.Version)
+	m.logger.WriteSuccess("Executing Migrate.Fix with Driver=%s, Set=%s, Version=%s", opts.Driver.Config.Metadata.Name, opts.Set.Metadata.Name, opts.Version)
 
 	nav := NewNavigator(opts.Driver, cfg, plugin.DriverExecutionContext{
 		Prefix: opts.Set.Spec.Namespace.Prefix,
@@ -176,7 +178,7 @@ type MigrateUpResult struct {
 }
 
 func (m *Migrator) MigrateUp(ctx context.Context, cfg *config.Config, opts MigrateUpOptions) (*MigrateUpResult, error) {
-	fmtx.WriteSuccess("Executing Migrate.Up with Driver=%s, Set=%s", opts.Driver.Config.Metadata.Name, opts.Set.Metadata.Name)
+	m.logger.WriteSuccess("Executing Migrate.Up with Driver=%s, Set=%s", opts.Driver.Config.Metadata.Name, opts.Set.Metadata.Name)
 
 	nav := NewNavigator(opts.Driver, cfg, plugin.DriverExecutionContext{
 		Prefix: opts.Set.Spec.Namespace.Prefix,
@@ -242,7 +244,7 @@ func (m *Migrator) MigrateUp(ctx context.Context, cfg *config.Config, opts Migra
 			if err != nil {
 				return fmt.Errorf("exec: Failed to mark migration(up) `%s` as started: %w", pending.Metadata.Name, err)
 			}
-			fmtx.WriteInfo("Executing migration: %s", pending.Metadata.Name)
+			m.logger.WriteInfo("Executing migration: %s", pending.Metadata.Name)
 
 			execErr := nav.WithTx(ctx, conn, true, func(query plugin.DriverQuery) error {
 				return query.Exec(ctx, pending.Spec.Run.Up.Sql)
@@ -298,7 +300,7 @@ type MigrateDownResult struct {
 }
 
 func (m *Migrator) MigrateDown(ctx context.Context, cfg *config.Config, opts MigrateDownOptions) (*MigrateDownResult, error) {
-	fmtx.WriteSuccess("Executing Migrate.Down with Driver=%s, Set=%s, Version=%s", opts.Driver.Config.Metadata.Name, opts.Set.Metadata.Name, opts.Version)
+	m.logger.WriteSuccess("Executing Migrate.Down with Driver=%s, Set=%s, Version=%s", opts.Driver.Config.Metadata.Name, opts.Set.Metadata.Name, opts.Version)
 
 	nav := NewNavigator(opts.Driver, cfg, plugin.DriverExecutionContext{
 		Prefix: opts.Set.Spec.Namespace.Prefix,
@@ -369,7 +371,7 @@ func (m *Migrator) MigrateDown(ctx context.Context, cfg *config.Config, opts Mig
 			return fmt.Errorf("exec: Failed to mark migration(down) `%s` as started: %w", downMigration.Metadata.Name, err)
 		}
 
-        execErr := nav.WithTx(ctx, conn, true, func(query plugin.DriverQuery) error {
+		execErr := nav.WithTx(ctx, conn, true, func(query plugin.DriverQuery) error {
 			return query.Exec(ctx, downMigration.Spec.Run.Down.Sql)
 		})
 
@@ -395,11 +397,11 @@ func (m *Migrator) MigrateDown(ctx context.Context, cfg *config.Config, opts Mig
 			return fmt.Errorf("critical(inconsistent state): Failed to mark migration(down) `%s` as completed/failed: %w", downMigration.Metadata.Name, err)
 		}
 
-        // if migration failed, we faile the whole operation
-        // but showing failed audit log is WAY more important to show first
-        if execErr != nil {
-            return execErr
-        }
+		// if migration failed, we faile the whole operation
+		// but showing failed audit log is WAY more important to show first
+		if execErr != nil {
+			return execErr
+		}
 
 		return nil
 	})
@@ -427,7 +429,7 @@ type MigrationStatusResultSingle struct {
 }
 
 func (m *Migrator) MigrateStatus(ctx context.Context, cfg *config.Config, opts MigrateStatusOptions) (*MigrateStatusResult, error) {
-	fmtx.WriteSuccess("Executing Migrate.Status with Driver=%s, Set=%s", opts.Driver.Config.Metadata.Name, opts.Set.Metadata.Name)
+	m.logger.WriteSuccess("Executing Migrate.Status with Driver=%s, Set=%s", opts.Driver.Config.Metadata.Name, opts.Set.Metadata.Name)
 
 	nav := NewNavigator(opts.Driver, cfg, plugin.DriverExecutionContext{
 		Prefix: opts.Set.Spec.Namespace.Prefix,

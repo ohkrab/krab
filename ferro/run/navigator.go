@@ -16,6 +16,7 @@ type Navigator struct {
 	driver  plugin.DriverInstance
 	config  *config.Config
 	execCtx plugin.DriverExecutionContext
+	logger  *fmtx.Logger
 }
 
 type MigrationVersion string
@@ -67,7 +68,7 @@ func (n *Navigator) Open(ctx context.Context) (plugin.DriverConnection, func(), 
 	disconnect := func() {
 		err := n.driver.Driver.Disconnect(ctx, conn)
 		if err != nil {
-			fmtx.WriteError(fmt.Sprintf("failed to disconnect from database: %s", err))
+			n.logger.WriteError(fmt.Sprintf("failed to disconnect from database: %s", err))
 			os.Exit(2)
 		}
 	}
@@ -98,9 +99,9 @@ func (n *Navigator) Drive(ctx context.Context, conn plugin.DriverConnection, run
 	defer func() {
 		err := conn.UnlockAuditLog(ctx, n.execCtx, lock)
 		if err != nil {
-			fmtx.WriteError(fmt.Sprintf("failed to unlock audit log: %s", err))
+			n.logger.WriteError(fmt.Sprintf("failed to unlock audit log: %s", err))
 			if err := n.driver.Driver.Disconnect(ctx, conn); err != nil {
-				fmtx.WriteError(fmt.Sprintf("failed to disconnect from database: %s", err))
+				n.logger.WriteError(fmt.Sprintf("failed to disconnect from database: %s", err))
 			}
 			os.Exit(2)
 		}
@@ -202,10 +203,10 @@ func (n *Navigator) ComputeState(ctx context.Context, conn plugin.DriverConnecti
 			migration.Status = AuditStatusFailed
 
 		case MigrationFixUpEvent:
-            // INFO: migration wanted to be UP but failed, so it is not completed and should be retried
-            // so remove it from the computed state like it was never applied (aka pending migration)
+			// INFO: migration wanted to be UP but failed, so it is not completed and should be retried
+			// so remove it from the computed state like it was never applied (aka pending migration)
 			set := audited.EnsureMigrationSet(log.GetData("set"))
-            set.DeleteMigration(MigrationVersion(log.GetData("version")))
+			set.DeleteMigration(MigrationVersion(log.GetData("version")))
 		}
 	}
 

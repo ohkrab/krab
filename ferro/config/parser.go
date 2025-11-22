@@ -9,13 +9,15 @@ import (
 )
 
 type Parser struct {
-	fs *Filesystem
+	fs     *Filesystem
+	logger *fmtx.Logger
 }
 
 // New initializes parser and default file system.
-func NewParser(fs *Filesystem) *Parser {
+func NewParser(fs *Filesystem, logger *fmtx.Logger) *Parser {
 	return &Parser{
 		fs: fs,
+        logger: logger,
 	}
 }
 
@@ -32,7 +34,7 @@ func (p *Parser) LoadAndParse() (*ParsedConfig, error) {
 	}
 
 	for _, file := range parsedFiles {
-		fmtx.WriteInfo("  using file: %s", file.Path)
+		p.logger.WriteInfo("  using file: %s", file.Path)
 	}
 
 	if err := p.parse(parsedFiles); err != nil {
