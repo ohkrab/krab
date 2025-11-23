@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io/fs"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -46,6 +45,7 @@ func NewTestCLI(t *testing.T) (*cliMock, func()) {
 	}
 
 	teardown := func() {
+		// tempdir automatically cleans after finished test
 	}
 
 	return &cliMock{
@@ -184,8 +184,8 @@ func (m *cliMock) RefuteRun(args ...string) bool {
 }
 
 func (m *cliMock) AssertOutputContains(t *testing.T, output string) bool {
-    s := fmtx.StripANSI(m.stdout.String())
-    s = fmtx.Squish(s)
+	s := fmtx.StripANSI(m.stdout.String())
+	s = fmtx.Squish(s)
 	val := assert.Contains(
 		t,
 		strings.TrimSpace(s),
@@ -211,65 +211,12 @@ func (m *cliMock) AssertOutputNotContains(t *testing.T, output string) bool {
 	return val
 }
 
-func (m *cliMock) AssertUiErrorOutputContains(t *testing.T, output string) bool {
-	return assert.Contains(
-		t,
-		strings.TrimSpace(m.stderr.String()),
-		strings.TrimSpace(output),
-		"UI error output mismatch",
-	)
-}
-
-// AssertSQLContains compares expected query with all recoreded queries.
-// Assertions must happen in order the queries are executed, otherwise assertion fails.
-func (m *cliMock) AssertSQLContains(t *testing.T, expected string) bool {
-	expected = strings.TrimSpace(expected)
-	found := -1
-
-	// find matching query and remember last asserted query index
-	for i, sql := range m.connection.recorder {
-		if strings.Index(sql, expected) != -1 {
-			found = i
-			if i > m.connection.assertedSQLIndex {
-				m.connection.assertedSQLIndex = i
-			}
-			break
-		}
-	}
-
-	sql := ""
-	if found != -1 {
-		sql = m.connection.recorder[found]
-		// make sure assertion happen in the correct order
-		if found < m.connection.assertedSQLIndex {
-			return assert.True(t, false, "Queries asserted in the wrong order")
-		}
-	}
-
-	return assert.True(t, found != -1, fmt.Sprintf("SQL mismatch:\n%s\nwith:\n%s", expected, sql))
-}
-
 func (m *cliMock) ResetAllOutputs() {
 	m.stdout.Reset()
 	m.stderr.Reset()
 }
 
-func (m *cliMock) FSFiles() map[string][]byte {
-	data := map[string][]byte{}
-	m.fs.Walk("/", func(path string, info fs.FileInfo, err error) error {
-		if !info.IsDir() {
-			b, err := m.fs.ReadFile(path)
-			if err != nil {
-				panic(err)
-			}
-			data[path] = b
-		}
-		return nil
-	})
-	return data
-}
-
-func (m *cliMock) ResetSQLRecorder() {
+func (m *cliMock) ResetDriverOutputs() {
 	m.connection.assertedSQLIndex = 0
 	m.connection.recorder = []string{}
 }
