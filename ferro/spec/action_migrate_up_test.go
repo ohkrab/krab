@@ -57,6 +57,24 @@ spec:
     cli.AssertOutputContains(t, "completed v1 create_animals")
     cli.ResetAllOutputs()
 	// cli.AssertSchemaMigrationTable(t, "public", "v1")
+    // TODO:
+    // - count records in schema migration table
+    // - read records in schema migration table
+    // - check if table exists
+    // - check if table does not exists
+    // - fix english with asserts Contains? NotContain? be consistent
+
+    // cli.AssertRecordsCount("test", "public", 0)
+    // ...
+    // cli.AssertRecordsCount("test", "public", 1)
+
+    // audit := cli.UseAudit("test", "public")
+    // ...
+    // audit.AssertEvent(1, "pending")
+
+    // query := cli.UseQuery("test", "public")
+    // query.AssertTableExists("animals")
+    // query.AssertCount("table", 1)
 }
 
 // func TestActionMigrateUpWithError(t *testing.T) {
