@@ -2,6 +2,7 @@ package spec
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io/fs"
 	"path/filepath"
@@ -12,7 +13,10 @@ import (
 	_ "github.com/jackc/pgx/v5"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/ohkrab/krab/ferro"
+	"github.com/ohkrab/krab/ferro/config"
+	"github.com/ohkrab/krab/ferro/plugin"
 	"github.com/ohkrab/krab/fmtx"
+	"github.com/ohkrab/krab/plugins"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/wzshiming/ctc"
@@ -52,6 +56,64 @@ func NewTestCLI(t *testing.T) (*cliMock, func()) {
 		stdout: stdout,
 		stderr: stderr,
 	}, teardown
+}
+
+func (c *cliMock) RandomDatabase() func() {
+	dbID := fmt.Sprintf("test_%s", strings.ReplaceAll(uuid.NewString(), "-", ""))
+	execCtx := plugin.DriverExecutionContext{
+		Schema: "public",
+	}
+	ctx := context.Background()
+
+	driver := plugins.NewPostgreSQLDriver()
+	conn, err := driver.Connect(context.Background(), config.DriverConfig{
+		"dsn": "postgres://test:test@localhost:5433/test",
+	})
+	if err != nil {
+		c.T.Fatalf("failed to connect to test database: %v", err)
+	}
+	defer driver.Disconnect(ctx, conn)
+
+	// create database and grant privileges for the test case
+	err = conn.Query(execCtx).Exec(ctx, fmt.Sprintf("CREATE DATABASE %s", dbID))
+	if err != nil {
+		c.T.Fatalf("failed to create database: %v", err)
+	}
+	err = conn.Query(execCtx).Exec(ctx, fmt.Sprintf("GRANT ALL PRIVILEGES ON DATABASE %s TO test;", dbID))
+	if err != nil {
+		c.T.Fatalf("failed to grant access to database %v", err)
+	}
+
+	dbTeardown := func() {
+		conn, err := driver.Connect(ctx, config.DriverConfig{
+			"dsn": "postgres://test:test@localhost:5433/test",
+		})
+		if err != nil {
+			c.T.Fatalf("failed to connect to test database to perform cleanup: %v", err)
+		}
+		defer driver.Disconnect(ctx, conn)
+
+		// cleanup
+		err = conn.Query(execCtx).Exec(ctx, fmt.Sprintf("DROP DATABASE %s", dbID))
+		if err != nil {
+			c.T.Fatalf("failed to drop database %v", err)
+		}
+	}
+	c.Files(
+		"config.fyml",
+		fmt.Sprintf(`
+apiVersion: drivers/v1
+kind: Driver
+metadata:
+  name: test
+spec:
+  driver: postgresql
+  config:
+    dsn: postgres://test:test@localhost:5433/%s
+        `, dbID),
+	)
+
+	return dbTeardown
 }
 
 func (c *cliMock) DefaultDatabase() {
@@ -112,8 +174,6 @@ func (m *cliMock) setup(args []string) {
 		recorder:         []string{},
 		assertedSQLIndex: 0,
 	}
-	memfs := afero.NewMemMapFs()
-	m.fs = afero.Afero{Fs: memfs}
 }
 
 func (m *cliMock) RefuteRun(args ...string) bool {
@@ -124,14 +184,29 @@ func (m *cliMock) RefuteRun(args ...string) bool {
 }
 
 func (m *cliMock) AssertOutputContains(t *testing.T, output string) bool {
+    s := fmtx.StripANSI(m.stdout.String())
+    s = fmtx.Squish(s)
 	val := assert.Contains(
 		t,
-		strings.TrimSpace(m.stdout.String()),
+		strings.TrimSpace(s),
 		strings.TrimSpace(output),
 		"Output mismatch",
 	)
 	if !val {
-		t.FailNow()
+		t.Fatalf("Captured:\n%s", m.stdout.String())
+	}
+	return val
+}
+
+func (m *cliMock) AssertOutputNotContains(t *testing.T, output string) bool {
+	val := assert.NotContains(
+		t,
+		strings.TrimSpace(fmtx.StripANSI(m.stdout.String())),
+		strings.TrimSpace(output),
+		"Output mismatch",
+	)
+	if !val {
+		t.Fatalf("Captured:\n%s", m.stdout.String())
 	}
 	return val
 }
@@ -172,6 +247,11 @@ func (m *cliMock) AssertSQLContains(t *testing.T, expected string) bool {
 	}
 
 	return assert.True(t, found != -1, fmt.Sprintf("SQL mismatch:\n%s\nwith:\n%s", expected, sql))
+}
+
+func (m *cliMock) ResetAllOutputs() {
+	m.stdout.Reset()
+	m.stderr.Reset()
 }
 
 func (m *cliMock) FSFiles() map[string][]byte {

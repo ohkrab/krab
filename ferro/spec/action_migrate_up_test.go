@@ -8,7 +8,9 @@ func TestActionMigrateUp(t *testing.T) {
     cli, teardown := NewTestCLI(t)
     defer teardown()
 
-    cli.DefaultDatabase()
+    dbTeardown := cli.RandomDatabase()
+    defer dbTeardown()
+
     cli.Files(
         "set.fyml",
         `
@@ -38,8 +40,22 @@ spec:
 `,
     )
 
+    cli.AssertRun("migrate", "status", "--set", "public", "--driver", "test")
+    cli.AssertOutputContains(t, "pending v1 create_animals")
+    cli.ResetAllOutputs()
+
     cli.AssertRun("migrate", "up", "--set", "public", "--driver", "test")
-	// cli.AssertOutputContains(t, "\x1b[0;32mOK  \x1b[0mv1 create_animals")
+	cli.AssertOutputNotContains(t, "No pending migrations")
+    cli.AssertOutputContains(t, "Applied successfully")
+    cli.ResetAllOutputs()
+
+    cli.AssertRun("migrate", "up", "--set", "public", "--driver", "test")
+	cli.AssertOutputContains(t, "No pending migrations")
+    cli.ResetAllOutputs()
+
+    cli.AssertRun("migrate", "status", "--set", "public", "--driver", "test")
+    cli.AssertOutputContains(t, "completed v1 create_animals")
+    cli.ResetAllOutputs()
 	// cli.AssertSchemaMigrationTable(t, "public", "v1")
 }
 

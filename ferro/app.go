@@ -239,7 +239,9 @@ func (a *App) Run(args []string) int {
 			}
 			if out.WasPending == 0 {
 				a.Logger.WriteSuccess("No pending migrations")
-			}
+			} else {
+                a.Logger.WriteSuccess("Applied successfully")
+            }
 
 			return nil
 		},
