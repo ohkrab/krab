@@ -25,7 +25,7 @@ migration_set "public" {
 `))
 	defer c.Teardown()
 
-	c.AssertSuccessfulRun(t, []string{"migrate", "up", "public", "-schema", "custom"})
+	c.AssertSuccessfulRun(t, "migrate", "up", "public", "-schema", "custom")
 	c.AssertSchemaMigrationTableMissing(t, "public")
 	c.AssertSchemaMigrationTable(t, "custom", "v1")
 	c.AssertSQLContains(t, `SET search_path TO "custom"`)

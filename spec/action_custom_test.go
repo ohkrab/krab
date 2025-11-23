@@ -51,12 +51,12 @@ action "view" "refresh" {
 `))
 	defer c.Teardown()
 
-	c.AssertSuccessfulRun(t, []string{"migrate", "up", "animals"})
+	c.AssertSuccessfulRun(t, "migrate", "up", "animals")
 	c.AssertSchemaMigrationTable(t, "public", "v1", "v2", "v3")
 
 	_, vals := c.Query(t, "SELECT * FROM anims")
 	if assert.Len(t, vals, 0, "No values should be returned") {
-		c.AssertSuccessfulRun(t, []string{"action", "view", "refresh", "-name", "anims"})
+		c.AssertSuccessfulRun(t, "action", "view", "refresh", "-name", "anims")
 		_, vals := c.Query(t, "SELECT * FROM anims")
 		assert.Len(t, vals, 3, "There should be 3 animals after refresh")
 		c.AssertSQLContains(t, `REFRESH MATERIALIZED VIEW "anims"`)

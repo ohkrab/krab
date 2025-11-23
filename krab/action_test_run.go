@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/ohkrab/krab/cli"
 )
 
 // ActionTestRun outputs test runner.
@@ -17,7 +16,7 @@ func (a *ActionTestRun) Help() string {
 	return fmt.Sprint(
 		`Usage: krab test suite`,
 		"\n\n",
-		` 
+		`
 Starts a test suite.
 `,
 	)

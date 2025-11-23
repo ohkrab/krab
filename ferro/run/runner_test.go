@@ -6,6 +6,7 @@ import (
 	"text/template"
 
 	"github.com/ohkrab/krab/ferro/config"
+	"github.com/ohkrab/krab/fmtx"
 	"github.com/ohkrab/krab/plugins"
 	"github.com/ohkrab/krab/tpls"
 	"github.com/qbart/expecto/expecto"
@@ -23,16 +24,16 @@ func TestRunner_MigrationAuditLog(t *testing.T) {
 	fs := config.NewFilesystem(dir)
 	registry := plugins.New()
 	registry.RegisterAll()
-    templates := tpls.New(template.FuncMap{})
-	runner := New(fs, templates, registry)
+	templates := tpls.New(template.FuncMap{})
+	runner := New(fs, templates, registry, fmtx.Default())
 
 	cmd := &CommandMigrateUp{
 		Driver: db.clientDriverName,
 		Set:    "public",
 	}
 
-    _, err := runner.ExecuteMigrateUp(context.Background(), cmd)
-    expecto.NoErr(t, "runner execution", err)
+	_, err := runner.ExecuteMigrateUp(context.Background(), cmd)
+	expecto.NoErr(t, "runner execution", err)
 
 	// builder := NewBuilder(fs, parsed, plugins.New())
 	// cfg, errs := builder.BuildConfig()
@@ -80,22 +81,22 @@ spec:
 	registry := plugins.New()
 	registry.RegisterAll()
 	templates := tpls.New(template.FuncMap{})
-	runner := New(fs, templates, registry)
+	runner := New(fs, templates, registry, fmtx.Default())
 
 	// Execute migration up command
 	cmd := &CommandMigrateUp{
 		Driver: db.clientDriverName,
 		Set:    "public",
 	}
-	_, err := runner.ExecuteMigrateUp(ctx, cmd, nil)
+	_, err := runner.ExecuteMigrateUp(ctx, cmd)
 	expecto.NoErr(t, "[migrate.up] runner execution", err)
 
-    _, err = runner.ExecuteMigrateAudit(ctx, &CommandMigrateAudit{
-        Driver: db.clientDriverName,
-        Set:    "public",
-        N: 0,
-    }, nil)
-    expecto.NoErr(t, "[audit] runner execution", err)
+	_, err = runner.ExecuteMigrateAudit(ctx, &CommandMigrateAudit{
+		Driver: db.clientDriverName,
+		Set:    "public",
+		N:      0,
+	})
+	expecto.NoErr(t, "[audit] runner execution", err)
 
 	// Get driver connection to check audit log entries
 	driverInstance, err := runner.getDriverInstance(ctx, db.clientDriverName)

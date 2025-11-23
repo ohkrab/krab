@@ -2,23 +2,41 @@ package fmtx
 
 import (
 	"fmt"
+	"io"
+
 	"github.com/wzshiming/ctc"
 )
 
 func (l Logger) WriteError(format string, a ...any) {
-	fmt.Fprintf(l.Stderr, fmt.Sprint(ctc.ForegroundRed, format, ctc.Reset, "\n"), a...)
+	FWriteError(l.Stderr, format, a...)
 }
 
 func (l Logger) WriteSuccess(format string, a ...any) {
-	fmt.Fprintf(l.Stdout, fmt.Sprint(ctc.ForegroundGreen, format, ctc.Reset, "\n"), a...)
+	FWriteSuccess(l.Stdout, format, a...)
 }
 
 func (l Logger) WriteInfo(format string, a ...any) {
-	fmt.Fprintf(l.Stdout, fmt.Sprint(ctc.ForegroundCyan, format, ctc.Reset, "\n"), a...)
+	FWriteInfo(l.Stdout, format, a...)
 }
 
 func (l Logger) WriteLine(format string, a ...any) {
-	fmt.Fprintf(l.Stdout, format+"\n", a...)
+	FWriteLine(l.Stdout, format, a...)
+}
+
+func FWriteError(w io.Writer, format string, a ...any) {
+	fmt.Fprintf(w, fmt.Sprint(ctc.ForegroundRed, format, ctc.Reset, "\n"), a...)
+}
+
+func FWriteSuccess(w io.Writer, format string, a ...any) {
+	fmt.Fprintf(w, fmt.Sprint(ctc.ForegroundGreen, format, ctc.Reset, "\n"), a...)
+}
+
+func FWriteInfo(w io.Writer, format string, a ...any) {
+	fmt.Fprintf(w, fmt.Sprint(ctc.ForegroundCyan, format, ctc.Reset, "\n"), a...)
+}
+
+func FWriteLine(w io.Writer, format string, a ...any) {
+	fmt.Fprintf(w, format+"\n", a...)
 }
 
 func ColoredBlockDanger(format string, a ...any) string {

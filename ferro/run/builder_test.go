@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/ohkrab/krab/ferro/config"
+	"github.com/ohkrab/krab/fmtx"
 	"github.com/ohkrab/krab/plugins"
 	"github.com/qbart/expecto/expecto"
 )
@@ -35,7 +36,7 @@ spec:
 	defer cleanup()
 
 	fs := config.NewFilesystem(dir)
-	parser := config.NewParser(fs)
+	parser := config.NewParser(fs, fmtx.Default())
 	parsed, err := parser.LoadAndParse()
 	expecto.NoErr(t, "parsing config", err)
 
@@ -117,7 +118,7 @@ spec:
 	defer cleanup()
 
 	fs := config.NewFilesystem(dir)
-	parser := config.NewParser(fs)
+	parser := config.NewParser(fs, fmtx.Default())
 	parsed, err := parser.LoadAndParse()
 	expecto.NoErr(t, "parsing config", err)
 
@@ -150,7 +151,7 @@ spec:
 	defer cleanup()
 
 	fs := config.NewFilesystem(dir)
-	parser := config.NewParser(fs)
+	parser := config.NewParser(fs, fmtx.Default())
 	parsed, err := parser.LoadAndParse()
 
 	expecto.NoErr(t, "parsing config", err)
@@ -177,7 +178,7 @@ spec:
 	defer cleanup()
 
 	fs := config.NewFilesystem(dir)
-	parser := config.NewParser(fs)
+	parser := config.NewParser(fs, fmtx.Default())
 	parsed, err := parser.LoadAndParse()
 	expecto.NoErr(t, "parsing config", err)
 
@@ -214,7 +215,7 @@ spec:
 	defer cleanup()
 
 	fs := config.NewFilesystem(dir)
-	parser := config.NewParser(fs)
+	parser := config.NewParser(fs, fmtx.Default())
 	parsed, err := parser.LoadAndParse()
 
 	expecto.NoErr(t, "parsing config", err)
@@ -243,7 +244,7 @@ spec:
 	defer cleanup()
 
 	fs := config.NewFilesystem(dir)
-	parser := config.NewParser(fs)
+	parser := config.NewParser(fs, fmtx.Default())
 	parsed, err := parser.LoadAndParse()
 
 	expecto.NoErr(t, "parsing config", err)
@@ -284,7 +285,7 @@ spec:
 	defer cleanup()
 
 	fs := config.NewFilesystem(dir)
-	parser := config.NewParser(fs)
+	parser := config.NewParser(fs, fmtx.Default())
 	parsed, err := parser.LoadAndParse()
 	expecto.NoErr(t, "parsing config", err)
 

@@ -13,7 +13,7 @@ import (
 
 // Navigator abstracts the flow of the driver.
 type Navigator struct {
-	driver  plugin.DriverInstance
+	driver  *plugin.DriverInstance
 	config  *config.Config
 	execCtx plugin.DriverExecutionContext
 	logger  *fmtx.Logger
@@ -52,7 +52,7 @@ const (
 	MigrationFixDownEvent       = "migration.down.fixed"
 )
 
-func NewNavigator(driver plugin.DriverInstance, config *config.Config, execCtx plugin.DriverExecutionContext) *Navigator {
+func NewNavigator(driver *plugin.DriverInstance, config *config.Config, execCtx plugin.DriverExecutionContext) *Navigator {
 	return &Navigator{
 		driver:  driver,
 		config:  config,

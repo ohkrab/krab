@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/ohkrab/krab/cli"
 )
 
 // ActionVersion prints full version.

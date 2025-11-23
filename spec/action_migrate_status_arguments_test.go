@@ -3,8 +3,6 @@ package spec
 import (
 	"fmt"
 	"testing"
-
-	"github.com/ohkrab/krab/emojis"
 )
 
 func TestActionMigrateStatusArguments(t *testing.T) {

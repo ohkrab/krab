@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/ohkrab/krab/cli"
-	"github.com/ohkrab/krab/cliargs"
 )
 
 // ActionCustom keeps data needed to perform this action.

@@ -7,6 +7,7 @@ import (
 	_ "github.com/jackc/pgx/v5"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/ohkrab/krab/ferro"
+	"github.com/ohkrab/krab/ferro/config"
 	"github.com/ohkrab/krab/fmtx"
 )
 
@@ -28,11 +29,20 @@ var (
 )
 
 func main() {
+	logger := fmtx.Default()
+
+	dir, err := config.Dir()
+	if err != nil {
+		logger.WriteError("can't read config dir: %w", err)
+		os.Exit(1)
+	}
+
 	app := ferro.App{
-		Logger:                   fmtx.Default(),
+		Logger:                   logger,
+		Dir:                      dir,
 		EmbededMigrationTemplate: tplMigration,
 		EmbededDriverTemplate:    tplDriver,
 		EmbededSetTemplate:       tplSet,
 	}
-	app.Run(os.Args)
+	os.Exit(app.Run(os.Args))
 }

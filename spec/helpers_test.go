@@ -11,9 +11,11 @@ import (
 	"github.com/google/uuid"
 	_ "github.com/jackc/pgx/v5"
 	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/ohkrab/krab/ferro"
+	"github.com/ohkrab/krab/fmtx"
 	"github.com/ohkrab/krab/krab"
 	"github.com/ohkrab/krab/krabdb"
-	"github.com/ohkrab/krab/web"
+	"github.com/ohkrab/krab/plugins"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/wzshiming/ctc"
@@ -22,23 +24,32 @@ import (
 type cliMock struct {
 	connection *mockDBConnection
 	// config        *krab.Config
-	// app           *krabcli.App
-	exitCode      int
-	err           error
-	uiWriter      bytes.Buffer
-	uiErrorWriter bytes.Buffer
-	helpWriter    bytes.Buffer
-	errorWriter   bytes.Buffer
-	fs            afero.Afero
-	id            string
+	app      *ferro.App
+	exitCode int
+	fs       afero.Afero
+	id       string
+	stdout   *bytes.Buffer
+	stderr   *bytes.Buffer
+	T        *testing.T
 }
 
 func NewTestCLI(t *testing.T) *cliMock {
 	memfs := afero.NewMemMapFs()
 
+	stdout := new(bytes.Buffer)
+	stderr := new(bytes.Buffer)
+
+	app := &ferro.App{
+		Logger: fmtx.New(stdout, stderr),
+	}
+
 	return &cliMock{
-		id: uuid.Must(uuid.NewV7()).String(),
-		fs: afero.Afero{Fs: memfs},
+		T:      t,
+		id:     uuid.Must(uuid.NewV7()).String(),
+		fs:     afero.Afero{Fs: memfs},
+		app:    app,
+		stdout: stdout,
+		stderr: stderr,
 	}
 }
 
@@ -71,35 +82,38 @@ func (c *cliMock) Files(pathContentPair ...string) {
 	}
 }
 
+func (m *cliMock) AssertRun(args ...string) bool {
+	m.setup(args)
+	m.exitCode = m.app.Run(args)
+
+	if assert.Equal(m.T, 0, m.exitCode, "Exit code should be eql to 0") {
+		return true
+	} else {
+		fmt.Println("statements debug:")
+		for _, sql := range m.connection.recorder {
+			fmt.Println("---")
+			fmt.Println(ctc.ForegroundBrightRed, sql, ctc.Reset)
+		}
+		fmt.Println("---")
+		fmt.Println(ctc.ForegroundRed, m.stderr.String(), ctc.Reset)
+		fmt.Println(ctc.ForegroundRed, m.stdout.String(), ctc.Reset)
+		return false
+	}
+}
+
 func (m *cliMock) setup(args []string) {
+	// templates := tpls.New(template.FuncMap{})
+	registry := plugins.New()
+	registry.RegisterAll()
+	// filesystem := config.NewFilesystem("/")
+	// runner := run.New(filesystem, templates, registry, m.app.Logger)
+
 	m.connection = &mockDBConnection{
 		recorder:         []string{},
 		assertedSQLIndex: 0,
 	}
-	m.errorWriter = bytes.Buffer{}
-	m.helpWriter = bytes.Buffer{}
-	m.uiErrorWriter = bytes.Buffer{}
-	m.uiWriter = bytes.Buffer{}
 	memfs := afero.NewMemMapFs()
 	m.fs = afero.Afero{Fs: memfs}
-
-	registry := &krab.CmdRegistry{
-		Commands:         []krab.Cmd{},
-		FS:               m.fs,
-		VersionGenerator: &versionGeneratorMock{},
-	}
-	registry.RegisterAll(m.config, m.connection)
-
-	m.app = krabcli.New(
-		cli.New(&m.uiErrorWriter, &m.uiWriter),
-		args,
-		m.config,
-		registry,
-		m.connection,
-		&web.Server{},
-	)
-	m.app.CLI.ErrorWriter = &m.errorWriter
-	m.app.CLI.HelpWriter = &m.helpWriter
 }
 
 func (m *cliMock) Teardown() {
@@ -130,40 +144,17 @@ $$`)
 	}
 }
 
-func (m *cliMock) AssertFailedRun(t *testing.T, args []string) bool {
+func (m *cliMock) RefuteRun(t *testing.T, args []string) bool {
 	m.setup(args)
-	m.exitCode, m.err = m.app.Run()
+	m.exitCode = m.app.Run(args)
 
 	return assert.Equal(t, 1, m.exitCode, "Exit code should be greather than 0")
-}
-
-func (m *cliMock) AssertSuccessfulRun(t *testing.T, args []string) bool {
-	m.setup(args)
-	m.exitCode, m.err = m.app.Run()
-
-	if assert.NoError(t, m.err, "CLI should run successfully") {
-		if assert.Equal(t, 0, m.exitCode, "Exit code should be eql to 0") {
-			return true
-		} else {
-			fmt.Println("statements debug:")
-			for _, sql := range m.connection.recorder {
-				fmt.Println("---")
-				fmt.Println(ctc.ForegroundBrightRed, sql, ctc.Reset)
-			}
-			fmt.Println("---")
-			fmt.Println(ctc.ForegroundRed, m.uiErrorWriter.String(), ctc.Reset)
-			fmt.Println(ctc.ForegroundRed, m.uiWriter.String(), ctc.Reset)
-			return false
-		}
-	}
-
-	return false
 }
 
 func (m *cliMock) AssertOutputContains(t *testing.T, output string) bool {
 	return assert.Contains(
 		t,
-		strings.TrimSpace(m.uiWriter.String()),
+		strings.TrimSpace(m.stdout.String()),
 		strings.TrimSpace(output),
 		"Output mismatch",
 	)
@@ -172,7 +163,7 @@ func (m *cliMock) AssertOutputContains(t *testing.T, output string) bool {
 func (m *cliMock) AssertUiErrorOutputContains(t *testing.T, output string) bool {
 	return assert.Contains(
 		t,
-		strings.TrimSpace(m.uiErrorWriter.String()),
+		strings.TrimSpace(m.stderr.String()),
 		strings.TrimSpace(output),
 		"UI error output mismatch",
 	)
@@ -186,8 +177,8 @@ func (m *cliMock) AssertSchemaMigrationTableMissing(t *testing.T, schema string)
 	if assert.Error(t, err, "AssertSchemaMigrationTableMissing expects error") {
 		return assert.Contains(
 			t,
-			err.Error(),
 			fmt.Sprintf(`relation "%s.schema_migrations" does not exist`, schema),
+			err.Error(),
 		)
 	}
 
@@ -306,14 +297,6 @@ type versionGeneratorMock struct{}
 
 func (g *versionGeneratorMock) Next() string {
 	return "20230101"
-}
-
-func mockCli(config *krab.Config) *cliMock {
-	mock := &cliMock{
-		config: config,
-	}
-
-	return mock
 }
 
 func mockConfig(source string) *krab.Config {

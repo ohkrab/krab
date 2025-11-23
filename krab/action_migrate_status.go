@@ -3,10 +3,6 @@ package krab
 import (
 	"context"
 	"fmt"
-
-	"github.com/ohkrab/krab/cli"
-	"github.com/ohkrab/krab/cliargs"
-	"github.com/ohkrab/krab/emojis"
 )
 
 // ActionMigrateStatus keeps data needed to perform this action.

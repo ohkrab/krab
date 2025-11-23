@@ -3,7 +3,6 @@ package ferro
 import (
 	"context"
 	"fmt"
-	"os"
 	"text/template"
 
 	"github.com/ohkrab/krab/ferro/config"
@@ -26,17 +25,11 @@ type App struct {
 	EmbededSetTemplate       []byte
 	EmbededMigrationTemplate []byte
 
+	Dir    string
 	Logger *fmtx.Logger
 }
 
-func (a *App) Run(args []string) {
-	// check config dir
-	dir, err := config.Dir()
-	if err != nil {
-		a.Logger.WriteError("can't read config dir: %w", err)
-		os.Exit(1)
-	}
-
+func (a *App) Run(args []string) int {
 	// init templates
 	templates := tpls.New(template.FuncMap{})
 	templates.AddEmbedded("migration", a.EmbededMigrationTemplate)
@@ -48,7 +41,7 @@ func (a *App) Run(args []string) {
 	registry.RegisterAll()
 
 	// init internals
-	filesystem := config.NewFilesystem(dir)
+	filesystem := config.NewFilesystem(a.Dir)
 	// runners
 	generator := run.NewGenerator(filesystem, templates, &generators.TimestampVersionGenerator{})
 	runner := run.New(filesystem, templates, registry, a.Logger)
@@ -67,7 +60,10 @@ func (a *App) Run(args []string) {
 		Name:  "validate",
 		Usage: "Validate the config",
 		Action: func(ctx context.Context, cmd *cli.Command) error {
-			runner.MustConfig()
+            _, err := runner.UseConfig()
+            if err != nil {
+                return err
+            }
 			a.Logger.WriteSuccess("Config is valid")
 			return nil
 		},
@@ -336,9 +332,11 @@ func (a *App) Run(args []string) {
 		migrateGroup,
 	}
 
-	err = root.Run(context.Background(), args)
+    err := root.Run(context.Background(), args)
 	if err != nil {
 		a.Logger.WriteError(err.Error())
-		os.Exit(1)
+		return 1
 	}
+
+	return 0
 }

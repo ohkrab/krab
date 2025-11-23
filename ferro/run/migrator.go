@@ -23,7 +23,7 @@ func NewMigrator(fs *config.Filesystem, logger *fmtx.Logger) *Migrator {
 }
 
 type MigrateAuditOptions struct {
-	Driver      plugin.DriverInstance
+	Driver      *plugin.DriverInstance
 	Set         *config.MigrationSet
 	FilterLastN uint
 }
@@ -80,7 +80,7 @@ func (m *Migrator) MigrateAudit(ctx context.Context, cfg *config.Config, opts Mi
 }
 
 type MigrateFixUpOptions struct {
-	Driver  plugin.DriverInstance
+	Driver  *plugin.DriverInstance
 	Set     *config.MigrationSet
 	Version string
 	Comment string
@@ -154,7 +154,7 @@ func (m *Migrator) MigrateFixUp(ctx context.Context, cfg *config.Config, opts Mi
 }
 
 type MigrateFixDownOptions struct {
-	Driver  plugin.DriverInstance
+	Driver  *plugin.DriverInstance
 	Set     *config.MigrationSet
 	Version string
 	Comment string
@@ -169,7 +169,7 @@ func (m *Migrator) MigrateFixDown(ctx context.Context, cfg *config.Config, opts 
 }
 
 type MigrateUpOptions struct {
-	Driver plugin.DriverInstance
+	Driver *plugin.DriverInstance
 	Set    *config.MigrationSet
 }
 
@@ -291,7 +291,7 @@ func (m *Migrator) MigrateUp(ctx context.Context, cfg *config.Config, opts Migra
 }
 
 type MigrateDownOptions struct {
-	Driver  plugin.DriverInstance
+	Driver  *plugin.DriverInstance
 	Set     *config.MigrationSet
 	Version string
 }
@@ -414,7 +414,7 @@ func (m *Migrator) MigrateDown(ctx context.Context, cfg *config.Config, opts Mig
 }
 
 type MigrateStatusOptions struct {
-	Driver plugin.DriverInstance
+	Driver *plugin.DriverInstance
 	Set    *config.MigrationSet
 }
 
