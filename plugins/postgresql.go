@@ -251,8 +251,8 @@ func (q *PostgreSQLQuery) Exec(ctx context.Context, query string, args ...any) e
 	} else {
 		_, err := q.conn.Conn.Exec(ctx, query, args...)
 		if err != nil {
+            return fmt.Errorf("failed to execute query: %w", err)
 		}
-		return fmt.Errorf("failed to execute query: %w", err)
 	}
 
 	return nil
