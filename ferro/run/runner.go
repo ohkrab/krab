@@ -65,7 +65,7 @@ type CommandMigrateDown struct {
 	Version string
 }
 
-type CommandMigrateAudit struct {
+type CommandAudit struct {
 	Command
 
 	Driver   string
@@ -238,7 +238,7 @@ func (r *Runner) ExecuteMigrateStatus(ctx context.Context, cmd *CommandMigrateSt
 	})
 }
 
-func (r *Runner) ExecuteMigrateAudit(ctx context.Context, cmd *CommandMigrateAudit) (*MigrateAuditResult, error) {
+func (r *Runner) ExecuteMigrateAudit(ctx context.Context, cmd *CommandAudit) (*MigrateAuditResult, error) {
 	cfg, err := r.UseConfig()
 	if err != nil {
 		return nil, err

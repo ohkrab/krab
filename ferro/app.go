@@ -152,7 +152,7 @@ func (a *App) Run(args []string) int {
 			}},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
-			runCmd := run.CommandMigrateAudit{
+			runCmd := run.CommandAudit{
 				Driver:   cmd.String("driver"),
 				Set:      cmd.String("set"),
 				N:        uint(cmd.Uint("n")),

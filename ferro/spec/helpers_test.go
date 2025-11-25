@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"html/template"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -14,8 +16,10 @@ import (
 	"github.com/ohkrab/krab/ferro"
 	"github.com/ohkrab/krab/ferro/config"
 	"github.com/ohkrab/krab/ferro/plugin"
+	"github.com/ohkrab/krab/ferro/run"
 	"github.com/ohkrab/krab/fmtx"
 	"github.com/ohkrab/krab/plugins"
+	"github.com/ohkrab/krab/tpls"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/wzshiming/ctc"
@@ -30,6 +34,11 @@ type cliMock struct {
 	stdout     *bytes.Buffer
 	stderr     *bytes.Buffer
 	T          *testing.T
+}
+
+type assertAudit struct {
+	result *run.MigrateAuditResult
+	T      *testing.T
 }
 
 func NewTestCLI(t *testing.T) (*cliMock, func()) {
@@ -221,8 +230,61 @@ func (m *cliMock) ResetDriverOutputs() {
 	m.connection.recorder = []string{}
 }
 
-type versionGeneratorMock struct{}
+func (m *cliMock) Runner() *run.Runner {
+	templates := tpls.New(template.FuncMap{})
+	registry := plugins.New()
+	registry.RegisterAll()
+	filesystem := config.NewFilesystem(m.app.Dir)
+	return run.New(filesystem, templates, registry, m.app.Logger)
+}
 
-func (g *versionGeneratorMock) Next() string {
-	return "20230101"
+func (m *cliMock) Audit(driver string, set string) *assertAudit {
+	result, err := m.Runner().ExecuteMigrateAudit(context.Background(), &run.CommandAudit{
+		Driver:   driver,
+		Set:      set,
+		N:        0,
+		FullView: false,
+	})
+	if err != nil {
+		m.T.Fatalf("can read audit: %v", err)
+	}
+	return &assertAudit{
+		T:      m.T,
+		result: result,
+	}
+}
+
+func (a *assertAudit) AssertCount(count int) {
+	if count != len(a.result.Logs) {
+		a.T.Fatalf("expect to have %d audit logs, but got %d", count, len(a.result.Logs))
+	}
+}
+
+type auditLog struct {
+	ID       int64
+	Event    string
+	Data     map[string]any
+	Metadata map[string]any
+}
+
+func (a *assertAudit) Assert(index int, log auditLog) {
+	if index >= len(a.result.Logs) {
+		a.T.Fatalf("no enough logs in audit")
+	}
+
+	got := a.result.Logs[index]
+	want := plugin.DriverAuditLog{
+		ID:        log.ID,
+		AppliedAt: got.AppliedAt,
+		Event:     log.Event,
+		Data:      log.Data,
+		Metadata:  log.Metadata,
+	}
+
+	if !reflect.DeepEqual(got, want) {
+		a.T.Logf("audit log[%d] is not same", index)
+		a.T.Logf("   got:%v", got)
+		a.T.Logf("  want:%v", want)
+		a.T.Fail()
+	}
 }

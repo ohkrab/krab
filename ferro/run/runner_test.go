@@ -91,7 +91,7 @@ spec:
 	_, err := runner.ExecuteMigrateUp(ctx, cmd)
 	expecto.NoErr(t, "[migrate.up] runner execution", err)
 
-	_, err = runner.ExecuteMigrateAudit(ctx, &CommandMigrateAudit{
+	_, err = runner.ExecuteMigrateAudit(ctx, &CommandAudit{
 		Driver: db.clientDriverName,
 		Set:    "public",
 		N:      0,
